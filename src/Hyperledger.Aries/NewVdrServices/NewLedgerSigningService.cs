@@ -2,6 +2,8 @@
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
+using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
+using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.Aries.Configuration;
 using System;
@@ -26,8 +28,21 @@ namespace Hyperledger.Aries.Ledger
 
                 if (provisioning?.TaaAcceptance != null)
                 {
-                    requestJson = await IndyLedger.AppendTxnAuthorAgreementAcceptanceToRequestAsync(requestJson, provisioning.TaaAcceptance.Text,
-                        provisioning.TaaAcceptance.Version, provisioning.TaaAcceptance.Digest, provisioning.TaaAcceptance.AcceptanceMechanism, (ulong)DateTimeOffset.Now.ToUnixTimeSeconds());
+                    
+                    //requestJson = await IndyLedger.AppendTxnAuthorAgreementAcceptanceToRequestAsync(requestJson, provisioning.TaaAcceptance.Text,
+                    //    provisioning.TaaAcceptance.Version, provisioning.TaaAcceptance.Digest, provisioning.TaaAcceptance.AcceptanceMechanism, (ulong)DateTimeOffset.Now.ToUnixTimeSeconds());
+
+                    IntPtr requestHandle = await IndyVdrLedger.BuildCustomRequest(requestJson); 
+
+                    string taaRequestJson = await IndyVdrRequest.PrepareTxnAuthorAgreementAcceptanceAsync(
+                        provisioning.TaaAcceptance.AcceptanceMechanism,
+                        (ulong)DateTimeOffset.Now.ToUnixTimeSeconds(),
+                        provisioning.TaaAcceptance.Text,
+                        provisioning.TaaAcceptance.Version,
+                        provisioning.TaaAcceptance.Digest);
+                    await IndyVdrRequest.RequestSetTxnAuthorAgreementAcceptanceAsync(requestHandle, taaRequestJson);
+
+                    requestJson = await IndyVdrRequest.RequestGetBodyAsync(requestHandle);
                 }
             }
             catch (AriesFrameworkException ex) when (ex.ErrorCode == ErrorCode.RecordNotFound)
@@ -40,7 +55,11 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
         {
-            return IndyLedger.SignRequestAsync(wallet, submitterDid, requestJson);
+            string signature = "???"; //Todo GetSignature from Wallet and submitterDid info ?
+            IntPtr requestHandle = IndyVdrLedger.BuildCustomRequest(requestJson).GetAwaiter().GetResult();
+            IndyVdrRequest.RequestSetSigantureAsync(requestHandle, signature);
+            return IndyVdrRequest.RequestGetBodyAsync(requestHandle);
+            //return IndyLedger.SignRequestAsync(wallet, submitterDid, requestJson);
         }
     }
 }
