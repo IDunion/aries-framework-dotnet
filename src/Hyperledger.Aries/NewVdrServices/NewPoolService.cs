@@ -1,20 +1,22 @@
-﻿using System;
+﻿using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Ledger;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Contracts;
-using Hyperledger.Aries.Extensions;
-using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
-using Hyperledger.Indy.PoolApi;
-using Newtonsoft.Json.Linq;
+using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
+using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
+using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.NewVdrServices
 {
     /// <inheritdoc />
     public class NewPoolService : IPoolService
     {
         /// <summary>Collection of active pool handles.</summary>
-        protected static readonly ConcurrentDictionary<string, Pool> Pools =
-            new ConcurrentDictionary<string, Pool>();
+        protected static readonly ConcurrentDictionary<string, IntPtr> Pools =
+            new ConcurrentDictionary<string, IntPtr>();
 
         /// <summary>
         /// Concurrent collection of txn author agreements
@@ -30,105 +32,131 @@ namespace Hyperledger.Aries.Ledger
         protected static readonly ConcurrentDictionary<string, IndyAml> Amls =
             new ConcurrentDictionary<string, IndyAml>();
 
-        /// <inheritdoc />
-        public virtual async Task<Pool> GetPoolAsync(string poolName, int protocolVersion)
+        /// <summary>
+        /// DEPRECATED. Use GetVdrPool() instead.
+        /// </summary>
+        /// <param name="poolName"></param>
+        /// <param name="protocolVersion"></param>
+        /// <returns>NULL</returns>
+        public virtual async Task<Indy.PoolApi.Pool> GetPoolAsync(string poolName, int protocolVersion)
         {
-            await Pool.SetProtocolVersionAsync(protocolVersion);
-
-            return await GetPoolAsync(poolName);
+            return null;
         }
 
-        /// <inheritdoc />
-        public virtual async Task<Pool> GetPoolAsync(string poolName)
+        /// <summary>
+        /// DEPRECATED. Use GetVdrPool() instead.
+        /// </summary>
+        /// <param name="poolName"></param>
+        /// <returns>NULL</returns>
+        public virtual async Task<Indy.PoolApi.Pool> GetPoolAsync(string poolName)
         {
-            if (Pools.TryGetValue(poolName, out var pool))
+            return null;
+        }
+
+        public virtual async Task<IntPtr> GetVdrPoolAsync(string poolName)
+        {
+            if (Pools.TryGetValue(poolName, out IntPtr poolHandle))
             {
-                return pool;
+                return poolHandle;
             }
 
-            pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-            Pools.TryAdd(poolName, pool);
-            return pool;
+            poolHandle = await IndyVdrPool.CreatePoolAsync();
+            _ = Pools.TryAdd(poolName, poolHandle);
+            return poolHandle;
         }
 
         /// <inheritdoc />
         public virtual async Task CreatePoolAsync(string poolName, string genesisFile)
         {
-            var poolConfig = new { genesis_txn = genesisFile }.ToJson();
+            string poolConfig = JsonConvert.SerializeObject(new
+            {
+                protocol_version = "2"
+            });
 
-            await Pool.CreatePoolLedgerConfigAsync(poolName, poolConfig);
+            _ = await IndyVdrMod.SetConfigAsync(poolConfig);
+            _ = await IndyVdrPool.CreatePoolAsync(transactionsPath: genesisFile);
         }
 
         /// <inheritdoc />
         public async Task<IndyTaa> GetTaaAsync(string poolName)
         {
-            IndyTaa ParseTaa(string response)
+            static IndyTaa ParseTaa(string response)
             {
-                var jresponse = JObject.Parse(response);
-                if (jresponse["result"]["data"].HasValues)
-                {
-                    return new IndyTaa
+                JObject jresponse = JObject.Parse(response);
+                return jresponse["result"]["data"].HasValues
+                    ? new IndyTaa
                     {
                         Text = jresponse["result"]["data"]["text"].ToString(),
                         Version = jresponse["result"]["data"]["version"].ToString()
-                    };
-                }
-                return null;
+                    }
+                    : null;
             };
 
-            if (Taas.TryGetValue(poolName, out var taa))
+            if (Taas.TryGetValue(poolName, out IndyTaa taa))
             {
                 return taa;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
-            var req = await IndyLedger.BuildGetTxnAuthorAgreementRequestAsync(null, null);
-            var res = await IndyLedger.SubmitRequestAsync(pool, req);
+            string poolConfig = JsonConvert.SerializeObject(new
+            {
+                protocol_version = "2"
+            });
+
+            _ = await IndyVdrMod.SetConfigAsync(poolConfig);
+            IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
+
+            IntPtr req = await IndyVdrLedger.BuildGetTxnAuthorAgreementRequestAsync();
+            string res = await IndyVdrPool.SubmitPoolRequestAsync(poolHandle, req);
 
             EnsureSuccessResponse(res);
 
             taa = ParseTaa(res);
-            Taas.TryAdd(poolName, taa);
+            _ = Taas.TryAdd(poolName, taa);
             return taa;
         }
 
-        void EnsureSuccessResponse(string res)
+        private void EnsureSuccessResponse(string res)
         {
-            var response = JObject.Parse(res);
+            JObject response = JObject.Parse(res);
 
             if (!response["op"].ToObject<string>().Equals("reply", StringComparison.OrdinalIgnoreCase))
+            {
                 throw new AriesFrameworkException(ErrorCode.LedgerOperationRejected, "Ledger operation rejected");
+            }
         }
 
         /// <inheritdoc />
         public async Task<IndyAml> GetAmlAsync(string poolName, DateTimeOffset timestamp = default, string version = null)
         {
-            IndyAml ParseAml(string response)
+            static IndyAml ParseAml(string response)
             {
-                var jresponse = JObject.Parse(response);
-                if (jresponse["result"]["data"].HasValues)
-                {
-                    return jresponse["result"]["data"].ToObject<IndyAml>();
-                }
-                return null;
+                JObject jresponse = JObject.Parse(response);
+                return jresponse["result"]["data"].HasValues ? jresponse["result"]["data"].ToObject<IndyAml>() : null;
             };
 
-            if (Amls.TryGetValue(poolName, out var aml))
+            if (Amls.TryGetValue(poolName, out IndyAml aml))
             {
                 return aml;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
-            var req = await IndyLedger.BuildGetAcceptanceMechanismsRequestAsync(
-                submitter_did: null,
+            string poolConfig = JsonConvert.SerializeObject(new
+            {
+                protocol_version = "2"
+            });
+
+            _ = await IndyVdrMod.SetConfigAsync(poolConfig);
+            IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
+
+            IntPtr req = await IndyVdrLedger.BuildGetAcceptanceMechanismsRequestAsync(
+                submitterDid: null,
                 timestamp: timestamp == DateTimeOffset.MinValue ? -1 : timestamp.ToUnixTimeSeconds(),
                 version: version);
-            var res = await IndyLedger.SubmitRequestAsync(pool, req);
+            string res = await IndyVdrPool.SubmitPoolRequestAsync(poolHandle, req);
 
             EnsureSuccessResponse(res);
 
             aml = ParseAml(res);
-            Amls.TryAdd(poolName, aml);
+            _ = Amls.TryAdd(poolName, aml);
             return aml;
         }
     }
