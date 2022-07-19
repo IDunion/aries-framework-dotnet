@@ -55,7 +55,7 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
         {
-            string signature = "???"; //Todo GetSignature from Wallet and submitterDid info ?
+            string signature = "???"; //TODO: ??? GetSignature from Wallet and submitterDid info?
             IntPtr requestHandle = IndyVdrLedger.BuildCustomRequest(requestJson).GetAwaiter().GetResult();
             IndyVdrRequest.RequestSetSigantureAsync(requestHandle, signature);
             return IndyVdrRequest.RequestGetBodyAsync(requestHandle);
