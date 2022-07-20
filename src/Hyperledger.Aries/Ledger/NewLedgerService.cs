@@ -20,21 +20,21 @@ using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewLedgerService : ILedgerService
+    public class NewLedgerService : INewLedgerService
     {
-        private readonly ILedgerSigningService _signingService;
+        private readonly INewLedgerSigningService _signingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultLedgerService" /> class
         /// </summary>
         /// <param name="signingService"></param>
-        public NewLedgerService(ILedgerSigningService signingService)
+        public NewLedgerService(INewLedgerSigningService signingService)
         {
             _signingService = signingService;
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<ParseResponseResult> LookupDefinitionAsync(INewAgentContext agentContext,
             string definitionId)
         {
             async Task<ParseResponseResult> LookupDefinition()
@@ -51,7 +51,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(INewAgentContext agentContext,
             string registryId)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
@@ -61,7 +61,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
+        public virtual async Task<ParseResponseResult> LookupSchemaAsync(INewAgentContext agentContext, string schemaId)
         {
             async Task<ParseResponseResult> LookupSchema()
             {
@@ -79,7 +79,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(INewAgentContext agentContext, string revocationRegistryId,
              long from, long to)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
@@ -91,7 +91,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(INewAgentContext agentContext, string revocationRegistryId,
              long timestamp)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
@@ -103,14 +103,14 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task RegisterSchemaAsync(IAgentContext context, string issuerDid, string schemaJson, TransactionCost paymentInfo = null)
+        public virtual async Task RegisterSchemaAsync(INewAgentContext context, string issuerDid, string schemaJson, TransactionCost paymentInfo = null)
         {
             var req = await IndyVdrRequest.RequestGetBodyAsync(await IndyVdrLedger.BuildSchemaRequestAsync(issuerDid, schemaJson));
             _ = await SignAndSubmitAsync(context, issuerDid, req, paymentInfo);
         }
 
         /// <inheritdoc />
-        public async Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did)
+        public async Task<ServiceEndpointResult> LookupServiceEndpointAsync(INewAgentContext context, string did)
         {
             var res = await LookupAttributeAsync(context, did, "endpoint");
 
@@ -121,21 +121,21 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task RegisterServiceEndpointAsync(IAgentContext context, string did, string serviceEndpoint, TransactionCost paymentInfo = null)
+        public async Task RegisterServiceEndpointAsync(INewAgentContext context, string did, string serviceEndpoint, TransactionCost paymentInfo = null)
         {
             var value = new { endpoint = serviceEndpoint };
             await RegisterAttributeAsync(context, did, did, "endpoint", value);
         }
 
         /// <inheritdoc />
-        public virtual async Task RegisterCredentialDefinitionAsync(IAgentContext context, string submitterDid, string data, TransactionCost paymentInfo = null)
+        public virtual async Task RegisterCredentialDefinitionAsync(INewAgentContext context, string submitterDid, string data, TransactionCost paymentInfo = null)
         {
             var req = await IndyVdrRequest.RequestGetBodyAsync(await IndyVdrLedger.BuildCredDefRequest(submitterDid, data));
             _ = await SignAndSubmitAsync(context, submitterDid, req, paymentInfo);
         }
 
         /// <inheritdoc />
-        public virtual async Task RegisterRevocationRegistryDefinitionAsync(IAgentContext context, string submitterDid,
+        public virtual async Task RegisterRevocationRegistryDefinitionAsync(INewAgentContext context, string submitterDid,
             string data, TransactionCost paymentInfo = null)
         {
             var req = await IndyVdrRequest.RequestGetBodyAsync(await IndyVdrLedger.BuildRevocRegDefRequestAsync(submitterDid, data));
@@ -143,7 +143,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task SendRevocationRegistryEntryAsync(IAgentContext context, string issuerDid,
+        public virtual async Task SendRevocationRegistryEntryAsync(INewAgentContext context, string issuerDid,
             string revocationRegistryDefinitionId, string revocationDefinitionType, string value, TransactionCost paymentInfo = null)
         {
             var req = await IndyVdrRequest.RequestGetBodyAsync(
@@ -155,7 +155,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task RegisterNymAsync(IAgentContext context, string submitterDid, string theirDid,
+        public virtual async Task RegisterNymAsync(INewAgentContext context, string submitterDid, string theirDid,
             string theirVerkey, string role, TransactionCost paymentInfo = null)
         {
             if (DidUtils.IsFullVerkey(theirVerkey))
@@ -166,7 +166,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName)
+        public virtual async Task<string> LookupAttributeAsync(INewAgentContext agentContext, string targetDid, string attributeName)
         {
             var req = await IndyVdrLedger.BuildGetAttributeRequest(targetDid, null, null, attributeName, null);
             var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
@@ -175,7 +175,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<string> LookupTransactionAsync(IAgentContext agentContext, string ledgerType, int sequenceId)
+        public virtual async Task<string> LookupTransactionAsync(INewAgentContext agentContext, string ledgerType, int sequenceId)
         {
             if(int.TryParse(ledgerType, out int ledgerTypeAsInt) == false)
             {
@@ -188,7 +188,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task RegisterAttributeAsync(IAgentContext context, string submittedDid, string targetDid,
+        public virtual async Task RegisterAttributeAsync(INewAgentContext context, string submittedDid, string targetDid,
             string attributeName, object value, TransactionCost paymentInfo = null)
         {
             var data = $"{{\"{attributeName}\": {value.ToJson()}}}";
@@ -198,7 +198,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
+        public async Task<string> LookupNymAsync(INewAgentContext agentContext, string did)
         {
             var req = await IndyVdrLedger.BuildGetNymRequest(did);
             var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
@@ -209,7 +209,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext)
+        public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(INewAgentContext agentContext)
         {
             var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
             var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
@@ -220,7 +220,7 @@ namespace Hyperledger.Aries.Ledger
             return jobj["result"]["data"].ToObject<IList<AuthorizationRule>>();
         }
 
-        private async Task<string> SignAndSubmitAsync(IAgentContext context, string submitterDid, string request, TransactionCost paymentInfo)
+        private async Task<string> SignAndSubmitAsync(INewAgentContext context, string submitterDid, string request, TransactionCost paymentInfo)
         {
             if (paymentInfo != null)
             {

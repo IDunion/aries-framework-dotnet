@@ -11,7 +11,7 @@ using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewPoolService : IPoolService
+    public class NewPoolService : INewPoolService
     {
         /// <summary>Collection of active pool handles.</summary>
         protected static readonly ConcurrentDictionary<string, IntPtr> Pools =
@@ -31,28 +31,16 @@ namespace Hyperledger.Aries.Ledger
         protected static readonly ConcurrentDictionary<string, IndyAml> Amls =
             new ConcurrentDictionary<string, IndyAml>();
 
-        /// <summary>
-        /// DEPRECATED. Use GetVdrPool() instead.
-        /// </summary>
-        /// <param name="poolName"></param>
-        /// <param name="protocolVersion"></param>
-        /// <returns>NULL</returns>
-        public virtual async Task<Indy.PoolApi.Pool> GetPoolAsync(string poolName, int protocolVersion)
+        /// <inheritdoc />
+        public virtual async Task<IntPtr> GetPoolAsync(string poolName, int protocolVersion)
         {
-            return null;
+            await IndyVdrMod.SetProtocolVersionAsync(protocolVersion);
+
+            return await GetPoolAsync(poolName);
         }
 
-        /// <summary>
-        /// DEPRECATED. Use GetVdrPool() instead.
-        /// </summary>
-        /// <param name="poolName"></param>
-        /// <returns>NULL</returns>
-        public virtual async Task<Indy.PoolApi.Pool> GetPoolAsync(string poolName)
-        {
-            return null;
-        }
-
-        public virtual async Task<IntPtr> GetVdrPoolAsync(string poolName)
+        /// <inheritdoc />
+        public virtual async Task<IntPtr> GetPoolAsync(string poolName)
         {
             if (Pools.TryGetValue(poolName, out IntPtr poolHandle))
             {

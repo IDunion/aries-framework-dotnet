@@ -10,16 +10,16 @@ using System;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewLedgerSigningService : ILedgerSigningService
+    public class NewLedgerSigningService : INewLedgerSigningService
     {
-        private readonly IProvisioningService provisioningService;
+        private readonly INewProvisioningService provisioningService;
 
-        public NewLedgerSigningService(IProvisioningService provisioningService)
+        public NewLedgerSigningService(INewProvisioningService provisioningService)
         {
             this.provisioningService = provisioningService;
         }
         /// <inheritdoc />
-        public async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
+        public async Task<string> SignRequestAsync(INewAgentContext context, string submitterDid, string requestJson)
         {
             try
             {
