@@ -1,5 +1,4 @@
 ﻿using Hyperledger.Aries.Contracts;
-using Hyperledger.Aries.Ledger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -9,7 +8,7 @@ using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
 using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 
-namespace Hyperledger.Aries.NewVdrServices
+namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
     public class NewPoolService : IPoolService

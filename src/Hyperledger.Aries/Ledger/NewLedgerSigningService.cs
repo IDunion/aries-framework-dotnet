@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
-using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
 using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using Hyperledger.Indy.WalletApi;
@@ -28,10 +27,6 @@ namespace Hyperledger.Aries.Ledger
 
                 if (provisioning?.TaaAcceptance != null)
                 {
-                    
-                    //requestJson = await IndyLedger.AppendTxnAuthorAgreementAcceptanceToRequestAsync(requestJson, provisioning.TaaAcceptance.Text,
-                    //    provisioning.TaaAcceptance.Version, provisioning.TaaAcceptance.Digest, provisioning.TaaAcceptance.AcceptanceMechanism, (ulong)DateTimeOffset.Now.ToUnixTimeSeconds());
-
                     IntPtr requestHandle = await IndyVdrLedger.BuildCustomRequest(requestJson); 
 
                     string taaRequestJson = await IndyVdrRequest.PrepareTxnAuthorAgreementAcceptanceAsync(
@@ -59,7 +54,6 @@ namespace Hyperledger.Aries.Ledger
             IntPtr requestHandle = IndyVdrLedger.BuildCustomRequest(requestJson).GetAwaiter().GetResult();
             IndyVdrRequest.RequestSetSigantureAsync(requestHandle, signature);
             return IndyVdrRequest.RequestGetBodyAsync(requestHandle);
-            //return IndyLedger.SignRequestAsync(wallet, submitterDid, requestJson);
         }
     }
 }
