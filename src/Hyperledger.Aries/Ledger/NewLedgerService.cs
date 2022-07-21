@@ -42,6 +42,7 @@ namespace Hyperledger.Aries.Ledger
                 var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
                 var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
 
+                //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
                 return await IndyVdrLedger.ParseGetCredDefResponseAsync(res);
             }
 
@@ -57,6 +58,7 @@ namespace Hyperledger.Aries.Ledger
             var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
             var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
 
+            //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             return await IndyVdrLedger.ParseGetRevocRegDefResponseAsync(res);
         }
 
@@ -70,6 +72,7 @@ namespace Hyperledger.Aries.Ledger
 
                 EnsureSuccessResponse(res);
 
+                //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
                 return await IndyVdrLedger.ParseGetSchemaResponseAsync(res);
             };
 
@@ -87,6 +90,7 @@ namespace Hyperledger.Aries.Ledger
 
             EnsureSuccessResponse(res);
 
+            //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             return await IndyVdrLedger.ParseGetRevocRegDeltaResponseAsync(res);
         }
 
@@ -99,6 +103,7 @@ namespace Hyperledger.Aries.Ledger
 
             EnsureSuccessResponse(res);
 
+            //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             return await IndyVdrLedger.ParseGetRevocRegResponseAsync(res);
         }
 
@@ -211,6 +216,7 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(INewAgentContext agentContext)
         {
+            //TODO : ??? - missing functionality in indy-vdr? 
             var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
             var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
 
