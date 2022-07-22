@@ -6,6 +6,7 @@ using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.Aries.Configuration;
 using System;
+using aries_askar_dotnet.Models;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -48,7 +49,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
+        public Task<string> SignRequestAsync(Store wallet, string submitterDid, string requestJson)
         {
             string signature = "???"; //TODO: ??? GetSignature from Wallet and submitterDid info?
             IntPtr requestHandle = IndyVdrLedger.BuildCustomRequest(requestJson).GetAwaiter().GetResult();

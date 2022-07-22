@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Indy.WalletApi;
 
@@ -26,6 +27,6 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="requestJson"></param>
         /// <returns></returns>
         //TODO : ??? - change Wallet to Store/Wallet type of aries-askar 
-        Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson);
+        Task<string> SignRequestAsync(Store wallet, string submitterDid, string requestJson);
     }
 }
