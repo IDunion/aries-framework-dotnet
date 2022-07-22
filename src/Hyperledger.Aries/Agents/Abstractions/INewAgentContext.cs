@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Indy.WalletApi;
 
@@ -11,8 +12,7 @@ namespace Hyperledger.Aries.Agents
     {
         /// <summary>Gets or sets the agent wallet.</summary>
         /// <value>The wallet.</value>
-        //TODO: ??? - change to Wallet/Store of aries askar
-        Wallet Wallet { get; set; }
+        Store Wallet { get; set; }
 
         /// <summary>Gets or sets the pool handle.</summary>
         /// <value>The pool handle.</value>

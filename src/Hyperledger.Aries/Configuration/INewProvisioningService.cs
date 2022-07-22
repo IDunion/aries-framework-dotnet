@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger;
-using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Configuration
 {
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Configuration
         /// <param name="wallet">The wallet.</param>
         /// <exception cref="AriesFrameworkException">Throws with ErrorCode.RecordNotFound.</exception>
         /// <returns>The provisioning record.</returns>
-        Task<ProvisioningRecord> GetProvisioningAsync(Wallet wallet);
+        Task<ProvisioningRecord> GetProvisioningAsync(Store wallet);
 
         /// <summary>
         /// Creates a wallet and provisions a new agent with the default <see cref="AgentOptions" />
@@ -37,7 +37,7 @@ namespace Hyperledger.Aries.Configuration
         /// <param name="wallet">The wallet.</param>
         /// <param name="endpoint">The endpoint.</param>
         /// <returns></returns>
-        Task UpdateEndpointAsync(Wallet wallet, AgentEndpoint endpoint);
+        Task UpdateEndpointAsync(Store wallet, AgentEndpoint endpoint);
 
         /// <summary>
         /// Accepts the transaction author agreement
