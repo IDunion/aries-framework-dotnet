@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
         <Description>.NET Core tools for building agent services</Description>
@@ -7,7 +7,7 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.7-alpha" />
-        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.1-alpha" />
+        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.2-alpha" />
         <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.1-alpha" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
