@@ -14,8 +14,11 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
+using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
 using Flurl;
 using aries_askar_dotnet.Models;
+using System.Linq;
+using indy_shared_rs_dotnet.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -69,11 +72,13 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string issuerDid, string name,
             string version, string[] attributeNames)
         {
-            var schema = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, name, version, attributeNames.ToJson());
+            //var schema = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, name, version, attributeNames.ToJson());
+            uint seqNo = 0;
+            Schema schema = await IndySharedRsSchema.CreateSchemaAsync(issuerDid,name,version, attributeNames.ToList(), seqNo);
 
             var schemaRecord = new SchemaRecord
             {
-                Id = schema.SchemaId,
+                Id = schema.Id,
                 Name = name,
                 Version = version,
                 AttributeNames = attributeNames
