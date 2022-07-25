@@ -20,11 +20,11 @@ namespace Hyperledger.Aries.Ledger
             this.provisioningService = provisioningService;
         }
         /// <inheritdoc />
-        public async Task<string> SignRequestAsync(INewAgentContext context, string submitterDid, string requestJson)
+        public async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
         {
             try
             {
-                var provisioning = await provisioningService.GetProvisioningAsync(context.Wallet);
+                var provisioning = await provisioningService.GetProvisioningAsync(context.WalletStore);
 
                 if (provisioning?.TaaAcceptance != null)
                 {
@@ -45,7 +45,7 @@ namespace Hyperledger.Aries.Ledger
             {
                 // OK, used in unit tests and scenarios when we want to simply send ledger commands
             }
-            return await SignRequestAsync(context.Wallet, submitterDid, requestJson);
+            return await SignRequestAsync(context.WalletStore, submitterDid, requestJson);
         }
 
         /// <inheritdoc />
