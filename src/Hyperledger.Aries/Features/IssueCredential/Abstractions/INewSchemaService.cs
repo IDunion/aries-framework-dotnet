@@ -24,7 +24,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="attributeNames">The attribute names.</param>
         /// <returns>The schema identifier of the stored schema object.
         /// This identifier can be used for ledger schema lookup.</returns>
-        Task<string> CreateSchemaAsync(INewAgentContext context, string issuerDid, string name, string version,
+        Task<string> CreateSchemaAsync(IAgentContext context, string issuerDid, string name, string version,
             string[] attributeNames);
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="version">The version.</param>
         /// <param name="attributeNames">The attribute names.</param>
         /// <returns></returns>
-        Task<string> CreateSchemaAsync(INewAgentContext context, string name, string version, string[] attributeNames);
+        Task<string> CreateSchemaAsync(IAgentContext context, string name, string version, string[] attributeNames);
 
         /// <summary>Creates the credential definition and registers it on the ledger.</summary>
         /// <param name="context">The agent context</param>
@@ -50,7 +50,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <returns>The credential definition identifier of the stored definition record.
         /// This identifier can be used for ledger definition lookup.</returns>
         [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(IAgentContext, CredentialDefinitionConfiguration)'")]
-        Task<string> CreateCredentialDefinitionAsync(INewAgentContext context, string schemaId, string issuerDid, string tag, bool supportsRevocation, int maxCredentialCount, Uri tailsBaseUri);
+        Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId, string issuerDid, string tag, bool supportsRevocation, int maxCredentialCount, Uri tailsBaseUri);
 
         /// <summary>
         /// Creates new credential definition with the given configuration
@@ -58,7 +58,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="context">The context.</param>
         /// <param name="configuration">The configuration.</param>
         /// <returns></returns>
-        Task<string> CreateCredentialDefinitionAsync(INewAgentContext context, CredentialDefinitionConfiguration configuration);
+        Task<string> CreateCredentialDefinitionAsync(IAgentContext context, CredentialDefinitionConfiguration configuration);
 
         /// <summary>
         /// Creates new revocation registry record and definition for the given credential definition.
@@ -67,7 +67,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="tag">The tag.</param>
         /// <param name="definitionRecord">The definition record.</param>
         /// <returns></returns>
-        Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(INewAgentContext context, string tag, DefinitionRecord definitionRecord);
+        Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(IAgentContext context, string tag, DefinitionRecord definitionRecord);
 
         /// <summary>Creates the credential definition and registers it on the ledger.</summary>
         /// <param name="context">The agent context</param>
@@ -77,7 +77,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="maxCredentialCount">The maximum credential count.</param>
         /// <returns></returns>
         [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(IAgentContext, CredentialDefinitionConfiguration)'")]
-        Task<string> CreateCredentialDefinitionAsync(INewAgentContext context, string schemaId, string tag, bool supportsRevocation, int maxCredentialCount);
+        Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId, string tag, bool supportsRevocation, int maxCredentialCount);
 
         /// <summary>
         /// Gets the schemas asynchronous.
@@ -109,7 +109,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <returns>
         /// A json string of the credential definition
         /// </returns>
-        Task<string> LookupCredentialDefinitionAsync(INewAgentContext agentContext, string definitionId);
+        Task<string> LookupCredentialDefinitionAsync(IAgentContext agentContext, string definitionId);
 
         /// <summary>
         /// Looks up the schema definition on the ledger given a credential definition identifier.
@@ -119,7 +119,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <returns>
         /// A json string of the schema
         /// </returns>
-        Task<string> LookupSchemaFromCredentialDefinitionAsync(INewAgentContext agentContext, string credentialDefinitionId);
+        Task<string> LookupSchemaFromCredentialDefinitionAsync(IAgentContext agentContext, string credentialDefinitionId);
 
         /// <summary>
         /// Looks up the schema definition on the ledger.
@@ -129,7 +129,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <returns>
         /// A json string of the schema
         /// </returns>
-        Task<string> LookupSchemaAsync(INewAgentContext agentContext, int sequenceId);
+        Task<string> LookupSchemaAsync(IAgentContext agentContext, int sequenceId);
 
         /// <summary>
         /// Looks up the schema definition on the ledger.
@@ -139,6 +139,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <returns>
         /// A json string of the schema
         /// </returns>
-        Task<string> LookupSchemaAsync(INewAgentContext agentContext, string schemaId);
+        Task<string> LookupSchemaAsync(IAgentContext agentContext, string schemaId);
     }
 }

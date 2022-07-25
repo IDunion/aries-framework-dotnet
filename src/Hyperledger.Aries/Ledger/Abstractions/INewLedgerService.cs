@@ -18,7 +18,7 @@ namespace Hyperledger.Aries.Contracts
         /// </summary>
         /// <param name="agentContext">The agent context.</param>
         /// <returns></returns>
-        Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(INewAgentContext agentContext);
+        Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext);
 
         /// <summary>
         /// Looks up an attribute value on the ledger.
@@ -29,7 +29,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The attribute value or <c>null</c> if none were found.
         /// </returns>
-        Task<string> LookupAttributeAsync(INewAgentContext agentContext, string targetDid, string attributeName);
+        Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName);
 
         /// <summary>
         /// Register an attribute for the specified <paramref name="targetDid"/> to the ledger.
@@ -41,7 +41,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="attributeName">Attribute name.</param>
         /// <param name="value">The attribute value.</param>
         /// <param name="paymentInfo">Payment information</param>
-        Task RegisterAttributeAsync(INewAgentContext context, string submittedDid, string targetDid,
+        Task RegisterAttributeAsync(IAgentContext context, string submittedDid, string targetDid,
             string attributeName, object value, TransactionCost paymentInfo = null);
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The schema async.
         /// </returns>
-        Task<ParseResponseResult> LookupSchemaAsync(INewAgentContext agentContext, string schemaId);
+        Task<ParseResponseResult> LookupSchemaAsync(IAgentContext agentContext, string schemaId);
 
         /// <summary>
         /// Lookup NYM record on the ledger
@@ -60,7 +60,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="agentContext">The agent context.</param>
         /// <param name="did">The did.</param>
         /// <returns></returns>
-        Task<string> LookupNymAsync(INewAgentContext agentContext, string did);
+        Task<string> LookupNymAsync(IAgentContext agentContext, string did);
 
         /// <summary>
         /// Lookup the ledger transaction async.
@@ -71,7 +71,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The transaction async.
         /// </returns>
-        Task<string> LookupTransactionAsync(INewAgentContext agentContext, string ledgerType, int sequenceId);
+        Task<string> LookupTransactionAsync(IAgentContext agentContext, string ledgerType, int sequenceId);
 
         /// <summary>
         /// Lookups the definition async.
@@ -81,7 +81,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The definition async.
         /// </returns>
-        Task<ParseResponseResult> LookupDefinitionAsync(INewAgentContext agentContext, string definitionId);
+        Task<ParseResponseResult> LookupDefinitionAsync(IAgentContext agentContext, string definitionId);
 
         /// <summary>
         /// Lookups the revocation registry definition.
@@ -89,7 +89,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="agentContext">The agent context.</param>
         /// <param name="registryId">The registry identifier.</param>
         /// <returns></returns>
-        Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(INewAgentContext agentContext, string registryId);
+        Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext, string registryId);
 
         /// <summary>
         /// Lookup the revocation registry delta for the given registry in the range specified.
@@ -101,7 +101,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The revocation registry delta.
         /// </returns>
-        Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(INewAgentContext agentContext, string revocationRegistryId,
+        Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
             long from, long to);
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The revocation registry async.
         /// </returns>
-        Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(INewAgentContext agentContext, string revocationRegistryId,
+        Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
             long timestamp);
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// Registration async.
         /// </returns>
-        Task RegisterNymAsync(INewAgentContext context, string submitterDid, string theirDid,
+        Task RegisterNymAsync(IAgentContext context, string submitterDid, string theirDid,
             string theirVerkey, string role, TransactionCost paymentInfo = null);
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The credential definition async.
         /// </returns>
-        Task RegisterCredentialDefinitionAsync(INewAgentContext context, string submitterDid,
+        Task RegisterCredentialDefinitionAsync(IAgentContext context, string submitterDid,
             string data, TransactionCost paymentInfo = null);
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="data">The data.</param>
         /// <param name="paymentInfo">Payment information</param>
         /// <returns></returns>
-        Task RegisterRevocationRegistryDefinitionAsync(INewAgentContext context, string submitterDid,
+        Task RegisterRevocationRegistryDefinitionAsync(IAgentContext context, string submitterDid,
             string data, TransactionCost paymentInfo = null);
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="value">The value.</param>
         /// <param name="paymentInfo">Payment information</param>
         /// <returns></returns>
-        Task SendRevocationRegistryEntryAsync(INewAgentContext context, string issuerDid,
+        Task SendRevocationRegistryEntryAsync(IAgentContext context, string issuerDid,
             string revocationRegistryDefinitionId, string revocationDefinitionType, string value,
             TransactionCost paymentInfo = null);
 
@@ -177,7 +177,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="schemaJson">The schema json.</param>
         /// <param name="paymentInfo">Payment information</param>
         /// <returns></returns>
-        Task RegisterSchemaAsync(INewAgentContext context, string issuerDid, string schemaJson,
+        Task RegisterSchemaAsync(IAgentContext context, string issuerDid, string schemaJson,
             TransactionCost paymentInfo = null);
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="context">The agent context.</param>
         /// <param name="did">The did.</param>
         /// <returns></returns>
-        Task<ServiceEndpointResult> LookupServiceEndpointAsync(INewAgentContext context, string did);
+        Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did);
 
         /// <summary>
         /// Register service endpoint information for a did on a public ledger
@@ -196,7 +196,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="serviceEndpoint">The endpoint information to be added</param>
         /// <param name="paymentInfo">Payment information.</param>
         /// <returns></returns>
-        Task RegisterServiceEndpointAsync(INewAgentContext context, string did, string serviceEndpoint,
+        Task RegisterServiceEndpointAsync(IAgentContext context, string did, string serviceEndpoint,
             TransactionCost paymentInfo = null);
     }
 }

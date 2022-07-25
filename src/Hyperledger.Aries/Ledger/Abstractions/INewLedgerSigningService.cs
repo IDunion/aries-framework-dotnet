@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="submitterDid"></param>
         /// <param name="requestJson"></param>
         /// <returns></returns>
-        Task<string> SignRequestAsync(INewAgentContext context, string submitterDid, string requestJson);
+        Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson);
 
         /// <summary>
         /// Signs the outgoing request

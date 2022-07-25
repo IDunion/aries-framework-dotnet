@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Indy.WalletApi;
 
@@ -22,6 +23,14 @@ namespace Hyperledger.Aries.Agents
         /// The agent context pool.
         /// </summary>
         public PoolAwaitable Pool { get; set; }
+
+        /// <summary>Gets or sets the agent wallet.</summary>
+        /// <value>The aries-askar version of wallet.</value>
+        public Store WalletStore { get; set; }
+
+        /// <summary>Gets or sets the pool handle.</summary>
+        /// <value>The indy-vdr version of pool handle.</value>
+        public NewPoolAwaitable PoolHandle { get; set; }
 
         /// <inheritdoc />
         /// <summary>

@@ -46,6 +46,6 @@ namespace Hyperledger.Aries.Configuration
         /// <param name="txnAuthorAgreement"></param>
         /// <param name="acceptanceMechanism"></param>
         /// <returns></returns>
-        Task AcceptTxnAuthorAgreementAsync(INewAgentContext agentContext, IndyTaa txnAuthorAgreement, string acceptanceMechanism = null);
+        Task AcceptTxnAuthorAgreementAsync(IAgentContext agentContext, IndyTaa txnAuthorAgreement, string acceptanceMechanism = null);
     }
 }
