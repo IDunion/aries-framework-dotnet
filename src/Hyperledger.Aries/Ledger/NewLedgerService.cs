@@ -34,10 +34,10 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<SharedRsResponse> LookupDefinitionAsync(IAgentContext agentContext,
             string definitionId)
         {
-            async Task<ParseResponseResult> LookupDefinition()
+            async Task<SharedRsResponse> LookupDefinition()
             {
                 var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
                 var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
@@ -52,7 +52,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<SharedRsResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
             string registryId)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
@@ -63,9 +63,9 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
+        public virtual async Task<SharedRsResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
         {
-            async Task<ParseResponseResult> LookupSchema()
+            async Task<SharedRsResponse> LookupSchema()
             {
                 var req = await IndyVdrLedger.BuildGetSchemaRequestAsync(schemaId);
                 var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
@@ -82,7 +82,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
              long from, long to)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
@@ -95,7 +95,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
              long timestamp)
         {
             var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
