@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Indy.AnonCredsApi;
 
@@ -67,7 +68,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="tag">The tag.</param>
         /// <param name="definitionRecord">The definition record.</param>
         /// <returns></returns>
-        Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(IAgentContext context, string tag, DefinitionRecord definitionRecord);
+        Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(IAgentContext context, string tag, DefinitionRecord definitionRecord);
 
         /// <summary>Creates the credential definition and registers it on the ledger.</summary>
         /// <param name="context">The agent context</param>
