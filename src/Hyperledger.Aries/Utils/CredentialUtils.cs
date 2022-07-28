@@ -16,6 +16,38 @@ namespace Hyperledger.Aries.Utils
     public class CredentialUtils
     {
         /// <summary>
+        /// Formats the credential values into three string lists usable with the <see cref="indy_shared_rs_dotnet.IndyCredx.CredentialApi"/> API
+        /// </summary>
+        /// <returns>The credential values as three string lists. First is attribute names, second is attribute raw values , third is attribute encoded values.</returns>
+        /// <param name="credentialAttributes">The credential attributes.</param>
+        public static (List<string>, List<string>, List<string>) FormatCredentialValuesForIndySharedRs(IEnumerable<CredentialPreviewAttribute> credentialAttributes)
+        {
+            if (credentialAttributes == null)
+                return (null, null, null);
+
+            List<string> resultAttrNames = new List<string>();
+            List<string> resultAttrNamesRaw = new List<string>();
+            List<string> resultAttrNamesEnc = new List<string>();
+
+            foreach (var item in credentialAttributes)
+            {
+                switch (item.MimeType)
+                {
+                    case CredentialMimeTypes.TextMimeType:
+                    case CredentialMimeTypes.ApplicationJsonMimeType:
+                    case CredentialMimeTypes.ImagePngMimeType:
+                        resultAttrNames.Add(item.Name);
+                        resultAttrNamesRaw.Add((string)item.Value);
+                        break; 
+                    default:
+                        throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"{item.Name} mime type of {item.MimeType} not supported");
+                }
+            }
+            resultAttrNamesEnc = indy_shared_rs_dotnet.IndyCredx.CredentialApi.EncodeCredentialAttributesAsync(resultAttrNamesRaw).GetAwaiter().GetResult();
+            return (resultAttrNames, resultAttrNamesRaw, resultAttrNamesEnc);
+        }
+
+        /// <summary>
         /// Formats the credential values into a JSON usable with the <see cref="AnonCreds"/> API
         /// </summary>
         /// <returns>The credential values.</returns>
