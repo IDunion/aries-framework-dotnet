@@ -15,10 +15,12 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
 using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
+using IndySharedRsRevoc = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
 using Flurl;
 using aries_askar_dotnet.Models;
 using System.Linq;
 using indy_shared_rs_dotnet.Models;
+using Hyperledger.Aries.Features.IssueCredential.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -74,18 +76,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
         {
             //var schema = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, name, version, attributeNames.ToJson());
             uint seqNo = 0;
-            Schema schema = await IndySharedRsSchema.CreateSchemaAsync(issuerDid,name,version, attributeNames.ToList(), seqNo);
-
+            string schemaJson = await IndySharedRsSchema.CreateSchemaJsonAsync(issuerDid, name, version, attributeNames.ToList(), seqNo);
+            string schemaId = await IndySharedRsSchema.GetSchemaAttributeAsync(schemaJson, "id");
             var schemaRecord = new SchemaRecord
             {
-                Id = schema.Id,
+                Id = schemaId,
                 Name = name,
                 Version = version,
                 AttributeNames = attributeNames
             };
 
             var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
-            await LedgerService.RegisterSchemaAsync(context, issuerDid, schema.SchemaJson, paymentInfo);
+            await LedgerService.RegisterSchemaAsync(context, issuerDid, schemaJson, paymentInfo);
 
             await RecordService.AddAsync(context.WalletStore, schemaRecord);
 
@@ -242,35 +244,52 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
+        public async Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
                     IAgentContext context,
                     string tag,
                     DefinitionRecord definitionRecord)
         {
-            var tailsHandle = await TailsService.CreateTailsAsync();
+            //TODO : ??? - remove after fixing issue in line 276
+            //var tailsHandle = await TailsService.CreateTailsAsync(); 
 
-            var revocationRegistryDefinitionJson = new
-            {
-                issuance_type = "ISSUANCE_BY_DEFAULT",
-                max_cred_num = definitionRecord.MaxCredentialCount
-            }.ToJson();
-            var revocationRegistry = await AnonCreds.IssuerCreateAndStoreRevocRegAsync(
-                wallet: context.Wallet,
-                issuerDid: definitionRecord.IssuerDid,
-                type: null,
-                tag: tag,
-                credDefId: definitionRecord.Id,
-                configJson: revocationRegistryDefinitionJson,
-                tailsWriter: tailsHandle);
+            IssuerType issuanceType = IssuerType.ISSUANCE_BY_DEFAULT;
+            long maxCredNum = definitionRecord.MaxCredentialCount;
+
+            string credentialDefinitionJson = await LookupCredentialDefinitionAsync(context, definitionRecord.Id);
+            (string revocationRegistryDefinitionJson,
+             string revocationRegistryDefinitionPrivateJson,
+             string revocationRegistryJson,
+             string _) = await IndySharedRsRevoc.CreateRevocationRegistryJsonAsync(
+                 originDid : definitionRecord.IssuerDid,
+                 credentialDefinitionJson,
+                 tag : tag,
+                 revRegType : RegistryType.CL_ACCUM,
+                 issuanceType : issuanceType,
+                 maxCredNumber : maxCredNum,
+                 tailsDirPath: null // null : default path set in IndySharedRs method 
+                 //TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
+                 //revocationRecord.TailsLocation  
+                 );
+
+            //var revocationRegistry = await AnonCreds.IssuerCreateAndStoreRevocRegAsync(
+            //    wallet: context.Wallet,
+            //    issuerDid: definitionRecord.IssuerDid,
+            //   type: null,
+            //    tag: tag,
+            //    credDefId: definitionRecord.Id,
+            //    configJson: revocationRegistryDefinitionJson,
+            //    tailsWriter: tailsHandle);
+            
+            string revocationRegistryDefinitionId = await IndySharedRsRevoc.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
 
             var revocationRecord = new RevocationRegistryRecord
             {
-                Id = revocationRegistry.RevRegId,
+                Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id
             };
 
             // Update tails location URI
-            var revocationDefinition = JObject.Parse(revocationRegistry.RevRegDefJson);
+            var revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);
             var tailsfile = Path.GetFileName(revocationDefinition["value"]["tailsLocation"].ToObject<string>());
             var tailsLocation = Url.Combine(
                 AgentOptions.EndpointUri,
@@ -292,12 +311,19 @@ namespace Hyperledger.Aries.Features.IssueCredential
             await LedgerService.SendRevocationRegistryEntryAsync(
                 context: context,
                 issuerDid: definitionRecord.IssuerDid,
-                revocationRegistryDefinitionId: revocationRegistry.RevRegId,
-                revocationDefinitionType: "CL_ACCUM",
-                value: revocationRegistry.RevRegEntryJson,
+                revocationRegistryDefinitionId:revocationRegistryDefinitionId,
+                revocationDefinitionType: "CL_ACCUM", //RegistryType.CL_ACCUM.ToString()
+                value: revocationRegistryJson,
                 paymentInfo: null);
 
-            return (revocationRegistry, revocationRecord);
+            return (
+                new RevocationRegistryResult(
+                    revocationRegistryDefinitionId, 
+                    revocationRegistryDefinitionJson, 
+                    revocationRegistryDefinitionPrivateJson, 
+                    revocationRegistryJson),
+                revocationRecord
+                );
         }
 
         /// <inheritdoc />
