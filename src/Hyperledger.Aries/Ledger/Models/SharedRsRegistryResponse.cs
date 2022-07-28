@@ -29,5 +29,12 @@ namespace Hyperledger.Aries.Ledger.Models
         // Wert:
         //     The timestamp.
         public ulong Timestamp { get; set; }
+
+        public SharedRsRegistryResponse(string id, string objectJson, ulong timestamp)
+        {
+            Id = id;
+            ObjectJson = objectJson;
+            Timestamp = timestamp;
+        }
     }
 }

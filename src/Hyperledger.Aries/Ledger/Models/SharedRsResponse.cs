@@ -21,5 +21,11 @@ namespace Hyperledger.Aries.Ledger.Models
         // Wert:
         //     The object json.
         public string ObjectJson { get; set; }
+
+        public SharedRsResponse(string id, string objectJson)
+        {
+            Id = id;
+            ObjectJson = objectJson;
+        }
     }
 }
