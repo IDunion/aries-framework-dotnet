@@ -6,8 +6,6 @@ using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Models.Records;
-using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Ledger;
@@ -15,6 +13,7 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
 using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
+using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
 using IndySharedRsRevoc = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
 using Flurl;
 using aries_askar_dotnet.Models;
@@ -203,13 +202,21 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var provisioning = await ProvisioningService.GetProvisioningAsync(context.WalletStore);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
-            var credentialDefinition = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(
-                wallet: context.Wallet,
-                issuerDid: configuration.IssuerDid,
-                schemaJson: schema.ObjectJson,
+            /** TODO: ??? - add credDefPrivateJson and credKeyCorProofJson somehow? Needed for other IndySharedRs methods which also use credDefJson ***/
+            (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync(
+                originDid: configuration.IssuerDid,
+                schemaObjectJson: schema.ObjectJson,
                 tag: configuration.Tag,
-                type: null,
-                configJson: new { support_revocation = configuration.EnableRevocation }.ToJson());
+                indy_shared_rs_dotnet.Models.SignatureType.CL,
+                supportRevocation: configuration.EnableRevocation);
+            string credentialDefinitionId = await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credentialDefinitionJson, "id");
+            //var credentialDefinition = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(
+            //    wallet: context.Wallet,
+            //    issuerDid: configuration.IssuerDid,
+            //    schemaJson: schema.ObjectJson,
+            //    tag: configuration.Tag,
+            //    type: null,
+            //    configJson: new { support_revocation = configuration.EnableRevocation }.ToJson());
 
             var definitionRecord = new DefinitionRecord();
             definitionRecord.IssuerDid = configuration.IssuerDid;
@@ -219,11 +226,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
             await LedgerService.RegisterCredentialDefinitionAsync(
                 context: context,
                 submitterDid: configuration.IssuerDid,
-                data: credentialDefinition.CredDefJson,
+                data: credentialDefinitionJson,
                 paymentInfo: null);
-
+            
             definitionRecord.SupportsRevocation = configuration.EnableRevocation;
-            definitionRecord.Id = credentialDefinition.CredDefId;
+            definitionRecord.Id = credentialDefinitionId;
             definitionRecord.SchemaId = configuration.SchemaId;
 
             if (configuration.EnableRevocation)
@@ -240,7 +247,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             await RecordService.AddAsync(context.WalletStore, definitionRecord);
 
-            return credentialDefinition.CredDefId;
+            return credentialDefinitionId;
         }
 
         /// <inheritdoc />
@@ -249,13 +256,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     string tag,
                     DefinitionRecord definitionRecord)
         {
-            //TODO : ??? - remove after fixing issue in line 276
+            /** TODO : ??? - remove after fixing issue in line 276 **/
             //var tailsHandle = await TailsService.CreateTailsAsync(); 
 
             IssuerType issuanceType = IssuerType.ISSUANCE_BY_DEFAULT;
             long maxCredNum = definitionRecord.MaxCredentialCount;
 
             string credentialDefinitionJson = await LookupCredentialDefinitionAsync(context, definitionRecord.Id);
+            /** TODO: ??? - add revRegDefPrivateJson somehow? Needed for other IndySharedRs methods which also use revRegDefJson ***/
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
@@ -267,8 +275,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                  issuanceType : issuanceType,
                  maxCredNumber : maxCredNum,
                  tailsDirPath: null // null : default path set in IndySharedRs method 
-                 //TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
-                 //revocationRecord.TailsLocation  
+                 /** TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
+                 revocationRecord.TailsLocation  **/
                  );
 
             //var revocationRegistry = await AnonCreds.IssuerCreateAndStoreRevocRegAsync(
