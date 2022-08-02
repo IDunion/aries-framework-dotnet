@@ -26,7 +26,6 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="submitterDid"></param>
         /// <param name="requestJson"></param>
         /// <returns></returns>
-        //TODO : ??? - change Wallet to Store/Wallet type of aries-askar 
         Task<string> SignRequestAsync(Store wallet, string submitterDid, string requestJson);
     }
 }
