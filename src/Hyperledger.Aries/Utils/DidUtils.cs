@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Multiformats.Base;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -182,6 +186,108 @@ namespace Hyperledger.Aries.Utils
             }
             
             throw new AriesFrameworkException(ErrorCode.UnsupportedDidMethod);
+        }
+
+        /// <summary>
+        /// for use with <c>indy_shared_rs</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>Saves the identity DID with keys in a wallet so that it can be used to sign
+        /// and encrypt transactions.  Control over the created DID is provided through the 
+        /// following parameter:
+        /// </para>
+        /// <para>The <c>did</c> member specifies the DID of the new entry.  If not 
+        /// provided and the <c>cid</c> member is <c>false</c> then the first 16 bits of the VerKey value 
+        /// generated will be used as a new DID.  If not provided and the <c>cid</c> member is <c>true</c> then the full 
+        /// VerKey value will be used as a new DID.  If the <c>did</c> member is provided then the keys will be 
+        /// replaced - this is normally used in the case of key rotation.</para>
+        /// <para>The <c>seed</c> member specifies the seed to use when generating keys.  If not provided 
+        /// then a random seed value will be created.</para>
+        /// <para>The <c>crypto_type</c> member specifies the cryptographic algorithm used for generating
+        /// keys.  If not provided then ed25519 curve is used.
+        /// <note type="note">The only value currently supported for this member is 'ed25519'.</note>
+        /// </para>
+        /// <para>The <c>cid</c> member indicates whether the DID should be used in creating the DID.
+        /// If not provided then the value defaults to false.</para>
+        /// </remarks>
+        /// <param name="wallet">The wallet.</param>
+        /// <param name="did">The did as string; default null.</param>
+        /// <param name="seed">The seed as string;default null.</param>
+        /// <param name="cryptoType">The cryptoType as string; default "ed25519".</param>
+        /// <param name="cid">The cid as bool; default false.</param>
+        /// <returns>A tuple of strings. First is the did in format of "did":"method":"verkey". Second is the verkey </returns>
+        /// <exception cref="AriesFrameworkException"></exception>
+        public static async Task<(string, string)> CreateAndStoreMyDidAsync(
+            Store wallet, 
+            string did = null, 
+            string seed = null, 
+            string cryptoType = "ed25519", 
+            bool cid = false)
+        {
+            if (wallet is null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
+
+            KeyAlg keyAlg = cryptoType switch
+            {   // only member currently supported is "ed25519"
+                "ed25519" => KeyAlg.ED25519,
+                _ => KeyAlg.ED25519,
+            };
+
+            if (string.IsNullOrEmpty(seed))
+                seed = CryptoUtils.GetUniqueKey(32);
+
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
+                keyAlg: keyAlg,
+                seed: seed,
+                SeedMethod.BlsKeyGen); 
+
+            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            string verKeyInDid;
+            if (string.IsNullOrEmpty(did)) { 
+                if (cid == true)
+                    verKeyInDid = Multibase.Base58.Encode(verKey);
+                else
+                    verKeyInDid = Multibase.Base58.Encode(verKey[0..16]);
+                
+                did = ToDid(DidKeyMethodSpec, verKeyInDid);
+            }
+            else
+            {
+                //Do nothing. did does not change only verKey and secretKey rotate
+            }
+
+            string verKeyBase58 = Multibase.Base58.Encode(verKey);
+            if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
+                verKeyBase58 = verKeyBase58 + ":" + cryptoType;
+
+            //TODO : ??? - add next lines to recordService method or a new "keyService" ?
+            if (wallet.session == null)
+                _ = await AriesAskarStore.StartSessionAsync(wallet);
+
+            _ = await AriesAskarStore.InsertKeyAsync(
+                wallet.session,
+                keyHandle,
+                did);
+
+            return (did, verKeyBase58);
+        }
+
+        //TODO : ??? - add missing functions?
+        public static async Task StoreTheirDidAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static async Task<string> KeyForDidAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public static async Task<string> AbbreviateVerkeyAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

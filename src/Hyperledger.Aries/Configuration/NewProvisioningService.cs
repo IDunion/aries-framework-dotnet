@@ -8,10 +8,6 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Options;
-using IndySharedRsMs = indy_shared_rs_dotnet.IndyCredx.MasterSecretApi;
-using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using Multiformats.Base;
 
 namespace Hyperledger.Aries.Configuration
 {
@@ -117,30 +113,9 @@ namespace Hyperledger.Aries.Configuration
                 endpoint = new AgentEndpoint { Uri = agentOptions.EndpointUri.ToString() };
                 if (agentOptions.AgentKeySeed != null)
                 {
-                    /** TODO: ??? - makes sense? We need to add Did class, which supports function from create_my_did... ?
-                     *  check in indy-sdk code -> ..\indy-sdk\libindy\src\services\crypto\mod.rs : create_my_did() **/
-                    /**
-                    IntPtr newKeyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
-                        keyAlg: KeyAlg.ED25519, 
-                        seed: agentOptions.AgentKeySeed,
-                        SeedMethod.BlsKeyGen);
-
-                    if (wallet.session == null)
-                    {
-                        _ = await AriesAskarStore.StartSessionAsync(wallet);
-                    }
-                    var pk = await AriesAskarKey.GetPublicBytesFromKeyAsync(newKeyHandle);
-                    var sk = await AriesAskarKey.GetSecretBytesFromKeyAsync(newKeyHandle);
-                    var pkBase58 = Multibase.Base58.Encode(pk);
-                    var vkBase58 = Multibase.Base58.Encode(sk);
-                    _ = await AriesAskarStore.InsertKeyAsync(
-                        wallet.session,
-                        newKeyHandle,
-                        DID_NAME);
-                    **/
-                    var agent = await Did.CreateAndStoreMyDidAsync(wallet, new { seed = agentOptions.AgentKeySeed }.ToJson());
-                    endpoint.Did = agent.Did;
-                    endpoint.Verkey = new[] { agent.VerKey };
+                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet, seed: agentOptions.AgentKeySeed);
+                    endpoint.Did = did;
+                    endpoint.Verkey = new[] { verKey };
                 }
                 else if (agentOptions.AgentKey != null)
                 {
@@ -149,23 +124,13 @@ namespace Hyperledger.Aries.Configuration
                 }
                 else
                 {
-                    var agent = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
-                    endpoint.Did = agent.Did;
-                    endpoint.Verkey = new[] { agent.VerKey };
+                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet);
+                    endpoint.Did = did;
+                    endpoint.Verkey = new[] { verKey };
                 }
             }
-            //
-            //_ = await AriesAskarStore.InsertKeyAsync(
-            //        agentContext.WalletStore.session,
-            //        newKeyHandle,
-            //        DID_NAME);
-            //
-            string masterSecretId = Guid.NewGuid().ToString();
-            MasterSecretRecord masterSecretRecord = new()
-            {
-                Id = masterSecretId,
-                MasterSecretJson = await IndySharedRsMs.CreateMasterSecretJsonAsync()
-            };
+
+            string masterSecretId  = await MasterSecretUtils.CreateAndStoreMasterSecretAsync(wallet: wallet , recordService : RecordService);
 
             ProvisioningRecord record = new()
             {
@@ -184,17 +149,14 @@ namespace Hyperledger.Aries.Configuration
                 agentOptions.IssuerKeySeed = CryptoUtils.GetUniqueKey(32);
             }
 
-            var issuer = await Did.CreateAndStoreMyDidAsync(
-                wallet: wallet,
-                didJson: new
-                {
-                    did = agentOptions.IssuerDid,
-                    seed = agentOptions.IssuerKeySeed
-                }.ToJson());
+            var (issuerDid, issuerVerKey) = await DidUtils.CreateAndStoreMyDidAsync(
+                wallet, 
+                did : agentOptions.IssuerDid, 
+                seed : agentOptions.IssuerKeySeed);
 
             record.IssuerSeed = agentOptions.IssuerKeySeed;
-            record.IssuerDid = issuer.Did;
-            record.IssuerVerkey = issuer.VerKey;
+            record.IssuerDid = issuerDid;
+            record.IssuerVerkey = issuerVerKey;
             record.TailsBaseUri = agentOptions.EndpointUri != null
                 ? new Uri(new Uri(agentOptions.EndpointUri), "tails/").ToString()
                 : null;
@@ -206,8 +168,6 @@ namespace Hyperledger.Aries.Configuration
 
             // Add record to wallet
             await RecordService.AddAsync(wallet, record);
-            // Add master secret record to wallet
-            await RecordService.AddAsync(wallet, masterSecretRecord);
         }
     }
 }
