@@ -422,34 +422,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             else
             {
-                IntPtr newKeyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg: KeyAlg.ED25519, ephemeral: false);
-                if (agentContext.WalletStore.session == null)
-                {
-                    _ = await AriesAskarStore.StartSessionAsync(agentContext.WalletStore);
-                }
-
-                /** TODO : ??? - How to get Did -> DidUtils? **/
-                //DidUtils.ConvertVerkeyToDidKey();
-                string DID_NAME = "???";
-
-                _ = await AriesAskarStore.InsertKeyAsync(
-                    agentContext.WalletStore.session,
-                    newKeyHandle,
-                    DID_NAME);
-
-                proverDid = DID_NAME;
-
-                //var newDid = await Did.CreateAndStoreMyDidAsync(agentContext.WalletStore, "{}");
-                //proverDid = newDid.Did;
+                (string newDid, _ ) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
+                proverDid = newDid;
             }
 
             var definition = await LedgerService.LookupDefinitionAsync(agentContext, credential.CredentialDefinitionId);
             var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
-            MasterSecretRecord masterSecretRecord = await RecordService.GetAsync<MasterSecretRecord>(agentContext.WalletStore, provisioning.MasterSecretId);
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
-                masterSecretJson : masterSecretRecord.MasterSecretJson,
+                masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.WalletStore, RecordService, provisioning.MasterSecretId),
                 masterSecretId: provisioning.MasterSecretId,
                 credentialOfferJson: credential.OfferJson
 
