@@ -209,31 +209,19 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     credentialRecord.RevocationRegistryId);
 
             // Revoke the credential
-            SharedRsResponse revocationRegistryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
-                agentContext, 
-                credentialRecord.RevocationRegistryId); // revocationRecord.Id should be same
-            SharedRsRegistryResponse revocationRegistry = await LedgerService.LookupRevocationRegistryAsync(
-                agentContext, 
-                credentialRecord.RevocationRegistryId, // revocationRecord.Id should be same
-                new DateTimeOffset().ToUnixTimeSeconds());
-
             /** TODO : ??? - Format of credRevIdx like revRegistryIndex from revocationRegistryId? **/
             if(long.TryParse(credentialRecord.CredentialRevocationId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long credRevIdx))
             //if (false == long.TryParse(credentialRecord.CredentialRevocationId, out long credRevIdx))
                 throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Invalid credentialRevocationId, has to be of type long : {credentialRecord.CredentialRevocationId}.");
             
-            (string _, string revocRegistryDeltaJson) = await IndySharedRsRev.RevokeCredentialAsync(
-                revRegDefJson : revocationRegistryDefinition.ObjectJson,
-                revRegJson : revocationRegistry.ObjectJson,
+            (string revRegUpdatedJson, string revocRegistryDeltaJson) = await IndySharedRsRev.RevokeCredentialAsync(
+                revRegDefJson : revocationRecord.GetTag(TagConstants.RevRegDefJson),
+                revRegJson : revocationRecord.GetTag(TagConstants.RevRegJson),
                 credRevIdx : credRevIdx,
                 tailsPath : revocationRecord.TailsFile);
 
-            //var tailsReader = await TailsService.OpenTailsAsync(revocationRecord.TailsFile);
-            //var revocRegistryDeltaJson = await AnonCreds.IssuerRevokeCredentialAsync(
-            //    agentContext.WalletStore,
-            //    tailsReader,
-            //    revocationRecord.Id,
-            //    credentialRecord.CredentialRevocationId);
+            //TODO : ??? - check with team -> Need to update revocation Registry in wallet (see indy-sdk code indy_issuer_revoke_credential)
+            revocationRecord.SetTag(TagConstants.RevRegJson, revRegUpdatedJson);
 
             var paymentInfo =
                 await PaymentService.GetTransactionCostAsync(agentContext, TransactionTypes.REVOC_REG_ENTRY);
@@ -252,6 +240,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             // Update local credential record
             await RecordService.UpdateAsync(agentContext.WalletStore, credentialRecord);
+            // Update local revocation record
+            await RecordService.UpdateAsync(agentContext.WalletStore, revocationRecord);
 
             if (!sendRevocationNotification)
                 return;
@@ -275,16 +265,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public async Task DeleteCredentialAsync(IAgentContext agentContext, string credentialId)
         {
-            var credentialRecord = await GetAsync(agentContext, credentialId);
-            try
-            {
-                /** TODO : ??? - No such function in SharedRS **/
-                await AnonCreds.ProverDeleteCredentialAsync(agentContext.WalletStore, credentialRecord.CredentialId);
-            }
-            catch
-            {
-                // OK
-            }
+            // TODO : ??? - ProverDeleteCredentialAsync has same functionality than RecordService.DeleteAsync - delete after discussed with team
+            // see indy-sdk : NonSecrets.indy_delete_wallet_record and AnonCreds.indy_prover_delete_credential lead to delete_record(wallet,type,name)
+            //var credentialRecord = await GetAsync(agentContext, credentialId);
+            //try
+            //{
+            //    /** TODO : ??? - No such function in SharedRS **/
+            //    await AnonCreds.ProverDeleteCredentialAsync(agentContext.WalletStore, credentialRecord.CredentialId);
+            //}
+            //catch
+            //{
+            //    // OK
+            //}
 
             await RecordService.DeleteAsync<CredentialRecord>(agentContext.WalletStore, credentialId);
         }
@@ -428,6 +420,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             var definition = await LedgerService.LookupDefinitionAsync(agentContext, credential.CredentialDefinitionId);
             var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
@@ -436,12 +429,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialOfferJson: credential.OfferJson
 
                 );
-            //var request = await AnonCreds.ProverCreateCredentialReqAsync(
-            //    wallet: agentContext.WalletStore,
-            //    proverDid: proverDid,
-            //    credOfferJson: credential.OfferJson,
-            //   credDefJson: definition.ObjectJson,
-            //    masterSecretId: provisioning.MasterSecretId);
 
             // Update local credential record with new info
             credential.CredentialRequestMetadataJson = CredentialRequestMetadataJson;
@@ -503,22 +490,20 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialRecord.RevocationRegistryId = revRegId;
             }
 
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
-                /** TODO : ??? - Do we need to update / store the new generated masterSecret in wallet or provisionning Record?**/
-                await IndySharedRsMasterSecret.CreateMasterSecretJsonAsync(),
+                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.WalletStore, RecordService, provisioning.MasterSecretId),
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
             string credentialProcessedId = await IndySharedRsCred.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
-            // var credentialId = await AnonCreds.ProverStoreCredentialAsync(
-            //     wallet: agentContext.WalletStore,
-            //     credId: credentialRecord.Id,
-            //     credReqMetadataJson: credentialRecord.CredentialRequestMetadataJson,
-            //     credJson: credentialJson,
-            //     credDefJson: credentialDefinition.ObjectJson,
-            //     revRegDefJson: revocationRegistryDefinitionJson);
+
+            /** TODO : ??? - need to update credentialJson information
+             * we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential **/
+            credentialRecord.SetTag(TagConstants.CredJson, credentialProcessedJson);
 
             credentialRecord.CredentialId = credentialProcessedId;
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
@@ -556,24 +541,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 CredentialUtils.ValidateCredentialPreviewAttributes(config.CredentialAttributeValues);
             }
 
-            
-            SharedRsResponse credentialDefinition = await LedgerService.LookupDefinitionAsync(agentContext, config.CredentialDefinitionId);
             DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.WalletStore,config.CredentialDefinitionId);
-            /** TODO : ??? - see issue in line 582 **/
-            (string _, string _, string keyCorrectnessProofJson) =
-                await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync
-                (definition.IssuerDid,
-                definition.SchemaId,
-                config.Tags.ToJson(),
-                indy_shared_rs_dotnet.Models.SignatureType.CL,
-                Convert.ToByte(definition.SupportsRevocation));
+            string credDefJson = definition.GetTag(TagConstants.CredDefJson);
             string offerJson = await IndySharedRsOffer.CreateCredentialOfferAsync(
-                await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credentialDefinition.ObjectJson, "schema_id"),
-                credentialDefinition.ObjectJson,
-                keyCorrectnessProofJson); /** TODO : ??? - where to get? Use IndySharedRsCredDef.CreateCredentialDefinitionAsync(originDid, schemaJson, tag, "CL", bool supportRevoc) ? **/
-            
-            //var offerJson = await AnonCreds.IssuerCreateCredentialOfferAsync(
-            //    agentContext.WalletStore, config.CredentialDefinitionId);
+                await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credDefJson, "schema_id"),
+                credDefJson,
+                definition.GetTag(TagConstants.KeyCorrectnesProofJson));
 
             var offerJobj = JObject.Parse(offerJson);
             var schemaId = offerJobj["schema_id"].ToObject<string>();
@@ -785,59 +758,35 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             var (attrNames, attrNamesRaw, attrNamesEnc) = CredentialUtils.FormatCredentialValuesForIndySharedRs(credentialRecord.CredentialAttributesValues);
             List<long> regUsed = new(); /** TODO : ??? - Where to get this parameter? **/
+            string credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson;
 
             try
             {
-                //return (await AnonCreds.IssuerCreateCredentialAsync(
-                //    agentContext.WalletStore,
-                //    credentialRecord.OfferJson,
-                //    credentialRecord.RequestJson,
-                //    CredentialUtils.FormatCredentialValues(credentialRecord.CredentialAttributesValues),
-                //    definitionRecord.CurrentRevocationRegistryId,
-                //    tailsReader), revocationRecord);
-
-                /** TODO : ??? - see issue in Line 844 **/
-                string credentialDefinitionJson = (await LedgerService.LookupDefinitionAsync(agentContext, credentialRecord.CredentialDefinitionId)).ObjectJson;
-                (string _ , string credentialDefinitionPrivateJson, string _) = await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync(
-                    definitionRecord.IssuerDid,
-                    credentialDefinitionJson,
-                    definitionRecord.Tags.ToJson(),
-                    indy_shared_rs_dotnet.Models.SignatureType.CL,
-                    Convert.ToByte(definitionRecord.SupportsRevocation)
-                    );
-                /**
-                (string revocationRegistryDefinitionJson, 
-                 string revocationRegistryDefinitionPrivateJson, 
-                 string revocationRegistryJson, 
-                 string _ ) = await IndySharedRsRevoc.CreateRevocationRegistryAsync(
-                     definitionRecord.IssuerDid,
-                     credentialDefinitionJson,
-                     definitionRecord.Tags.ToJson(),
-                     RegistryType.CL_ACCUM,
-                     IssuerType.ISSUANCE_BY_DEFAULT,
-                     (long)definitionRecord.MaxCredentialCount,
-                     revocationRecord.TailsLocation);**/
-                string revocationRegistryDefinitionJson = (await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, definitionRecord.CurrentRevocationRegistryId)).ObjectJson;
-                string revocationRegistryJson = (await LedgerService.LookupRevocationRegistryAsync(agentContext, definitionRecord.CurrentRevocationRegistryId, new DateTimeOffset().ToUnixTimeSeconds())).ObjectJson;
-
                 long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long revRegistryIndex);
 
-                await IndySharedRsCred.CreateCredentialAsync(
-                    (await LedgerService.LookupDefinitionAsync(agentContext, credentialRecord.CredentialDefinitionId)).ObjectJson,
-                    credentialDefinitionPrivateJson, /** TODO : ??? - where to get? Use IndySharedRsCredDef.CreateCredentialDefinitionAsync(originDid, schemaJson, tag, "CL", bool supportRevoc) ? **/
+                (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
+                    credentialRecord.GetTag(TagConstants.CredDefJson),
+                    credentialRecord.GetTag(TagConstants.CredDefPrivateJson),
                     credentialRecord.OfferJson,
                     credentialRecord.RequestJson,
                     attrNames,
                     attrNamesRaw,
                     attrNamesEnc,
-                    revocationRegistryDefinitionJson,
-                    revocationRegistryDefinitionPrivateJson,
-                    revocationRegistryJson,
+                    revocationRecord.GetTag(TagConstants.RevRegDefJson),
+                    revocationRecord.GetTag(TagConstants.RevRegDefPrivateJson),
+                    revocationRecord.GetTag(TagConstants.RevRegJson),
                     revRegistryIndex,
                     regUsed);
 
+                /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
+                revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
+                await RecordService.UpdateAsync(agentContext.WalletStore, revocationRecord);
+
                 return (
                     new SharedRsIssuerCreateCredentialResult(
+                        credentialJson : credentialJson,
+                        revocId : await IndySharedRsCred.GetCredentialAttributeAsync(credentialJson, "rev_reg_id"),
+                        revocRegDeltaJson : revocationRegistryDeltaJson
                         ),
                     revocationRecord);
             }
@@ -866,9 +815,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             await RecordService.UpdateAsync(agentContext.WalletStore, definitionRecord);
             long.TryParse(revocationRegistryResult.RevRegId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out var revRegistryNewIndex);
 
-            (string credentialJson, string _ , string revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
-                (await LedgerService.LookupDefinitionAsync(agentContext, credentialRecord.CredentialDefinitionId)).ObjectJson,
-                credentialDefinitionPrivateJson, /** TODO : ??? - where to get? Use IndySharedRsCredDef.CreateCredentialDefinitionAsync(originDid, schemaJson, tag, "CL", bool supportRevoc) ? **/
+            (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
+                definitionRecord.GetTag(TagConstants.CredDefJson),
+                definitionRecord.GetTag(TagConstants.CredDefPrivateJson),
                 credentialRecord.OfferJson,
                 credentialRecord.RequestJson,
                 attrNames,
@@ -881,20 +830,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 regUsed
                 );
 
+            /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
+            nextRevocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
+            await RecordService.UpdateAsync(agentContext.WalletStore, nextRevocationRecord);
+
             return (
                 new SharedRsIssuerCreateCredentialResult(
                     credentialJson: credentialJson, 
                     revocId: await IndySharedRsCred.GetCredentialAttributeAsync(credentialJson, "rev_reg_id"),  //Alternative: revocationRegistryResult.RevRegId
                     revocRegDeltaJson: revocationRegistryDeltaJson),
                 nextRevocationRecord);
-
-            //return (await AnonCreds.IssuerCreateCredentialAsync(
-            //    agentContext.WalletStore,
-            //    credentialRecord.OfferJson,
-            //    credentialRecord.RequestJson,
-            //    CredentialUtils.FormatCredentialValues(credentialRecord.CredentialAttributesValues),
-            //    nextRevocationRecord.Id,
-            //    tailsReader), nextRevocationRecord);
         }
     }
 }

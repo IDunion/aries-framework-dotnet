@@ -130,6 +130,9 @@ namespace Hyperledger.Aries.Configuration
                 }
             }
 
+            //TODO : ??? - maybe better solution : add masterSecretJson as Tag to provisioningRecord instead of creating a new MasterSecretRecord?
+            //string masterSecretId = Guid.NewGuid().ToString();
+            //record.SetTag(TagConstants.MasterSecretJson, await indy_shared_rs_dotnet.IndyCredx.MasterSecretApi.CreateMasterSecretJsonAsync());
             string masterSecretId  = await MasterSecretUtils.CreateAndStoreMasterSecretAsync(wallet: wallet , recordService : RecordService);
 
             ProvisioningRecord record = new()

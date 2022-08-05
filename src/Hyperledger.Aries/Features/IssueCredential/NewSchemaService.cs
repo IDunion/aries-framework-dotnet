@@ -20,6 +20,7 @@ using aries_askar_dotnet.Models;
 using System.Linq;
 using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
+using Hyperledger.Aries.Utils;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -202,7 +203,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var provisioning = await ProvisioningService.GetProvisioningAsync(context.WalletStore);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
-            /** TODO: ??? - add credDefPrivateJson and credKeyCorProofJson somehow? Needed for other IndySharedRs methods which also use credDefJson ***/
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync(
                 originDid: configuration.IssuerDid,
                 schemaObjectJson: schema.ObjectJson,
@@ -210,16 +210,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 indy_shared_rs_dotnet.Models.SignatureType.CL,
                 supportRevocation: configuration.EnableRevocation);
             string credentialDefinitionId = await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credentialDefinitionJson, "id");
-            //var credentialDefinition = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(
-            //    wallet: context.Wallet,
-            //    issuerDid: configuration.IssuerDid,
-            //    schemaJson: schema.ObjectJson,
-            //    tag: configuration.Tag,
-            //    type: null,
-            //    configJson: new { support_revocation = configuration.EnableRevocation }.ToJson());
 
             var definitionRecord = new DefinitionRecord();
             definitionRecord.IssuerDid = configuration.IssuerDid;
+
+            /** TODO: ??? - right way to add credDefJson, credDefPrivateJson and credKeyCorProofJson info? Needed for other IndySharedRs methods which also use credDefJson ***/
+            definitionRecord.SetTag(TagConstants.CredDefJson, credentialDefinitionJson);
+            definitionRecord.SetTag(TagConstants.CredDefPrivateJson, credentialDefinitionPrivateJson);
+            definitionRecord.SetTag(TagConstants.KeyCorrectnesProofJson, credentialKeyCorrectnessProofJson);
 
             //var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.CRED_DEF);
 
@@ -263,7 +261,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
             long maxCredNum = definitionRecord.MaxCredentialCount;
 
             string credentialDefinitionJson = await LookupCredentialDefinitionAsync(context, definitionRecord.Id);
-            /** TODO: ??? - add revRegDefPrivateJson somehow? Needed for other IndySharedRs methods which also use revRegDefJson ***/
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
@@ -278,15 +275,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                  /** TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
                  revocationRecord.TailsLocation  **/
                  );
-
-            //var revocationRegistry = await AnonCreds.IssuerCreateAndStoreRevocRegAsync(
-            //    wallet: context.Wallet,
-            //    issuerDid: definitionRecord.IssuerDid,
-            //   type: null,
-            //    tag: tag,
-            //    credDefId: definitionRecord.Id,
-            //    configJson: revocationRegistryDefinitionJson,
-            //    tailsWriter: tailsHandle);
             
             string revocationRegistryDefinitionId = await IndySharedRsRevoc.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
 
@@ -295,6 +283,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id
             };
+            /** TODO: ??? - right way to add revocationRegistry.. info? Needed for other IndySharedRs methods which also use revReg/DefJson ***/
+            revocationRecord.SetTag(TagConstants.RevRegDefJson, revocationRegistryDefinitionJson);
+            revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryJson);
+            revocationRecord.SetTag(TagConstants.RevRegDefPrivateJson, revocationRegistryDefinitionPrivateJson);
 
             // Update tails location URI
             var revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);
