@@ -275,7 +275,7 @@ namespace Hyperledger.Aries.Utils
         }
 
         //TODO : ??? - add missing functions?
-        public static async Task StoreTheirDidAsync()
+        public static async Task StoreTheirDidAsync(Store wallet, string identityJson)
         {
             throw new NotImplementedException();
         }
