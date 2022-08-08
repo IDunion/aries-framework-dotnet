@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
@@ -12,10 +11,6 @@ using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using aries_askar_dotnet.Models;
-using Multiformats.Base;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -163,29 +158,6 @@ namespace Hyperledger.Aries.Utils
 
             var routingKeys = connection.Endpoint?.Verkey != null ? connection.Endpoint.Verkey : new string[0];
             return PrepareAsync(agentContext, message, recipientKey, routingKeys, connection.MyVk);
-        }
-
-        public async static Task<string> CreateKeyAsync(Store wallet, KeyAlg keyAlg = KeyAlg.ED25519, bool ephemeral = true, bool cid = false)
-        {
-            if (wallet is null)
-            {
-                throw new ArgumentNullException(nameof(wallet));
-            }
-            string did = "";
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral);
-            byte[] keyBytes = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
-            string keyInDid;
-            if (string.IsNullOrEmpty(did))
-            {
-                if (cid == true)
-                    keyInDid = Multibase.Base58.Encode(keyBytes);
-                else
-                    keyInDid = Multibase.Base58.Encode(keyBytes[0..16]);
-
-                did = DidUtils.ToDid("key", keyInDid);
-            }
-
-            return did;
         }
     }
 

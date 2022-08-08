@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Decorators.Attachments;
@@ -14,10 +15,12 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Logging;
+using Multiformats.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -85,7 +88,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
 
             /** TODO : ??? - How does key/DID generation work? **/
-            string connectionKey = await CryptoUtils.CreateKeyAsync(agentContext.WalletStore);
+            string connectionKey = await CreateKeyAsync(agentContext.WalletStore);
 
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
@@ -493,6 +496,26 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             }
 
             _ = await RecordService.DeleteAsync<ConnectionRecord>(agentContext.WalletStore, invitationId);
+        }
+
+        private static async Task<string> CreateKeyAsync(Store wallet, KeyAlg keyAlg = KeyAlg.ED25519, bool ephemeral = true, bool cid = false)
+        {
+            if (wallet is null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
+            string did = "";
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral);
+            byte[] keyBytes = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            string keyInDid;
+            if (string.IsNullOrEmpty(did))
+            {
+                keyInDid = cid == true ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(keyBytes[0..16]);
+
+                did = DidUtils.ToDid("key", keyInDid);
+            }
+
+            return did;
         }
     }
 }
