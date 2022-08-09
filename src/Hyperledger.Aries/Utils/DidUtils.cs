@@ -1,9 +1,10 @@
-﻿using System;
+﻿using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
+using Multiformats.Base;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using aries_askar_dotnet.Models;
-using Multiformats.Base;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
@@ -43,7 +44,10 @@ namespace Hyperledger.Aries.Utils
         /// <param name="methodSpec">DID method spec.</param>
         /// <param name="identifier">Identifier to use in DID.</param>
         /// <returns>DID.</returns>
-        public static string ToDid(string methodSpec, string identifier) => $"did:{methodSpec}:{identifier}";
+        public static string ToDid(string methodSpec, string identifier)
+        {
+            return $"did:{methodSpec}:{identifier}";
+        }
 
         /// <summary>
         /// Extracts the identifier from a DID.
@@ -52,12 +56,9 @@ namespace Hyperledger.Aries.Utils
         /// <returns>Identifier.</returns>
         public static string IdentifierFromDid(string did)
         {
-            var regExMatches = Regex.Matches(did, DID_REGEX);
+            MatchCollection regExMatches = Regex.Matches(did, DID_REGEX);
 
-            if (regExMatches.Count != 1 || regExMatches[0].Groups.Count != 3)
-                return null;
-            
-            return regExMatches[0].Groups[2].Value;
+            return regExMatches.Count != 1 || regExMatches[0].Groups.Count != 3 ? null : regExMatches[0].Groups[2].Value;
         }
 
         /// <summary>
@@ -67,12 +68,9 @@ namespace Hyperledger.Aries.Utils
         /// <returns></returns>
         public static string MethodSpecFromDid(string did)
         {
-            var regExMatches = Regex.Matches(did, DID_REGEX);
-            
-            if (regExMatches.Count != 1 || regExMatches[0].Groups.Count < 3)
-                return null;
+            MatchCollection regExMatches = Regex.Matches(did, DID_REGEX);
 
-            return regExMatches[0].Groups[1].Value;
+            return regExMatches.Count != 1 || regExMatches[0].Groups.Count < 3 ? null : regExMatches[0].Groups[1].Value;
         }
 
         /// <summary>
@@ -106,7 +104,7 @@ namespace Hyperledger.Aries.Utils
 
         public static bool IsVerkey(string verkey)
         {
-            return IsAbbreviatedVerkey(verkey)|| IsFullVerkey(verkey);
+            return IsAbbreviatedVerkey(verkey) || IsFullVerkey(verkey);
         }
 
         /// <summary>
@@ -116,12 +114,9 @@ namespace Hyperledger.Aries.Utils
         /// <returns>Boolean indicating if the string is a valid did:key</returns>
         public static bool IsDidKey(string didKey)
         {
-            if (didKey == null) 
-                return false;
-            
-            return Regex.Matches(didKey, DID_KEY_REGEX).Count == 1;
+            return didKey != null && Regex.Matches(didKey, DID_KEY_REGEX).Count == 1;
         }
-        
+
         /// <summary>
         /// Converts a base58 encoded ed25519 verkey into its did:key representation
         /// </summary>
@@ -134,13 +129,13 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentException($"Value {verkey} is no verkey", nameof(verkey));
             }
 
-            var bytes = Multibase.Base58.Decode(verkey);
+            byte[] bytes = Multibase.Base58.Decode(verkey);
             bytes = MULTICODEC_PREFIX_ED25519.Concat(bytes).ToArray();
             string base58PublicKey = Multibase.Base58.Encode(bytes);
 
             return $"{DIDKEY_PREFIX}:{BASE58_PREFIX}{base58PublicKey}";
         }
-        
+
         /// <summary>
         /// Converts a did:key of a ed25519 public key into a plain base58 representation 
         /// </summary>
@@ -153,9 +148,9 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentException($"Value {didKey} is no did:key", nameof(didKey));
             }
 
-            string base58EncodedKey = didKey.Substring($"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length);
-            var bytes = Multibase.Base58.Decode(base58EncodedKey);
-            var codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
+            string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
+            byte[] bytes = Multibase.Base58.Decode(base58EncodedKey);
+            byte[] codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
             if (codec.SequenceEqual(MULTICODEC_PREFIX_ED25519))
             {
                 bytes = bytes.Skip(MULTICODEC_PREFIX_ED25519.Length).ToArray();
@@ -174,17 +169,12 @@ namespace Hyperledger.Aries.Utils
         /// <exception cref="AriesFrameworkException"></exception>
         public static string EnsureQualifiedDid(string didCandidate)
         {
-            if (MethodSpecFromDid(didCandidate) == DidKeyMethodSpec ||
-                MethodSpecFromDid(didCandidate) == DidSovMethodSpec)
-            {
-                return didCandidate;
-            }
-
-            if (IsVerkey(didCandidate))
-            {
-                return ConvertVerkeyToDidKey(didCandidate);
-            }
-            
+            return MethodSpecFromDid(didCandidate) is DidKeyMethodSpec or
+                DidSovMethodSpec
+                ? didCandidate
+                : IsVerkey(didCandidate)
+                ? ConvertVerkeyToDidKey(didCandidate)
+                :
             throw new AriesFrameworkException(ErrorCode.UnsupportedDidMethod);
         }
 
@@ -218,10 +208,10 @@ namespace Hyperledger.Aries.Utils
         /// <returns>A tuple of strings. First is the did in format of "did":"method":"verkey". Second is the verkey </returns>
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<(string, string)> CreateAndStoreMyDidAsync(
-            Store wallet, 
-            string did = null, 
-            string seed = null, 
-            string cryptoType = "ed25519", 
+            Store wallet,
+            string did = null,
+            string seed = null,
+            string cryptoType = "ed25519",
             bool cid = false)
         {
             if (wallet is null)
@@ -236,21 +226,21 @@ namespace Hyperledger.Aries.Utils
             };
 
             if (string.IsNullOrEmpty(seed))
+            {
                 seed = CryptoUtils.GetUniqueKey(32);
+            }
 
             IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
                 keyAlg: keyAlg,
                 seed: seed,
-                SeedMethod.BlsKeyGen); 
+                SeedMethod.BlsKeyGen);
 
-            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyInDid;
-            if (string.IsNullOrEmpty(did)) { 
-                if (cid == true)
-                    verKeyInDid = Multibase.Base58.Encode(verKey);
-                else
-                    verKeyInDid = Multibase.Base58.Encode(verKey[0..16]);
-                
+            if (string.IsNullOrEmpty(did))
+            {
+                verKeyInDid = cid ? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey[0..16]);
+
                 did = ToDid(DidKeyMethodSpec, verKeyInDid);
             }
             else
@@ -260,11 +250,15 @@ namespace Hyperledger.Aries.Utils
 
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
+            {
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
+            }
 
             //TODO : ??? - add next lines to recordService method or a new "keyService" ?
             if (wallet.session == null)
+            {
                 _ = await AriesAskarStore.StartSessionAsync(wallet);
+            }
 
             _ = await AriesAskarStore.InsertKeyAsync(
                 wallet.session,
@@ -275,19 +269,90 @@ namespace Hyperledger.Aries.Utils
         }
 
         //TODO : ??? - add missing functions?
+
+        /// <summary>
+        /// Stores a remote party's DID for a pairwise connection in the specified wallet.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The DID and optional associated parameters must be provided in the <paramref name="identityJson"/>
+        /// parameter as a JSON <see cref="string"/>:
+        /// </para>
+        /// <code>
+        /// {
+        ///        "did": string, (required)
+        ///        "verkey": string
+        ///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+        ///             - mandatory in case of updating an existing DID
+        /// }
+        /// </code>
+        /// <para>The <c>did</c> member specifies the DID to store.  This value is required.</para>
+        /// <para>The <c>verkey</c> member specifies the verification key and is optional.</para>
+        /// <para>The <c>crypto_type</c> member specifies the type of cryptographic algorithm will be 
+        /// used to generate they keys.  If not provided then ed22519 curve will be used.
+        /// <note type="note">The only value currently supported for this member is 'ed25519'.</note>
+        /// </para>
+        /// </remarks>
+        /// <param name="wallet">The wallet to store the DID in.</param>
+        /// <param name="identityJson">The identity JSON.</param>
+        /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static async Task StoreTheirDidAsync(Store wallet, string identityJson)
         {
-            throw new NotImplementedException();
+            if (wallet is null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
+
+            if (string.IsNullOrEmpty(identityJson))
+            {
+                throw new ArgumentNullException(nameof(identityJson));
+            }
+
+            // create_their_did(identityJson)
+            //  -> validate_did
+            //  -> build_full_verkey
+            await BuildFullVerkey();
+            //  -> new Did-Json
+            string did = "{\"did\": \"\", \"verkey\": \"\"}";
+            // upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)
+            //  -> if record exists => update_indy_object else add_indy_object
+
         }
 
-        public static async Task<string> KeyForDidAsync()
+        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, string did)
         {
             throw new NotImplementedException();
         }
 
-        public static async Task<string> AbbreviateVerkeyAsync()
+        public static async Task<string> AbbreviateVerkeyAsync(string did, string verKey)
         {
             throw new NotImplementedException();
+        }
+
+        private static async Task<string> BuildFullVerkey(string dest, string str)
+        {
+            string verkey;
+            string cryptoType;
+            if (str.Contains(':'))
+            {
+                verkey = str.Substring(0, str.IndexOf(':'));
+                cryptoType = str.Substring(str.IndexOf(':')+1, str.Length-1);
+            } 
+            else
+            {
+                verkey = str;
+            }
+
+            if (verkey.StartsWith('~'))
+            {
+                Multibase.Base58.Decode(dest).Append(Multibase.Base58.Decode(verkey.))
+            }
+            else
+            {
+
+            }
+
+            return verkey;
         }
     }
 }
