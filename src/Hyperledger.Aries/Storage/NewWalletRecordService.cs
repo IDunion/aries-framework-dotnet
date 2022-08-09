@@ -83,17 +83,14 @@ namespace Hyperledger.Aries.Storage
             int numRecords = await AriesAskarResults.EntryListCountAsync(entryListHandle);
             for (int i = 0; i < numRecords; i++)
             {
-                string id = await AriesAskarResults.EntryListGetNameAsync(entryListHandle, i);
-                string type = options.RetrieveType ? await AriesAskarResults.EntryListGetCategoryAsync(entryListHandle, i) : null;
-                string value = options.RetrieveValue ? await AriesAskarResults.EntryListGetValueAsync(entryListHandle, i) : null;
-                string tags = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(entryListHandle, i) : null;
+                string tagsJson = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(entryListHandle, i) : null;
 
                 SearchItem item = new()
                 {
-                    Id = id,
-                    Type = type,
-                    Value = value,
-                    Tags = JsonConvert.DeserializeObject<Dictionary<string, string>>(tags)
+                    Id = await AriesAskarResults.EntryListGetNameAsync(entryListHandle, i),
+                    Type = options.RetrieveType ? await AriesAskarResults.EntryListGetCategoryAsync(entryListHandle, i) : null,
+                    Value = options.RetrieveValue ? await AriesAskarResults.EntryListGetValueAsync(entryListHandle, i) : null,
+                    Tags = !string.IsNullOrEmpty(tagsJson) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(tagsJson) : null,
                 };
                 records.Add(item);
             }
