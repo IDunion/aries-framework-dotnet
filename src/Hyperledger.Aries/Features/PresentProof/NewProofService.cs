@@ -30,6 +30,8 @@ using aries_askar_dotnet.Models;
 using Hyperledger.Indy.WalletApi;
 using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Models.Records;
+using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
@@ -131,8 +133,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                 string revStateJson = "{\"Handle\":{\"value\":0},\"JsonString\":null,\"witness\":null,\"rev_reg\":null,\"timestamp\":0}";
 
                 revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(revRegDefJson, revRegDeltaJson, 0, 0, revRegRecord.TailsLocation, revStateJson);
+                
                 CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
-                credentialEntryJsons.Add(JsonConvert.SerializeObject(new CredentialEntry(credential, revState.Timestamp, revState);));
+                credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
             }
 
             List<string> selfAttestNames = new();
@@ -810,8 +813,8 @@ namespace Hyperledger.Aries.Features.PresentProof
             return false;
         }
 
-        private async Task<(ParseRegistryResponseResult, string)> BuildRevocationStateAsync(
-            IAgentContext agentContext, CredentialInfo credential, ParseResponseResult registryDefinition,
+        private async Task<(SharedRsRegistryResponse, string)> BuildRevocationStateAsync(
+            IAgentContext agentContext, CredentialInfo credential, SharedRsResponse registryDefinition,
             RevocationInterval nonRevoked)
         {
             var delta = await LedgerService.LookupRevocationRegistryDeltaAsync(

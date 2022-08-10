@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>netstandard2</TargetFrameworks>
         <Description>.NET Core tools for building agent services</Description>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Aries.xml</DocumentationFile>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.7-alpha" />
-        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.4-alpha" />
-        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.1-alpha" />
+        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.8-alpha" />
+        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.5-alpha" />
+        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.2-alpha" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
