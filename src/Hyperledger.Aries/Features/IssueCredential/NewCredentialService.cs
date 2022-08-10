@@ -421,7 +421,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var definition = await LedgerService.LookupDefinitionAsync(agentContext, credential.CredentialDefinitionId);
             var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
 
-            (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestAsync(
+            (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
                 masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.WalletStore, RecordService, provisioning.MasterSecretId),
@@ -543,7 +543,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.WalletStore,config.CredentialDefinitionId);
             string credDefJson = definition.GetTag(TagConstants.CredDefJson);
-            string offerJson = await IndySharedRsOffer.CreateCredentialOfferAsync(
+            string offerJson = await IndySharedRsOffer.CreateCredentialOfferJsonAsync(
                 await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credDefJson, "schema_id"),
                 credDefJson,
                 definition.GetTag(TagConstants.KeyCorrectnesProofJson));
