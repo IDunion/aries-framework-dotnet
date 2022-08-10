@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using aries_askar_dotnet.Models;
+using Hyperledger.Indy.DidApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -281,8 +282,9 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                     agentContext.WalletStore.session,
                     myHandle,
                     did);
-
-            string my = "???";
+            /** TODO: ??? - remove indyFunktion**/
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            //string my = "???";
 
             ConnectionRecord connection = new()
             {
@@ -353,7 +355,9 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                     myHandle,
                     did);
 
-            string my = "???";
+            /** TODO: ??? - remove indyFunktion**/
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            //string my = "???";
 
             ConnectionRecord connection = new()
             {
@@ -399,7 +403,9 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                     myHandle,
                     did);
 
-            string my = "???";
+            /** TODO: ??? - remove indyFunktion**/
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            //string my = "???";
 
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
