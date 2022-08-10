@@ -16,6 +16,7 @@ using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
 using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
+using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -39,11 +40,16 @@ namespace Hyperledger.Aries.Ledger
         {
             async Task<SharedRsResponse> LookupDefinition()
             {
-                var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
-                var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+                var req = await IndyLedger.BuildGetCredDefRequestAsync(null, definitionId);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+                var temp = await IndyLedger.ParseGetCredDefResponseAsync(res);
+                //var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
 
                 //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
-                return await IndyVdrLedger.ParseGetCredDefResponseAsync(res);
+                //return await IndyVdrLedger.ParseGetCredDefResponseAsync(res);
+                return new SharedRsResponse(temp.Id, temp.ObjectJson);
+
             }
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -55,11 +61,15 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<SharedRsResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
             string registryId)
         {
-            var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var req = await IndyLedger.BuildGetRevocRegDefRequestAsync(null, registryId);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var temp = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
+            //var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
 
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
-            return await IndyVdrLedger.ParseGetRevocRegDefResponseAsync(res);
+            //return await IndyVdrLedger.ParseGetRevocRegDefResponseAsync(res);
+            return new SharedRsResponse(temp.Id, temp.ObjectJson);
         }
 
         /// <inheritdoc />
@@ -67,13 +77,20 @@ namespace Hyperledger.Aries.Ledger
         {
             async Task<SharedRsResponse> LookupSchema()
             {
-                var req = await IndyVdrLedger.BuildGetSchemaRequestAsync(schemaId);
-                var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+                var req = await IndyLedger.BuildGetSchemaRequestAsync(null, schemaId);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
 
                 EnsureSuccessResponse(res);
 
+                var temp = await IndyLedger.ParseGetSchemaResponseAsync(res);
+                //var req = await IndyVdrLedger.BuildGetSchemaRequestAsync(schemaId);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+
+                //EnsureSuccessResponse(res);
+
                 //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
-                return await IndyVdrLedger.ParseGetSchemaResponseAsync(res);
+                //return await IndyVdrLedger.ParseGetSchemaResponseAsync(res);
+                return new SharedRsResponse(temp.Id, temp.ObjectJson);
             };
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -85,26 +102,40 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
              long from, long to)
         {
-            var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var req = await IndyLedger.BuildGetRevocRegDeltaRequestAsync(null, revocationRegistryId, from, to);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
 
             EnsureSuccessResponse(res);
 
+            var temp = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            //var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+
+            //EnsureSuccessResponse(res);
+
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
-            return await IndyVdrLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            //return await IndyVdrLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            return new SharedRsRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
         }
 
         /// <inheritdoc />
         public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
              long timestamp)
         {
-            var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var req = await IndyLedger.BuildGetRevocRegRequestAsync(null, revocationRegistryId, timestamp);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
 
             EnsureSuccessResponse(res);
 
+            var temp =  await IndyLedger.ParseGetRevocRegResponseAsync(res);
+            //var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+
+            //EnsureSuccessResponse(res);
+
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
-            return await IndyVdrLedger.ParseGetRevocRegResponseAsync(res);
+            //return await IndyVdrLedger.ParseGetRevocRegResponseAsync(res);
+            return new SharedRsRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
         }
 
         /// <inheritdoc />
@@ -217,8 +248,11 @@ namespace Hyperledger.Aries.Ledger
         public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext)
         {
             //TODO : ??? - missing functionality in indy-vdr? 
-            var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
+            //var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
+
+            var req = await IndyLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
 
             EnsureSuccessResponse(res);
 
