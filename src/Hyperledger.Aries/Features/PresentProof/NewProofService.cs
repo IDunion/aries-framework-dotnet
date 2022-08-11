@@ -27,11 +27,10 @@ using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using IndySharedRsPres = indy_shared_rs_dotnet.IndyCredx.PresentationApi;
 using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
 using aries_askar_dotnet.Models;
-using Hyperledger.Indy.WalletApi;
 using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Models.Records;
-using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Indy.AnonCredsApi;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
@@ -251,7 +250,6 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<bool> VerifyProofAsync(IAgentContext agentContext, string proofRequestJson, string proofJson, bool validateEncoding = true)
         {
             var proof = JsonConvert.DeserializeObject<PartialProof>(proofJson);
-            var proofRequest = proofRequestJson.ToObject<ProofRequest>();
 
             // If any values are revealed, validate encoding
             // against expected values
@@ -289,9 +287,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                 agentContext,
                 proof.Identifiers.Where(x => x.RevocationRegistryId != null));
 
-            return await AnonCreds.VerifierVerifyProofAsync(
+            return await IndySharedRsPres.VerifyPresentationAsync(proofJson,
                 proofRequestJson,
-                proofJson,
                 schemas,
                 definitions,
                 revocationDefinitions,
@@ -774,30 +771,30 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         #region Private Methods
 
-        private async Task<string> BuildSchemasAsync(IAgentContext agentContext, IEnumerable<string> schemaIds)
+        private async Task<List<string>> BuildSchemasAsync(IAgentContext agentContext, IEnumerable<string> schemaIds)
         {
-            var result = new Dictionary<string, JObject>();
+            var result = new List<string>();
 
             foreach (var schemaId in schemaIds)
             {
                 var ledgerSchema = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
-                result.Add(schemaId, JObject.Parse(ledgerSchema.ObjectJson));
+                result.Add(ledgerSchema.ObjectJson);
             }
 
-            return result.ToJson();
+            return result;
         }
 
-        private async Task<string> BuildCredentialDefinitionsAsync(IAgentContext agentContext, IEnumerable<string> credentialDefIds)
+        private async Task<List<string>> BuildCredentialDefinitionsAsync(IAgentContext agentContext, IEnumerable<string> credentialDefIds)
         {
-            var result = new Dictionary<string, JObject>();
+            var result = new List<string>();
 
-            foreach (var schemaId in credentialDefIds)
+            foreach (var credDefId in credentialDefIds)
             {
-                var ledgerDefinition = await LedgerService.LookupDefinitionAsync(agentContext, schemaId);
-                result.Add(schemaId, JObject.Parse(ledgerDefinition.ObjectJson));
+                var ledgerDefinition = await LedgerService.LookupDefinitionAsync(agentContext, credDefId);
+                result.Add(ledgerDefinition.ObjectJson);
             }
 
-            return result.ToJson();
+            return result;
         }
 
         private bool HasNonRevokedOnAttributeLevel(ProofRequest proofRequest)
@@ -910,11 +907,11 @@ namespace Hyperledger.Aries.Features.PresentProof
             return result.ToJson();
         }
 
-        private async Task<string> BuildRevocationRegistriesAsync(
+        private async Task<List<string>> BuildRevocationRegistriesAsync(
             IAgentContext agentContext,
             IEnumerable<ProofIdentifier> proofIdentifiers)
         {
-            var result = new Dictionary<string, Dictionary<string, JObject>>();
+            var result = new List<string>();
 
             foreach (var identifier in proofIdentifiers)
             {
@@ -925,29 +922,24 @@ namespace Hyperledger.Aries.Features.PresentProof
                     identifier.RevocationRegistryId,
                     long.Parse(identifier.Timestamp));
 
-                result.Add(identifier.RevocationRegistryId,
-                    new Dictionary<string, JObject>
-                    {
-                        {identifier.Timestamp, JObject.Parse(revocationRegistry.ObjectJson)}
-                    });
+                result.Add(revocationRegistry.ObjectJson);
             }
 
-            return result.ToJson();
+            return result;
         }
 
-        private async Task<string> BuildRevocationRegistryDefinitionsAsync(IAgentContext agentContext,
+        private async Task<List<string>> BuildRevocationRegistryDefinitionsAsync(IAgentContext agentContext,
             IEnumerable<string> revocationRegistryIds)
         {
-            var result = new Dictionary<string, JObject>();
+            var result = new List<string>();
 
-            foreach (var revocationRegistryId in revocationRegistryIds)
+            foreach (var revRegId in revocationRegistryIds)
             {
-                var ledgerSchema =
-                    await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revocationRegistryId);
-                result.Add(revocationRegistryId, JObject.Parse(ledgerSchema.ObjectJson));
+                var ledgerRegistry = await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revRegId);
+                result.Add(ledgerRegistry.ObjectJson);
             }
 
-            return result.ToJson();
+            return result;
         }
 
         private void CheckProofProposalParameters(ProofProposal proofProposal)
