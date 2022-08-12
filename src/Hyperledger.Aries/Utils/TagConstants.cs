@@ -41,6 +41,8 @@
 
         public const string RevRegJson = "revocationRegistryJson";
 
+        public const string RevRegDeltaJson = "revocationRegistryDeltaJson";
+
         public const string CredDefJson = "credentialDefinitionJson";
 
         public const string CredDefPrivateJson = "credentialDefinitionPrivateJson";

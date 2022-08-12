@@ -237,10 +237,16 @@ namespace Hyperledger.Aries.Utils
 
             byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyInDid;
-            if (string.IsNullOrEmpty(did))
-            {
-                verKeyInDid = cid ? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey[0..16]);
-
+            if (string.IsNullOrEmpty(did)) { 
+                if (cid == true)
+                {
+                    verKeyInDid = Multibase.Base58.Encode(verKey);
+                }
+                else
+                {
+                    verKeyInDid = Multibase.Base58.Encode(verKey.Take(16).ToArray());
+                }
+                
                 did = ToDid(DidKeyMethodSpec, verKeyInDid);
             }
             else

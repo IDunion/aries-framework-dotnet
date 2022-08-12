@@ -264,7 +264,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
-             string _) = await IndySharedRsRevoc.CreateRevocationRegistryJsonAsync(
+             string revocationRegistryDeltaJson) = await IndySharedRsRevoc.CreateRevocationRegistryJsonAsync(
                  originDid : definitionRecord.IssuerDid,
                  credentialDefinitionJson,
                  tag : tag,
@@ -287,6 +287,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             revocationRecord.SetTag(TagConstants.RevRegDefJson, revocationRegistryDefinitionJson);
             revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryJson);
             revocationRecord.SetTag(TagConstants.RevRegDefPrivateJson, revocationRegistryDefinitionPrivateJson);
+            revocationRecord.SetTag(TagConstants.RevRegDeltaJson, revocationRegistryDeltaJson);
 
             // Update tails location URI
             var revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);
