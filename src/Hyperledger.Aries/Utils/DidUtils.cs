@@ -148,7 +148,8 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentException($"Value {didKey} is no did:key", nameof(didKey));
             }
 
-            string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
+            //string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
+            string base58EncodedKey = "";
             byte[] bytes = Multibase.Base58.Decode(base58EncodedKey);
             byte[] codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
             if (codec.SequenceEqual(MULTICODEC_PREFIX_ED25519))
@@ -317,7 +318,7 @@ namespace Hyperledger.Aries.Utils
             // create_their_did(identityJson)
             //  -> validate_did
             //  -> build_full_verkey
-            await BuildFullVerkey();
+            //await BuildFullVerkey();
             //  -> new Did-Json
             string did = "{\"did\": \"\", \"verkey\": \"\"}";
             // upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)
@@ -337,26 +338,26 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task<string> BuildFullVerkey(string dest, string str)
         {
-            string verkey;
-            string cryptoType;
-            if (str.Contains(':'))
-            {
-                verkey = str.Substring(0, str.IndexOf(':'));
-                cryptoType = str.Substring(str.IndexOf(':')+1, str.Length-1);
-            } 
-            else
-            {
-                verkey = str;
-            }
+            string verkey = "";
+            //string cryptoType;
+            //if (str.Contains(':'))
+            //{
+            //    verkey = str.Substring(0, str.IndexOf(':'));
+            //    cryptoType = str.Substring(str.IndexOf(':')+1, str.Length-1);
+            //} 
+            //else
+            //{
+            //    verkey = str;
+            //}
 
-            if (verkey.StartsWith('~'))
-            {
-                Multibase.Base58.Decode(dest).Append(Multibase.Base58.Decode(verkey.))
-            }
-            else
-            {
+            //if (verkey.StartsWith('~'))
+            //{
+            //    Multibase.Base58.Decode(dest).Append(Multibase.Base58.Decode(verkey.))
+            //}
+            //else
+            //{
 
-            }
+            //}
 
             return verkey;
         }
