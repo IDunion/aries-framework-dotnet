@@ -129,9 +129,14 @@ namespace Hyperledger.Aries.Features.PresentProof
                 RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.WalletStore, credentialInfo.RevocationRegistryId);
                 string revRegDefJson = revRegRecord.GetTag(TagConstants.RevRegDefJson);
                 string revRegDeltaJson = revRegRecord.GetTag(TagConstants.RevRegDeltaJson);
-                string revStateJson = "{\"Handle\":{\"value\":0},\"JsonString\":null,\"witness\":null,\"rev_reg\":null,\"timestamp\":0}";
 
-                revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(revRegDefJson, revRegDeltaJson, 0, 0, revRegRecord.TailsLocation, revStateJson);
+                string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                    revRegDefJson,
+                    revRegDeltaJson,
+                    0,
+                    0,
+                    revRegRecord.TailsLocation,
+                    new CredentialRevocationState().JsonString);
                 
                 CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
                 credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
@@ -823,14 +828,15 @@ namespace Hyperledger.Aries.Features.PresentProof
                 to: nonRevoked.To);
 
             var tailsFile = await TailsService.EnsureTailsExistsAsync(agentContext, credential.RevocationRegistryId);
-            var tailsReader = await TailsService.OpenTailsAsync(tailsFile);
-
-            var state = await AnonCreds.CreateRevocationStateAsync(
-                blobStorageReader: tailsReader,
-                revRegDef: registryDefinition.ObjectJson,
-                revRegDelta: delta.ObjectJson,
-                timestamp: (long)delta.Timestamp,
-                credRevId: credential.CredentialRevocationId);
+            
+            string state = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                registryDefinition.ObjectJson,
+                delta.ObjectJson,
+                0,
+                (long)delta.Timestamp,
+                tailsFile,
+                new CredentialRevocationState().JsonString
+                );
 
             return (delta, state);
         }
