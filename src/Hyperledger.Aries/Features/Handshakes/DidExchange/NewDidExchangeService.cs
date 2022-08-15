@@ -69,7 +69,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, "{}");
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, _recordService, "{}");
 
             var connection = new ConnectionRecord
             {
@@ -115,7 +115,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         {
             await record.TriggerAsync(ConnectionTrigger.Request);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, "{}");
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, _recordService, "{}");
             record.MyDid = DidUtils.ConvertVerkeyToDidKey(myVerKey);
             record.MyVk = myVerKey;
 
@@ -163,7 +163,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             }
             else
             {
-                (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, "{}");
+                (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, _recordService, "{}");
                 connectionRecord.MyDid = DidUtils.ConvertVerkeyToDidKey(myVerKey);
                 connectionRecord.MyVk = myVerKey;
 

@@ -257,7 +257,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <inheritdoc />
         public async Task<ConnectionRecord> ProcessInvitationAsync(IAgentContext agentContext, ConnectionInvitationMessage invitation)
         {
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, RecordService);
 
             ConnectionRecord connection = new()
             {
@@ -316,7 +316,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             }
 
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, RecordService);
 
             ConnectionRecord connection = new()
             {
@@ -349,7 +349,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogInformation(LoggingEvents.ProcessConnectionRequest, "Did {0}", request.Connection.Did);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, RecordService);
 
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
