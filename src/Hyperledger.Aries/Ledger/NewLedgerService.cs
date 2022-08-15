@@ -41,10 +41,10 @@ namespace Hyperledger.Aries.Ledger
             async Task<AriesResponse> LookupDefinition()
             {
                 var req = await IndyLedger.BuildGetCredDefRequestAsync(null, definitionId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
                 var temp = await IndyLedger.ParseGetCredDefResponseAsync(res);
                 //var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
-                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
                 //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
                 //return await IndyVdrLedger.ParseGetCredDefResponseAsync(res);
@@ -62,10 +62,10 @@ namespace Hyperledger.Aries.Ledger
             string registryId)
         {
             var req = await IndyLedger.BuildGetRevocRegDefRequestAsync(null, registryId);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
             var temp = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             //return await IndyVdrLedger.ParseGetRevocRegDefResponseAsync(res);
@@ -78,13 +78,13 @@ namespace Hyperledger.Aries.Ledger
             async Task<AriesResponse> LookupSchema()
             {
                 var req = await IndyLedger.BuildGetSchemaRequestAsync(null, schemaId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
 
                 EnsureSuccessResponse(res);
 
                 var temp = await IndyLedger.ParseGetSchemaResponseAsync(res);
                 //var req = await IndyVdrLedger.BuildGetSchemaRequestAsync(schemaId);
-                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
                 //EnsureSuccessResponse(res);
 
@@ -103,13 +103,13 @@ namespace Hyperledger.Aries.Ledger
              long from, long to)
         {
             var req = await IndyLedger.BuildGetRevocRegDeltaRequestAsync(null, revocationRegistryId, from, to);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
 
             EnsureSuccessResponse(res);
 
             var temp = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             //EnsureSuccessResponse(res);
 
@@ -123,13 +123,13 @@ namespace Hyperledger.Aries.Ledger
              long timestamp)
         {
             var req = await IndyLedger.BuildGetRevocRegRequestAsync(null, revocationRegistryId, timestamp);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
 
             EnsureSuccessResponse(res);
 
             var temp =  await IndyLedger.ParseGetRevocRegResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             //EnsureSuccessResponse(res);
 
@@ -205,7 +205,7 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName)
         {
             var req = await IndyVdrLedger.BuildGetAttributeRequest(targetDid, null, null, attributeName, null);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             return res;
         }
@@ -218,7 +218,7 @@ namespace Hyperledger.Aries.Ledger
                 //Throw exception
             };
             var req = await IndyVdrLedger.BuildGetTxnRequestAsync(ledgerTypeAsInt, sequenceId);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             return res;
         }
@@ -237,7 +237,7 @@ namespace Hyperledger.Aries.Ledger
         public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
         {
             var req = await IndyVdrLedger.BuildGetNymRequest(did);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             EnsureSuccessResponse(res);
 
@@ -249,10 +249,10 @@ namespace Hyperledger.Aries.Ledger
         {
             //TODO : ??? - missing functionality in indy-vdr? 
             //var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync((await agentContext.Pool).PoolHandle, req);
 
             var req = await IndyLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
 
             EnsureSuccessResponse(res);
 
@@ -282,7 +282,7 @@ namespace Hyperledger.Aries.Ledger
                 request = requestWithFees.Result;
             }
             var signedRequest = await _signingService.SignRequestAsync(context, submitterDid, request);
-            var response = await IndyVdrPool.SubmitPoolRequestAsync(await context.AriesPool.PoolHandle, await IndyVdrLedger.BuildCustomRequest(signedRequest));
+            var response = await IndyVdrPool.SubmitPoolRequestAsync((await context.Pool).PoolHandle, await IndyVdrLedger.BuildCustomRequest(signedRequest));
 
             EnsureSuccessResponse(response);
 

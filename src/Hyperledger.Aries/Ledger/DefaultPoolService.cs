@@ -6,6 +6,7 @@ using Hyperledger.Aries.Extensions;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 using Hyperledger.Indy.PoolApi;
 using Newtonsoft.Json.Linq;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -13,8 +14,8 @@ namespace Hyperledger.Aries.Ledger
     public class DefaultPoolService : IPoolService
     {
         /// <summary>Collection of active pool handles.</summary>
-        protected static readonly ConcurrentDictionary<string, Pool> Pools =
-            new ConcurrentDictionary<string, Pool>();
+        protected static readonly ConcurrentDictionary<string, AriesPool> Pools =
+            new ConcurrentDictionary<string, AriesPool>();
 
         /// <summary>
         /// Concurrent collection of txn author agreements
@@ -31,7 +32,7 @@ namespace Hyperledger.Aries.Ledger
             new ConcurrentDictionary<string, IndyAml>();
 
         /// <inheritdoc />
-        public virtual async Task<Pool> GetPoolAsync(string poolName, int protocolVersion)
+        public virtual async Task<AriesPool> GetPoolAsync(string poolName, int protocolVersion)
         {
             await Pool.SetProtocolVersionAsync(protocolVersion);
 
@@ -39,16 +40,17 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<Pool> GetPoolAsync(string poolName)
+        public virtual async Task<AriesPool> GetPoolAsync(string poolName)
         {
-            if (Pools.TryGetValue(poolName, out var pool))
+            if (Pools.TryGetValue(poolName, out AriesPool ariesPool))
             {
-                return pool;
+                return ariesPool;
             }
+            ariesPool = new AriesPool();
+            ariesPool.Pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-            Pools.TryAdd(poolName, pool);
-            return pool;
+            _ = Pools.TryAdd(poolName, ariesPool);
+            return ariesPool;
         }
 
         /// <inheritdoc />
@@ -81,9 +83,9 @@ namespace Hyperledger.Aries.Ledger
                 return taa;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
+            var ariesPool = await GetPoolAsync(poolName, 2);
             var req = await IndyLedger.BuildGetTxnAuthorAgreementRequestAsync(null, null);
-            var res = await IndyLedger.SubmitRequestAsync(pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
@@ -118,12 +120,12 @@ namespace Hyperledger.Aries.Ledger
                 return aml;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
+            var ariesPool = await GetPoolAsync(poolName, 2);
             var req = await IndyLedger.BuildGetAcceptanceMechanismsRequestAsync(
                 submitter_did: null,
                 timestamp: timestamp == DateTimeOffset.MinValue ? -1 : timestamp.ToUnixTimeSeconds(),
                 version: version);
-            var res = await IndyLedger.SubmitRequestAsync(pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
