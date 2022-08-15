@@ -15,7 +15,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet.</param>
         /// <param name="recordService">The record service.</param>
         /// <returns>The master secret id for accessing the corresponding record.</returns>
-        public static async Task<string> CreateAndStoreMasterSecretAsync(Store wallet, INewWalletRecordService recordService)
+        public static async Task<string> CreateAndStoreMasterSecretAsync(Store wallet, IWalletRecordService recordService)
         {
             string masterSecretId = Guid.NewGuid().ToString();
             MasterSecretRecord masterSecretRecord = new()
@@ -35,7 +35,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet.</param>
         /// <param name="recordService">The record service.</param>
         /// <returns>The master secret as JSON.</returns>
-        public static async Task<string> GetMasterSecretJsonAsync(Store wallet, INewWalletRecordService recordService, string id)
+        public static async Task<string> GetMasterSecretJsonAsync(Store wallet, IWalletRecordService recordService, string id)
         {
             MasterSecretRecord record = await recordService.GetAsync<MasterSecretRecord>(wallet, id);
             return record?.MasterSecretJson;

@@ -33,7 +33,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <summary>
         /// The record service
         /// </summary>
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
         /// <summary>
         /// The provisioning service
         /// </summary>
@@ -52,7 +52,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <param name="logger">The logger.</param>
         public NewConnectionService(
             IEventAggregator eventAggregator,
-            INewWalletRecordService recordService,
+            IWalletRecordService recordService,
             INewProvisioningService provisioningService,
             ILogger<DefaultConnectionService> logger)
         {

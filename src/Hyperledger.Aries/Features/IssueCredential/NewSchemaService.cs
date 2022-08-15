@@ -31,7 +31,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         // ReSharper disable InconsistentNaming
         protected readonly INewProvisioningService ProvisioningService;
         /// <summary>The record service</summary>
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
         /// <summary>The ledger service</summary>
         protected readonly INewLedgerService LedgerService;
         private readonly IPaymentService paymentService;
@@ -56,7 +56,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="agentOptions">The agent options.</param>
         public NewSchemaService(
             INewProvisioningService provisioningService,
-            INewWalletRecordService recordService,
+            IWalletRecordService recordService,
             INewLedgerService ledgerService,
             IPaymentService paymentService,
             ITailsService tailsService,

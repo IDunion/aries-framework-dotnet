@@ -22,9 +22,9 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         private readonly IEventAggregator _eventAggregator;
         private readonly ILedgerService _ledgerService;
         private readonly INewProvisioningService _provisioningService;
-        private readonly INewWalletRecordService _recordService;
+        private readonly IWalletRecordService _recordService;
 
-        public NewDidExchangeService(ILedgerService ledgerService, INewWalletRecordService recordService, INewProvisioningService provisioningService, IEventAggregator eventAggregator)
+        public NewDidExchangeService(ILedgerService ledgerService, IWalletRecordService recordService, INewProvisioningService provisioningService, IEventAggregator eventAggregator)
         {
             _ledgerService = ledgerService;
             _recordService = recordService;

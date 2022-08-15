@@ -214,7 +214,7 @@ namespace Hyperledger.Aries.Utils
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<(string, string)> CreateAndStoreMyDidAsync(
             Store wallet,
-            INewWalletRecordService recordService,
+            IWalletRecordService recordService,
             string did = null,
             string seed = null,
             string cryptoType = "ed25519",
@@ -297,7 +297,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet to store the DID in.</param>
         /// <param name="identityJson">The identity JSON.</param>
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
-        public static async Task StoreTheirDidAsync(INewWalletRecordService recordService, Store wallet, string identityJson)
+        public static async Task StoreTheirDidAsync(IWalletRecordService recordService, Store wallet, string identityJson)
         {
             if (wallet is null)
             {
@@ -325,7 +325,7 @@ namespace Hyperledger.Aries.Utils
             return record;
         }
 
-        private static async Task Upsert(INewWalletRecordService recordService, Store wallet, DidRecord didRecord)
+        private static async Task Upsert(IWalletRecordService recordService, Store wallet, DidRecord didRecord)
         {
             DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(wallet, didRecord.Did);
             if (existingRecord != null)

@@ -16,10 +16,10 @@ namespace Hyperledger.Aries.Configuration
     {
         /// <summary>The record service</summary>
         // ReSharper disable InconsistentNaming
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
 
         /// <summary>The wallet service</summary>
-        protected readonly INewWalletService WalletService;
+        protected readonly IWalletService WalletService;
         /// <summary>
         /// Agent options
         /// </summary>
@@ -32,8 +32,8 @@ namespace Hyperledger.Aries.Configuration
         /// <param name="walletService">The wallet service.</param>
         /// <param name="agentOptions"></param>
         public NewProvisioningService(
-            INewWalletRecordService walletRecord,
-            INewWalletService walletService,
+            IWalletRecordService walletRecord,
+            IWalletService walletService,
             IOptions<AgentOptions> agentOptions)
         {
             RecordService = walletRecord;
@@ -44,7 +44,7 @@ namespace Hyperledger.Aries.Configuration
         /// <inheritdoc />
         public async Task AcceptTxnAuthorAgreementAsync(IAgentContext agentContext, IndyTaa txnAuthorAgreement, string acceptanceMechanism = "service_agreement")
         {
-            var provisioning = await GetProvisioningAsync(agentContext.WalletStore);
+            var provisioning = await GetProvisioningAsync(agentContext.AriesStorage.Store);
 
             provisioning.TaaAcceptance = new IndyTaaAcceptance
             {
@@ -55,7 +55,7 @@ namespace Hyperledger.Aries.Configuration
                 AcceptanceMechanism = acceptanceMechanism
             };
 
-            await RecordService.UpdateAsync(agentContext.WalletStore, provisioning);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, provisioning);
         }
 
         private string GetDigest(IndyTaa taa)
