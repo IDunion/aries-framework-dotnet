@@ -353,7 +353,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
-            await DidUtils.StoreTheirDidAsync(agentContext.WalletStore, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.WalletStore, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             if (request.Connection.DidDoc.Services != null &&
                 request.Connection.DidDoc.Services.Count > 0 &&
@@ -427,7 +427,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             //i.e there is no way for this agent to respond to messages. And or no keys specified
             Common.Connection connectionObj = await SignatureUtils.UnpackAndVerifyAsync<Common.Connection>(response.ConnectionSig);
 
-            await DidUtils.StoreTheirDidAsync(agentContext.WalletStore,
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.WalletStore,
                 new { did = connectionObj.Did, verkey = connectionObj.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             connection.TheirDid = connectionObj.Did;
