@@ -113,7 +113,7 @@ namespace Hyperledger.Aries.Configuration
                 endpoint = new AgentEndpoint { Uri = agentOptions.EndpointUri.ToString() };
                 if (agentOptions.AgentKeySeed != null)
                 {
-                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet, seed: agentOptions.AgentKeySeed);
+                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet, RecordService, seed: agentOptions.AgentKeySeed);
                     endpoint.Did = did;
                     endpoint.Verkey = new[] { verKey };
                 }
@@ -124,7 +124,7 @@ namespace Hyperledger.Aries.Configuration
                 }
                 else
                 {
-                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet);
+                    var (did, verKey) = await DidUtils.CreateAndStoreMyDidAsync(wallet, RecordService);
                     endpoint.Did = did;
                     endpoint.Verkey = new[] { verKey };
                 }
@@ -153,7 +153,8 @@ namespace Hyperledger.Aries.Configuration
             }
 
             var (issuerDid, issuerVerKey) = await DidUtils.CreateAndStoreMyDidAsync(
-                wallet, 
+                wallet,
+                RecordService,
                 did : agentOptions.IssuerDid, 
                 seed : agentOptions.IssuerKeySeed);
 
