@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Decorators.Attachments;
@@ -14,14 +15,12 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Logging;
+using Multiformats.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using aries_askar_dotnet.Models;
-using Hyperledger.Indy.DidApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -89,19 +88,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
 
             /** TODO : ??? - How does key/DID generation work? **/
-            IntPtr connectionKeyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg: KeyAlg.ED25519, ephemeral: false);
-            string did = "???";
-            if (agentContext.WalletStore.session == null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(agentContext.WalletStore);
-            }
-
-            _ = await AriesAskarStore.InsertKeyAsync(
-                    agentContext.WalletStore.session,
-                    connectionKeyHandle,
-                    did);
-
-            string connectionKey = "???";
+            string connectionKey = await CreateKeyAsync(agentContext.WalletStore);
 
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
@@ -270,27 +257,13 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <inheritdoc />
         public async Task<ConnectionRecord> ProcessInvitationAsync(IAgentContext agentContext, ConnectionInvitationMessage invitation)
         {
-            //var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            IntPtr myHandle = await AriesAskarKey.CreateKeyAsync(keyAlg: KeyAlg.ED25519, ephemeral: false);
-            string did = "???";
-            if (agentContext.WalletStore.session == null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(agentContext.WalletStore);
-            }
-
-            _ = await AriesAskarStore.InsertKeyAsync(
-                    agentContext.WalletStore.session,
-                    myHandle,
-                    did);
-            /** TODO: ??? - remove indyFunktion**/
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            //string my = "???";
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
 
             ConnectionRecord connection = new()
             {
                 Endpoint = new AgentEndpoint(invitation.ServiceEndpoint, null, invitation.RoutingKeys != null && invitation.RoutingKeys.Count != 0 ? invitation.RoutingKeys.ToArray() : null),
-                MyDid = my.Did,
-                MyVk = my.VerKey,
+                MyDid = myDid,
+                MyVk = myVerKey,
                 Role = ConnectionRole.Invitee
             };
             connection.SetTag(TagConstants.InvitationKey, invitation.RecipientKeys.First());
@@ -342,28 +315,14 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 throw new ArgumentNullException(nameof(invitation.Services), "No service endpoint defined");
             }
 
-            //var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            IntPtr myHandle = await AriesAskarKey.CreateKeyAsync(keyAlg: KeyAlg.ED25519, ephemeral: false);
-            string did = "???";
-            if (agentContext.WalletStore.session == null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(agentContext.WalletStore);
-            }
 
-            _ = await AriesAskarStore.InsertKeyAsync(
-                    agentContext.WalletStore.session,
-                    myHandle,
-                    did);
-
-            /** TODO: ??? - remove indyFunktion**/
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            //string my = "???";
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
 
             ConnectionRecord connection = new()
             {
                 Endpoint = new AgentEndpoint(service.ServiceEndpoint, null, service.RoutingKeys != null && service.RoutingKeys.Count != 0 ? service.RoutingKeys.ToArray() : null),
-                MyDid = my.Did,
-                MyVk = my.VerKey,
+                MyDid = myDid,
+                MyVk = myVerKey,
                 Role = ConnectionRole.Invitee
             };
             connection.SetTag(TagConstants.InvitationKey, service.RecipientKeys.First());
@@ -390,26 +349,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogInformation(LoggingEvents.ProcessConnectionRequest, "Did {0}", request.Connection.Did);
 
-            //var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            IntPtr myHandle = await AriesAskarKey.CreateKeyAsync(keyAlg: KeyAlg.ED25519, ephemeral: false);
-            string did = "???";
-            if (agentContext.WalletStore.session == null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(agentContext.WalletStore);
-            }
-
-            _ = await AriesAskarStore.InsertKeyAsync(
-                    agentContext.WalletStore.session,
-                    myHandle,
-                    did);
-
-            /** TODO: ??? - remove indyFunktion**/
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
-            //string my = "???";
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore);
 
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
-            await Did.StoreTheirDidAsync(agentContext.Wallet, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.WalletStore, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             if (request.Connection.DidDoc.Services != null &&
                 request.Connection.DidDoc.Services.Count > 0 &&
@@ -420,8 +364,8 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             connection.TheirDid = request.Connection.Did;
             connection.TheirVk = request.Connection.DidDoc.Keys[0].PublicKeyBase58;
-            connection.MyDid = my.Did;
-            connection.MyVk = my.VerKey;
+            connection.MyDid = myDid;
+            connection.MyVk = myVerKey;
 
             connection.SetTag(TagConstants.LastThreadId, request.Id);
 
@@ -483,7 +427,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             //i.e there is no way for this agent to respond to messages. And or no keys specified
             Common.Connection connectionObj = await SignatureUtils.UnpackAndVerifyAsync<Common.Connection>(response.ConnectionSig);
 
-            await Did.StoreTheirDidAsync(agentContext.Wallet,
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.WalletStore,
                 new { did = connectionObj.Did, verkey = connectionObj.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             connection.TheirDid = connectionObj.Did;
@@ -552,6 +496,27 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             }
 
             _ = await RecordService.DeleteAsync<ConnectionRecord>(agentContext.WalletStore, invitationId);
+        }
+
+        private static async Task<string> CreateKeyAsync(Store wallet, KeyAlg keyAlg = KeyAlg.ED25519, bool ephemeral = true, bool cid = false)
+        {
+            if (wallet is null)
+            {
+                throw new ArgumentNullException(nameof(wallet));
+            }
+            string did = "";
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral);
+            byte[] keyBytes = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            string keyInDid;
+            if (string.IsNullOrEmpty(did))
+            {
+                byte[] subArray = new byte[16];
+                Array.Copy(keyBytes, subArray, 16);
+                keyInDid = cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
+                did = DidUtils.ToDid("key", keyInDid);
+            }
+
+            return did;
         }
     }
 }
