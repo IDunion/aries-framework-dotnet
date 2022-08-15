@@ -510,9 +510,9 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             string keyInDid;
             if (string.IsNullOrEmpty(did))
             {
-                //keyInDid = cid == true ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(keyBytes[0..16]);
-                keyInDid = cid == true ? Multibase.Base58.Encode(keyBytes) : "";
-
+                byte[] subArray = new byte[16];
+                Array.Copy(keyBytes, subArray, 16);
+                keyInDid = cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
                 did = DidUtils.ToDid("key", keyInDid);
             }
 

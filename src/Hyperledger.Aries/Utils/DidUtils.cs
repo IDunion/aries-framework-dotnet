@@ -1,6 +1,9 @@
 ﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Features.Handshakes.DidExchange;
+using Hyperledger.Aries.Storage;
 using Multiformats.Base;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -238,16 +241,10 @@ namespace Hyperledger.Aries.Utils
 
             byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyInDid;
-            if (string.IsNullOrEmpty(did)) { 
-                if (cid == true)
-                {
-                    verKeyInDid = Multibase.Base58.Encode(verKey);
-                }
-                else
-                {
-                    verKeyInDid = Multibase.Base58.Encode(verKey.Take(16).ToArray());
-                }
-                
+            if (string.IsNullOrEmpty(did))
+            {
+                verKeyInDid = cid == true ? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey.Take(16).ToArray());
+
                 did = ToDid(DidKeyMethodSpec, verKeyInDid);
             }
             else
@@ -303,7 +300,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet to store the DID in.</param>
         /// <param name="identityJson">The identity JSON.</param>
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
-        public static async Task StoreTheirDidAsync(Store wallet, string identityJson)
+        public static async Task StoreTheirDidAsync(INewWalletRecordService recordService, Store wallet, string identityJson)
         {
             if (wallet is null)
             {
@@ -315,15 +312,33 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentNullException(nameof(identityJson));
             }
 
-            // create_their_did(identityJson)
-            //  -> validate_did
-            //  -> build_full_verkey
-            //await BuildFullVerkey();
-            //  -> new Did-Json
-            string did = "{\"did\": \"\", \"verkey\": \"\"}";
-            // upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)
-            //  -> if record exists => update_indy_object else add_indy_object
+            DidRecord theirDid = await CreateTheirDidAsync(identityJson);
+            await Upsert(recordService, wallet, theirDid);
+        }
 
+        private static async Task<DidRecord> CreateTheirDidAsync(string identityJson)
+        {
+            DidRecord record = JsonConvert.DeserializeObject<DidRecord>(identityJson);
+            if (!IsVerkey(record.Verkey))
+            {
+                throw new ArgumentException("Not a valid did: " + record.Did);
+            }
+
+            record.Verkey = await BuildFullVerkey(record.Did, record.Verkey);
+            return record;
+        }
+
+        private static async Task Upsert(INewWalletRecordService recordService, Store wallet, DidRecord didRecord)
+        {
+            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(wallet, didRecord.Did);
+            if (existingRecord != null)
+            {
+                await recordService.UpdateAsync(wallet, didRecord);
+            }
+            else
+            {
+                await recordService.AddAsync(wallet, didRecord);
+            }            
         }
 
         public static async Task<string> KeyForDidAsync(IAgentContext agentContext, string did)
@@ -339,25 +354,27 @@ namespace Hyperledger.Aries.Utils
         private static async Task<string> BuildFullVerkey(string dest, string str)
         {
             string verkey = "";
-            //string cryptoType;
-            //if (str.Contains(':'))
-            //{
-            //    verkey = str.Substring(0, str.IndexOf(':'));
-            //    cryptoType = str.Substring(str.IndexOf(':')+1, str.Length-1);
-            //} 
-            //else
-            //{
-            //    verkey = str;
-            //}
+            string cryptoType = "";
+            if (str.Contains(':'))
+            {
+                string[] splits = str.Split(':');
+                verkey = splits[0];
+                cryptoType = splits[1];
+            }
+            else
+            {
+                verkey = str;
+            }
 
-            //if (verkey.StartsWith('~'))
-            //{
-            //    Multibase.Base58.Decode(dest).Append(Multibase.Base58.Decode(verkey.))
-            //}
-            //else
-            //{
+            if (verkey.StartsWith("~"))
+            {
+                Multibase.Base58.Decode(dest).ToList<byte>().AddRange(Multibase.Base58.Decode(verkey.Substring(1, verkey.Length - 1)).ToList<byte>());
+            }
 
-            //}
+            if (String.IsNullOrEmpty(cryptoType))
+            {
+                verkey = $"{verkey}:{cryptoType}";
+            }
 
             return verkey;
         }
