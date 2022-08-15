@@ -3,19 +3,18 @@ using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
 using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
 using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
-using Hyperledger.Indy.WalletApi;
 using Hyperledger.Aries.Configuration;
 using System;
-using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Storage.Models;
 
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewLedgerSigningService : INewLedgerSigningService
+    public class NewLedgerSigningService : ILedgerSigningService
     {
-        private readonly INewProvisioningService provisioningService;
+        private readonly IProvisioningService provisioningService;
 
-        public NewLedgerSigningService(INewProvisioningService provisioningService)
+        public NewLedgerSigningService(IProvisioningService provisioningService)
         {
             this.provisioningService = provisioningService;
         }
@@ -24,7 +23,7 @@ namespace Hyperledger.Aries.Ledger
         {
             try
             {
-                var provisioning = await provisioningService.GetProvisioningAsync(context.WalletStore);
+                var provisioning = await provisioningService.GetProvisioningAsync(context.AriesStorage);
 
                 if (provisioning?.TaaAcceptance != null)
                 {
@@ -45,11 +44,11 @@ namespace Hyperledger.Aries.Ledger
             {
                 // OK, used in unit tests and scenarios when we want to simply send ledger commands
             }
-            return await SignRequestAsync(context.WalletStore, submitterDid, requestJson);
+            return await SignRequestAsync(context.AriesStorage, submitterDid, requestJson);
         }
 
         /// <inheritdoc />
-        public Task<string> SignRequestAsync(Store wallet, string submitterDid, string requestJson)
+        public Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson)
         {
             string signature = "???"; //TODO: ??? GetSignature from Wallet and submitterDid info?
             IntPtr requestHandle = IndyVdrLedger.BuildCustomRequest(requestJson).GetAwaiter().GetResult();

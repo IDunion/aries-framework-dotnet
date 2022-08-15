@@ -21,34 +21,34 @@ using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewLedgerService : INewLedgerService
+    public class NewLedgerService : ILedgerService
     {
-        private readonly INewLedgerSigningService _signingService;
+        private readonly ILedgerSigningService _signingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultLedgerService" /> class
         /// </summary>
         /// <param name="signingService"></param>
-        public NewLedgerService(INewLedgerSigningService signingService)
+        public NewLedgerService(ILedgerSigningService signingService)
         {
             _signingService = signingService;
         }
 
         /// <inheritdoc />
-        public virtual async Task<SharedRsResponse> LookupDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<AriesResponse> LookupDefinitionAsync(IAgentContext agentContext,
             string definitionId)
         {
-            async Task<SharedRsResponse> LookupDefinition()
+            async Task<AriesResponse> LookupDefinition()
             {
                 var req = await IndyLedger.BuildGetCredDefRequestAsync(null, definitionId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
                 var temp = await IndyLedger.ParseGetCredDefResponseAsync(res);
                 //var req = await IndyVdrLedger.BuildGetCredDefRequest(definitionId);
-                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
                 //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
                 //return await IndyVdrLedger.ParseGetCredDefResponseAsync(res);
-                return new SharedRsResponse(temp.Id, temp.ObjectJson);
+                return new AriesResponse(temp.Id, temp.ObjectJson);
 
             }
 
@@ -58,39 +58,39 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<SharedRsResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<AriesResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
             string registryId)
         {
             var req = await IndyLedger.BuildGetRevocRegDefRequestAsync(null, registryId);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
             var temp = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegDefRequest(registryId);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             //return await IndyVdrLedger.ParseGetRevocRegDefResponseAsync(res);
-            return new SharedRsResponse(temp.Id, temp.ObjectJson);
+            return new AriesResponse(temp.Id, temp.ObjectJson);
         }
 
         /// <inheritdoc />
-        public virtual async Task<SharedRsResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
+        public virtual async Task<AriesResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
         {
-            async Task<SharedRsResponse> LookupSchema()
+            async Task<AriesResponse> LookupSchema()
             {
                 var req = await IndyLedger.BuildGetSchemaRequestAsync(null, schemaId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
                 EnsureSuccessResponse(res);
 
                 var temp = await IndyLedger.ParseGetSchemaResponseAsync(res);
                 //var req = await IndyVdrLedger.BuildGetSchemaRequestAsync(schemaId);
-                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+                //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
                 //EnsureSuccessResponse(res);
 
                 //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
                 //return await IndyVdrLedger.ParseGetSchemaResponseAsync(res);
-                return new SharedRsResponse(temp.Id, temp.ObjectJson);
+                return new AriesResponse(temp.Id, temp.ObjectJson);
             };
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -99,43 +99,43 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<AriesRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
              long from, long to)
         {
             var req = await IndyLedger.BuildGetRevocRegDeltaRequestAsync(null, revocationRegistryId, from, to);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
             var temp = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             //EnsureSuccessResponse(res);
 
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             //return await IndyVdrLedger.ParseGetRevocRegDeltaResponseAsync(res);
-            return new SharedRsRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
+            return new AriesRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
         }
 
         /// <inheritdoc />
-        public virtual async Task<SharedRsRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<AriesRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
              long timestamp)
         {
             var req = await IndyLedger.BuildGetRevocRegRequestAsync(null, revocationRegistryId, timestamp);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
             var temp =  await IndyLedger.ParseGetRevocRegResponseAsync(res);
             //var req = await IndyVdrLedger.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             //EnsureSuccessResponse(res);
 
             //TODO : ??? - Write own parser or wait for needed functionality in shared-rs 
             //return await IndyVdrLedger.ParseGetRevocRegResponseAsync(res);
-            return new SharedRsRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
+            return new AriesRegistryResponse(temp.Id, temp.ObjectJson, (ulong)temp.Timestamp);
         }
 
         /// <inheritdoc />
@@ -205,7 +205,7 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName)
         {
             var req = await IndyVdrLedger.BuildGetAttributeRequest(targetDid, null, null, attributeName, null);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             return res;
         }
@@ -218,7 +218,7 @@ namespace Hyperledger.Aries.Ledger
                 //Throw exception
             };
             var req = await IndyVdrLedger.BuildGetTxnRequestAsync(ledgerTypeAsInt, sequenceId);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             return res;
         }
@@ -237,7 +237,7 @@ namespace Hyperledger.Aries.Ledger
         public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
         {
             var req = await IndyVdrLedger.BuildGetNymRequest(did);
-            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.PoolHandle, req);
+            var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             EnsureSuccessResponse(res);
 
@@ -249,10 +249,10 @@ namespace Hyperledger.Aries.Ledger
         {
             //TODO : ??? - missing functionality in indy-vdr? 
             //var req = await IndyVdrLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.Pool, req);
+            //var res = await IndyVdrPool.SubmitPoolRequestAsync(await agentContext.AriesPool.PoolHandle, req);
 
             var req = await IndyLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
@@ -262,10 +262,11 @@ namespace Hyperledger.Aries.Ledger
 
         private async Task<string> SignAndSubmitAsync(IAgentContext context, string submitterDid, string request, TransactionCost paymentInfo)
         {
+            /** TODO : ??? - Remove payment part? We have no payment in our wrapper and no AriesStorage.Wallet in this Service ***/
             if (paymentInfo != null)
             {
                 var requestWithFees = await IndyPayments.AddRequestFeesAsync(
-                    wallet: context.Wallet,
+                    wallet: context.AriesStorage.Wallet,
                     submitterDid: null,
                     reqJson: request,
                     inputsJson: paymentInfo.PaymentAddress.Sources.Select(x => x.Source).ToJson(),
@@ -281,7 +282,7 @@ namespace Hyperledger.Aries.Ledger
                 request = requestWithFees.Result;
             }
             var signedRequest = await _signingService.SignRequestAsync(context, submitterDid, request);
-            var response = await IndyVdrPool.SubmitPoolRequestAsync(await context.PoolHandle, await IndyVdrLedger.BuildCustomRequest(signedRequest));
+            var response = await IndyVdrPool.SubmitPoolRequestAsync(await context.AriesPool.PoolHandle, await IndyVdrLedger.BuildCustomRequest(signedRequest));
 
             EnsureSuccessResponse(response);
 

@@ -32,15 +32,16 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<AriesResponse> LookupDefinitionAsync(IAgentContext agentContext,
             string definitionId)
         {
-            async Task<ParseResponseResult> LookupDefinition()
+            async Task<AriesResponse> LookupDefinition()
             {
                 var req = await IndyLedger.BuildGetCredDefRequestAsync(null, definitionId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+                var parseResult = await IndyLedger.ParseGetCredDefResponseAsync(res);
 
-                return await IndyLedger.ParseGetCredDefResponseAsync(res);
+                return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
             }
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -49,26 +50,28 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<AriesResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext,
             string registryId)
         {
             var req = await IndyLedger.BuildGetRevocRegDefRequestAsync(null, registryId);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
+            var parseResult = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
 
-            return await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
+            return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseResponseResult> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
+        public virtual async Task<AriesResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
         {
-            async Task<ParseResponseResult> LookupSchema()
+            async Task<AriesResponse> LookupSchema()
             {
                 var req = await IndyLedger.BuildGetSchemaRequestAsync(null, schemaId);
-                var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+                var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
                 EnsureSuccessResponse(res);
 
-                return await IndyLedger.ParseGetSchemaResponseAsync(res);
+                var parseResult = await IndyLedger.ParseGetSchemaResponseAsync(res);
+                return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
             };
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -77,27 +80,29 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<AriesRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
              long from, long to)
         {
             var req = await IndyLedger.BuildGetRevocRegDeltaRequestAsync(null, revocationRegistryId, from, to);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
-            return await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            var parseResult = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            return new AriesRegistryResponse(parseResult?.Id, parseResult?.ObjectJson, (ulong)parseResult?.Timestamp);
         }
 
         /// <inheritdoc />
-        public virtual async Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
+        public virtual async Task<AriesRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
              long timestamp)
         {
             var req = await IndyLedger.BuildGetRevocRegRequestAsync(null, revocationRegistryId, timestamp);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
-            return await IndyLedger.ParseGetRevocRegResponseAsync(res);
+            var parseResult = await IndyLedger.ParseGetRevocRegResponseAsync(res);
+            return new AriesRegistryResponse(parseResult?.Id, parseResult?.ObjectJson, (ulong)parseResult?.Timestamp);
         }
 
         /// <inheritdoc />
@@ -166,7 +171,7 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName)
         {
             var req = await IndyLedger.BuildGetAttribRequestAsync(null, targetDid, attributeName, null, null);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             return res;
         }
@@ -175,7 +180,7 @@ namespace Hyperledger.Aries.Ledger
         public virtual async Task<string> LookupTransactionAsync(IAgentContext agentContext, string ledgerType, int sequenceId)
         {
             var req = await IndyLedger.BuildGetTxnRequestAsync(null, ledgerType, sequenceId);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             return res;
         }
@@ -194,7 +199,7 @@ namespace Hyperledger.Aries.Ledger
         public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
         {
             var req = await IndyLedger.BuildGetNymRequestAsync(null, did);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
@@ -205,7 +210,7 @@ namespace Hyperledger.Aries.Ledger
         public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext)
         {
             var req = await IndyLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
-            var res = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, req);
+            var res = await IndyLedger.SubmitRequestAsync(await agentContext.AriesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
@@ -218,7 +223,7 @@ namespace Hyperledger.Aries.Ledger
             if (paymentInfo != null)
             {
                 var requestWithFees = await IndyPayments.AddRequestFeesAsync(
-                    wallet: context.Wallet,
+                    wallet: context.AriesStorage.Wallet,
                     submitterDid: null,
                     reqJson: request,
                     inputsJson: paymentInfo.PaymentAddress.Sources.Select(x => x.Source).ToJson(),
@@ -234,7 +239,7 @@ namespace Hyperledger.Aries.Ledger
                 request = requestWithFees.Result;
             }
             var signedRequest = await _signingService.SignRequestAsync(context, submitterDid, request);
-            var response = await IndyLedger.SubmitRequestAsync(await context.Pool, signedRequest);
+            var response = await IndyLedger.SubmitRequestAsync(await context.AriesPool.Pool, signedRequest);
 
             EnsureSuccessResponse(response);
 
