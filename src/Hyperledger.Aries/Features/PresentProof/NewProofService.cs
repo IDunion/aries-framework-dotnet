@@ -11,9 +11,13 @@ using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.PresentProof.Messages;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Models.Events;
+using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
+using Hyperledger.Indy.AnonCredsApi;
+using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,16 +25,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using IndySharedRsPres = indy_shared_rs_dotnet.IndyCredx.PresentationApi;
+using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
 using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
-using aries_askar_dotnet.Models;
-using indy_shared_rs_dotnet.Models;
-using Hyperledger.Aries.Models.Records;
-using Hyperledger.Aries.Ledger.Models;
-using Hyperledger.Indy.AnonCredsApi;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
@@ -137,14 +134,14 @@ namespace Hyperledger.Aries.Features.PresentProof
                     0,
                     revRegRecord.TailsLocation,
                     new CredentialRevocationState().JsonString);
-                
+
                 CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
                 credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
             }
 
             List<string> selfAttestNames = new();
             List<string> selfAttestValues = new();
-            foreach(var pair in requestedCredentials.SelfAttestedAttributes)
+            foreach (var pair in requestedCredentials.SelfAttestedAttributes)
             {
                 selfAttestNames.Add(pair.Key);
                 selfAttestValues.Add(pair.Value);
@@ -828,7 +825,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 to: nonRevoked.To);
 
             var tailsFile = await TailsService.EnsureTailsExistsAsync(agentContext, credential.RevocationRegistryId);
-            
+
             string state = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                 registryDefinition.ObjectJson,
                 delta.ObjectJson,
