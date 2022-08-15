@@ -5,6 +5,7 @@ using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.Indy.DidApi;
@@ -46,7 +47,7 @@ namespace Hyperledger.Aries.Configuration
         /// <inheritdoc />
         public async Task AcceptTxnAuthorAgreementAsync(IAgentContext agentContext, IndyTaa txnAuthorAgreement, string acceptanceMechanism = "service_agreement")
         {
-            var provisioning = await GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await GetProvisioningAsync(agentContext.AriesStorage);
 
             provisioning.TaaAcceptance = new IndyTaaAcceptance
             {
@@ -57,7 +58,7 @@ namespace Hyperledger.Aries.Configuration
                 AcceptanceMechanism = acceptanceMechanism
             };
 
-            await RecordService.UpdateAsync(agentContext.Wallet, provisioning);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, provisioning);
         }
 
         private string GetDigest(IndyTaa taa)
@@ -70,9 +71,13 @@ namespace Hyperledger.Aries.Configuration
         }
 
         /// <inheritdoc />
-        public virtual async Task<ProvisioningRecord> GetProvisioningAsync(Wallet wallet)
+        public virtual async Task<ProvisioningRecord> GetProvisioningAsync(AriesStorage storage)
         {
-            var record = await RecordService.GetAsync<ProvisioningRecord>(wallet, ProvisioningRecord.UniqueRecordId);
+
+            if (storage.Store == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
+
+            var record = await RecordService.GetAsync<ProvisioningRecord>(storage, ProvisioningRecord.UniqueRecordId);
 
             if (record == null)
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Provisioning record not found");
@@ -81,12 +86,12 @@ namespace Hyperledger.Aries.Configuration
         }
 
         /// <inheritdoc />
-        public virtual async Task UpdateEndpointAsync(Wallet wallet, AgentEndpoint endpoint)
+        public virtual async Task UpdateEndpointAsync(AriesStorage storage, AgentEndpoint endpoint)
         {
-            var record = await GetProvisioningAsync(wallet);
+            var record = await GetProvisioningAsync(storage);
             record.Endpoint = endpoint;
 
-            await RecordService.UpdateAsync(wallet, record);
+            await RecordService.UpdateAsync(storage, record);
         }
 
         /// <inheritdoc />
@@ -104,7 +109,7 @@ namespace Hyperledger.Aries.Configuration
             await WalletService.CreateWalletAsync(
                 configuration: agentOptions.WalletConfiguration,
                 credentials: agentOptions.WalletCredentials);
-            var wallet = await WalletService.GetWalletAsync(
+            var storage = await WalletService.GetWalletAsync(
                 configuration: agentOptions.WalletConfiguration,
                 credentials: agentOptions.WalletCredentials);
 
@@ -115,7 +120,7 @@ namespace Hyperledger.Aries.Configuration
                 endpoint = new AgentEndpoint { Uri = agentOptions.EndpointUri.ToString() };
                 if (agentOptions.AgentKeySeed != null)
                 {
-                    var agent = await Did.CreateAndStoreMyDidAsync(wallet, new { seed = agentOptions.AgentKeySeed }.ToJson());
+                    var agent = await Did.CreateAndStoreMyDidAsync(storage.Wallet, new { seed = agentOptions.AgentKeySeed }.ToJson());
                     endpoint.Did = agent.Did;
                     endpoint.Verkey = new[] { agent.VerKey };
                 }
@@ -126,12 +131,12 @@ namespace Hyperledger.Aries.Configuration
                 }
                 else
                 {
-                    var agent = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
+                    var agent = await Did.CreateAndStoreMyDidAsync(storage.Wallet, "{}");
                     endpoint.Did = agent.Did;
                     endpoint.Verkey = new[] { agent.VerKey };
                 }
             }
-            var masterSecretId = await AnonCreds.ProverCreateMasterSecretAsync(wallet, null);
+            var masterSecretId = await AnonCreds.ProverCreateMasterSecretAsync(storage.Wallet, null);
 
             var record = new ProvisioningRecord
             {
@@ -151,7 +156,7 @@ namespace Hyperledger.Aries.Configuration
             }
 
             var issuer = await Did.CreateAndStoreMyDidAsync(
-                wallet: wallet,
+                wallet: storage.Wallet,
                 didJson: new
                 {
                     did = agentOptions.IssuerDid,
@@ -171,7 +176,7 @@ namespace Hyperledger.Aries.Configuration
             record.SetTag("IssuerKeySeed", agentOptions.IssuerKeySeed);
 
             // Add record to wallet
-            await RecordService.AddAsync(wallet, record);
+            await RecordService.AddAsync(storage, record);
         }
     }
 }
