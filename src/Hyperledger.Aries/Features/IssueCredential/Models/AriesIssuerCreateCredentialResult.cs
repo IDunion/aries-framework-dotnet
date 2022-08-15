@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Hyperledger.Aries.Features.IssueCredential.Models
 {
-    public class SharedRsIssuerCreateCredentialResult
+    public class AriesIssuerCreateCredentialResult
     {
         //
         // Zusammenfassung:
@@ -25,7 +25,7 @@ namespace Hyperledger.Aries.Features.IssueCredential.Models
         //    
         public string RevocRegDeltaJson { get; }
 
-        public SharedRsIssuerCreateCredentialResult(string credentialJson, string revocId, string revocRegDeltaJson)
+        public AriesIssuerCreateCredentialResult(string credentialJson, string revocId, string revocRegDeltaJson)
         {
             CredentialJson = credentialJson;
             RevocId = revocId;
