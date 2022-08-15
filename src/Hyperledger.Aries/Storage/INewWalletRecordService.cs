@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using aries_askar_dotnet.Models;
+using Stateless.Graph;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -55,5 +57,13 @@ namespace Hyperledger.Aries.Storage
         /// <param name="id">Record Identifier.</param>
         /// <returns>Boolean status indicating if the removal succeed</returns>
         Task<bool> DeleteAsync<T>(Store wallet, string id) where T : RecordBase, new();
+
+        /// <summary>
+        /// Adds the key to the wallet.
+        /// </summary>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="keyHandle">The key handle associated with the public / private key pair.</param>
+        /// <param name="did">The did.</param>
+        Task AddKeyAsync(Store wallet, IntPtr keyHandle, string did);
     }
 }

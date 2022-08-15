@@ -4,6 +4,7 @@ using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Storage;
 using Multiformats.Base;
 using Newtonsoft.Json;
+using Stateless.Graph;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -213,6 +214,7 @@ namespace Hyperledger.Aries.Utils
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<(string, string)> CreateAndStoreMyDidAsync(
             Store wallet,
+            INewWalletRecordService recordService,
             string did = null,
             string seed = null,
             string cryptoType = "ed25519",
@@ -230,20 +232,25 @@ namespace Hyperledger.Aries.Utils
             };
 
             if (string.IsNullOrEmpty(seed))
-            {
                 seed = CryptoUtils.GetUniqueKey(32);
-            }
 
             IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
                 keyAlg: keyAlg,
                 seed: seed,
                 SeedMethod.BlsKeyGen);
 
-            byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyInDid;
             if (string.IsNullOrEmpty(did))
             {
-                verKeyInDid = cid == true ? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey.Take(16).ToArray());
+                if (cid == true)
+                {
+                    verKeyInDid = Multibase.Base58.Encode(verKey);
+                }
+                else
+                {
+                    verKeyInDid = Multibase.Base58.Encode(verKey.Take(16).ToArray());
+                }
 
                 did = ToDid(DidKeyMethodSpec, verKeyInDid);
             }
@@ -254,20 +261,10 @@ namespace Hyperledger.Aries.Utils
 
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
-            {
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
-            }
 
             //TODO : ??? - add next lines to recordService method or a new "keyService" ?
-            if (wallet.session == null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
-            }
-
-            _ = await AriesAskarStore.InsertKeyAsync(
-                wallet.session,
-                keyHandle,
-                did);
+            await recordService.AddKeyAsync(wallet, keyHandle, did);
 
             return (did, verKeyBase58);
         }

@@ -12,6 +12,7 @@ using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using Newtonsoft.Json;
 using aries_askar_dotnet.Models;
+using Stateless.Graph;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -195,6 +196,19 @@ namespace Hyperledger.Aries.Storage
                 Debug.WriteLine($"Couldn't delete record: {e}");
                 return false;
             }
+        }
+
+        public virtual async Task AddKeyAsync(Store wallet, IntPtr keyHandle, string did)
+        {
+            Debug.WriteLine($"Adding key for did: {did}");
+
+            if (wallet.session == null)
+                _ = await AriesAskarStore.StartSessionAsync(wallet);
+
+            _ = await AriesAskarStore.InsertKeyAsync(
+                wallet.session,
+                keyHandle,
+                did);
         }
     }
 }
