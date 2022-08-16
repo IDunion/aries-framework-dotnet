@@ -2,6 +2,7 @@
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Multiformats.Base;
 using Newtonsoft.Json;
 using Stateless.Graph;
@@ -213,16 +214,16 @@ namespace Hyperledger.Aries.Utils
         /// <returns>A tuple of strings. First is the did in format of "did":"method":"verkey". Second is the verkey </returns>
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<(string, string)> CreateAndStoreMyDidAsync(
-            Store wallet,
+            AriesStorage storage,
             IWalletRecordService recordService,
             string did = null,
             string seed = null,
             string cryptoType = "ed25519",
             bool cid = false)
         {
-            if (wallet is null)
+            if (storage.Wallet is null)
             {
-                throw new ArgumentNullException(nameof(wallet));
+                throw new ArgumentNullException(nameof(storage.Wallet));
             }
 
             KeyAlg keyAlg = cryptoType switch
@@ -264,7 +265,7 @@ namespace Hyperledger.Aries.Utils
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 
             //TODO : ??? - add next lines to recordService method or a new "keyService" ?
-            await recordService.AddKeyAsync(wallet, keyHandle, did);
+            await recordService.AddKeyAsync(storage, keyHandle, did);
 
             return (did, verKeyBase58);
         }
@@ -297,20 +298,15 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet to store the DID in.</param>
         /// <param name="identityJson">The identity JSON.</param>
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
-        public static async Task StoreTheirDidAsync(IWalletRecordService recordService, Store wallet, string identityJson)
+        public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
         {
-            if (wallet is null)
-            {
-                throw new ArgumentNullException(nameof(wallet));
-            }
-
             if (string.IsNullOrEmpty(identityJson))
             {
                 throw new ArgumentNullException(nameof(identityJson));
             }
 
             DidRecord theirDid = await CreateTheirDidAsync(identityJson);
-            await Upsert(recordService, wallet, theirDid);
+            await Upsert(recordService, storage, theirDid);
         }
 
         private static async Task<DidRecord> CreateTheirDidAsync(string identityJson)
@@ -325,16 +321,16 @@ namespace Hyperledger.Aries.Utils
             return record;
         }
 
-        private static async Task Upsert(IWalletRecordService recordService, Store wallet, DidRecord didRecord)
+        private static async Task Upsert(IWalletRecordService recordService, AriesStorage storage, DidRecord didRecord)
         {
-            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(wallet, didRecord.Did);
+            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(storage, didRecord.Did);
             if (existingRecord != null)
             {
-                await recordService.UpdateAsync(wallet, didRecord);
+                await recordService.UpdateAsync(storage, didRecord);
             }
             else
             {
-                await recordService.AddAsync(wallet, didRecord);
+                await recordService.AddAsync(storage, didRecord);
             }            
         }
 
@@ -354,14 +350,39 @@ namespace Hyperledger.Aries.Utils
         /// <param name="did">The DID to get the verification key for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
         /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
-        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, string did)
+        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
         {
-            return "";
+            AriesStorage storage = agentContext.AriesStorage;
+            if (storage.Wallet is null)
+            {
+                throw new ArgumentNullException(nameof(storage.Wallet));
+            }
+
+            DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+            return didRecord.Verkey;
         }
 
+        /// <summary>
+        /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+        /// </summary>
+        /// <returns>The verkey async.</returns>
+        /// <param name="did">Did.</param>
+        /// <param name="verKey">Full verkey.</param>
         public static async Task<string> AbbreviateVerkeyAsync(string did, string verKey)
         {
-            throw new NotImplementedException();
+            string decodedDid = Multibase.Base58.Decode(did).ToString();
+            string decodedVerKey = Multibase.Base58.Decode(verKey).ToString();
+            string firstPart = decodedVerKey.Substring(0, 16);
+            string secondPart = decodedVerKey.Substring(17, decodedVerKey.Length - 1);
+
+            if (decodedDid.Equals(firstPart))
+            {
+                return $"~{secondPart}";
+            }
+            else
+            {
+                return verKey;
+            };
         }
 
         private static async Task<string> BuildFullVerkey(string dest, string str)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
@@ -56,5 +57,13 @@ namespace Hyperledger.Aries.Storage
         /// <param name="id">Record Identifier.</param>
         /// <returns>Boolean status indicating if the removal succeed</returns>
         Task<bool> DeleteAsync<T>(AriesStorage storage, string id) where T : RecordBase, new();
+
+        /// <summary>
+        /// Adds a key for a given did.
+        /// </summary>
+        /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
+        /// <param name="keyHandle"></param>
+        /// <param name="did"></param>
+        Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did);
     }
 }
