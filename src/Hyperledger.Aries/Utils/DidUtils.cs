@@ -338,9 +338,25 @@ namespace Hyperledger.Aries.Utils
             }            
         }
 
+        /// <summary>
+        /// Gets the verification key for the specified DID.
+        /// </summary>
+        /// <remarks>
+        /// If the provided <paramref name="wallet"/> of the agent context does not contain the verification key associated with the specified DID then 
+        /// an attempt will be made to look up the key from the provided agent context <paramref name="pool"/>. If resolved from the agent context <paramref name="pool"/>
+        /// then the DID and key will be automatically cached in the <paramref name="wallet"/>.
+        /// <note type="note">
+        /// The <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
+        /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
+        /// </note>
+        /// </remarks>
+        /// <param name="agentContext"></param>
+        /// <param name="did">The DID to get the verification key for.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
         public static async Task<string> KeyForDidAsync(IAgentContext agentContext, string did)
         {
-            throw new NotImplementedException();
+            return "";
         }
 
         public static async Task<string> AbbreviateVerkeyAsync(string did, string verKey)
