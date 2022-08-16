@@ -172,8 +172,8 @@ namespace Hyperledger.Aries.Agents
                     if (inboundMessageContext.ReturnRoutingRequested())
                     {
                         var result = inboundMessageContext.Connection != null
-                            ? await CryptoUtils.PackAsync(agentContext.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
-                            : await CryptoUtils.PackAsync(agentContext.Wallet, unpacked.SenderVerkey, response.ToByteArray());
+                            ? await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
+                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked.SenderVerkey, response.ToByteArray());
                         return new PackedMessageContext(result);
                     }
                     if (inboundMessageContext.Connection != null)
@@ -198,7 +198,7 @@ namespace Hyperledger.Aries.Agents
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync(agentContext.Wallet, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(agentContext.AriesStorage.Wallet, message.Payload);
             }
             catch (Exception e)
             {

@@ -24,7 +24,7 @@ namespace Hyperledger.Aries.Agents
         /// <summary>
         /// The agent context pool.
         /// </summary>
-        public AriesPool AriesPool { get; set; }
+        public PoolAwaitable Pool { get; set; }
 
         /// <inheritdoc />
         /// <summary>

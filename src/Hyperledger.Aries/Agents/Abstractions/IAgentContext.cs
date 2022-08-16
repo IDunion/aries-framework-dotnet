@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Agents
 
         /// <summary>Gets or sets the pool.</summary>
         /// <value>The pool.</value>
-        AriesPool AriesPool { get; set; }
+        PoolAwaitable Pool { get; set; }
 
         /// <summary>Name/value utility store to pass data
         /// along the execution pipeline.</summary>

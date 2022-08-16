@@ -52,7 +52,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The schema async.
         /// </returns>
-        Task<ParseResponseResult> LookupSchemaAsync(IAgentContext agentContext, string schemaId);
+        Task<AriesResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId);
 
         /// <summary>
         /// Lookup NYM record on the ledger
@@ -81,7 +81,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The definition async.
         /// </returns>
-        Task<ParseResponseResult> LookupDefinitionAsync(IAgentContext agentContext, string definitionId);
+        Task<AriesResponse> LookupDefinitionAsync(IAgentContext agentContext, string definitionId);
 
         /// <summary>
         /// Lookups the revocation registry definition.
@@ -89,7 +89,7 @@ namespace Hyperledger.Aries.Contracts
         /// <param name="agentContext">The agent context.</param>
         /// <param name="registryId">The registry identifier.</param>
         /// <returns></returns>
-        Task<ParseResponseResult> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext, string registryId);
+        Task<AriesResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext, string registryId);
 
         /// <summary>
         /// Lookup the revocation registry delta for the given registry in the range specified.
@@ -101,7 +101,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The revocation registry delta.
         /// </returns>
-        Task<ParseRegistryResponseResult> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
+        Task<AriesRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId,
             long from, long to);
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// The revocation registry async.
         /// </returns>
-        Task<ParseRegistryResponseResult> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
+        Task<AriesRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId,
             long timestamp);
 
         /// <summary>

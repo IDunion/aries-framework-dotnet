@@ -54,7 +54,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         /// <inheritdoc />
         public async Task<PaymentAddressRecord> CreatePaymentAddressAsync(IAgentContext agentContext, AddressOptions configuration = null)
         {
-            var address = await IndyPayments.CreatePaymentAddressAsync(agentContext.Wallet, TokenConfiguration.MethodName,
+            var address = await IndyPayments.CreatePaymentAddressAsync(agentContext.AriesStorage.Wallet, TokenConfiguration.MethodName,
                 new { seed = configuration?.Seed }.ToJson());
 
             var addressRecord = new PaymentAddressRecord
@@ -65,7 +65,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                 SourcesSyncedAt = DateTime.MinValue
             };
 
-            await recordService.AddAsync(agentContext.Wallet, addressRecord);
+            await recordService.AddAsync(agentContext.AriesStorage, addressRecord);
 
             return addressRecord;
         }
@@ -78,12 +78,12 @@ namespace Hyperledger.Aries.Payments.SovrinToken
             {
                 if (addressRecord == null)
                 {
-                    var provisioning = await provisioningService.GetProvisioningAsync(context.Wallet);
+                    var provisioning = await provisioningService.GetProvisioningAsync(context.AriesStorage);
                     if (provisioning.DefaultPaymentAddressId == null)
                     {
                         throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Default PaymentAddressRecord not found");
                     }
-                    addressRecord = await recordService.GetAsync<PaymentAddressRecord>(context.Wallet, provisioning.DefaultPaymentAddressId);
+                    addressRecord = await recordService.GetAsync<PaymentAddressRecord>(context.AriesStorage, provisioning.DefaultPaymentAddressId);
                 }
 
                 return new TransactionCost
@@ -101,25 +101,25 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         {
             if (paymentAddress == null)
             {
-                var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+                var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 if (provisioning.DefaultPaymentAddressId == null)
                 {
                     throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Default PaymentAddressRecord not found");
                 }
 
-                paymentAddress = await recordService.GetAsync<PaymentAddressRecord>(agentContext.Wallet, provisioning.DefaultPaymentAddressId);
+                paymentAddress = await recordService.GetAsync<PaymentAddressRecord>(agentContext.AriesStorage, provisioning.DefaultPaymentAddressId);
             }
 
             // Cache sources data in record for one hour
-            var request = await IndyPayments.BuildGetPaymentSourcesAsync(agentContext.Wallet, null, paymentAddress.Address);
-            var response = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, request.Result);
+            var request = await IndyPayments.BuildGetPaymentSourcesAsync(agentContext.AriesStorage.Wallet, null, paymentAddress.Address);
+            var response = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, request.Result);
 
             var sourcesJson = await IndyPayments.ParseGetPaymentSourcesAsync(paymentAddress.Method, response);
             var sources = sourcesJson.ToObject<IList<IndyPaymentInputSource>>();
             paymentAddress.Sources = sources;
             paymentAddress.SourcesSyncedAt = DateTime.Now;
 
-            await recordService.UpdateAsync(agentContext.Wallet, paymentAddress);
+            await recordService.UpdateAsync(agentContext.AriesStorage, paymentAddress);
         }
 
         /// <inheritdoc />
@@ -137,7 +137,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                 throw new AriesFrameworkException(ErrorCode.InvalidRecordData, "Payment record is missing an address");
             }
 
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             if (addressFromRecord == null)
             {
                 addressFromRecord = await GetDefaultPaymentAddressAsync(agentContext);
@@ -151,7 +151,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
             }
             var txnFee = await GetTransactionFeeAsync(agentContext, TransactionTypes.XFER_PUBLIC);
             var paymentResult = await IndyPayments.BuildPaymentRequestAsync(
-                wallet: agentContext.Wallet,
+                wallet: agentContext.AriesStorage.Wallet,
                 submitterDid: null,
                 inputsJson: addressFromRecord.Sources.Select(x => x.Source).ToJson(),
                 outputsJson: new[]
@@ -169,7 +169,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                 }.ToJson(),
                 extra: null);
 
-            var response = await IndyLedger.SignAndSubmitRequestAsync(await agentContext.Pool, agentContext.Wallet,
+            var response = await IndyLedger.SignAndSubmitRequestAsync((await agentContext.Pool).Pool, agentContext.AriesStorage.Wallet,
                 provisioning.Endpoint.Did, paymentResult.Result);
 
             var paymentResponse = await IndyPayments.ParsePaymentResponseAsync(TokenConfiguration.MethodName, response);
@@ -186,24 +186,24 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                 })
                 .ToList();
 
-            await recordService.UpdateAsync(agentContext.Wallet, paymentRecord);
-            await recordService.UpdateAsync(agentContext.Wallet, addressFromRecord);
+            await recordService.UpdateAsync(agentContext.AriesStorage, paymentRecord);
+            await recordService.UpdateAsync(agentContext.AriesStorage, addressFromRecord);
         }
 
         /// <inheritdoc />
         public async Task SetDefaultPaymentAddressAsync(IAgentContext agentContext, PaymentAddressRecord addressRecord)
         {
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             provisioning.DefaultPaymentAddressId = addressRecord.Id;
 
-            await recordService.UpdateAsync(agentContext.Wallet, provisioning);
+            await recordService.UpdateAsync(agentContext.AriesStorage, provisioning);
         }
 
         /// <inheritdoc />
         public async Task<ulong> GetTransactionFeeAsync(IAgentContext agentContext, string txnType)
         {
             var feeAliases = await GetTransactionFeesAsync(agentContext);
-            var authRules = await LookupAuthorizationRulesAsync(await agentContext.Pool);
+            var authRules = await LookupAuthorizationRulesAsync((await agentContext.Pool).Pool);
 
             // TODO: Add better selective logic that takes action and role into account
             // Ex: ADD action may have fees, but EDIT may not have any
@@ -268,8 +268,8 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         {
             if (_transactionFees == null)
             {
-                var feesRequest = await IndyPayments.BuildGetTxnFeesRequestAsync(agentContext.Wallet, null, TokenConfiguration.MethodName);
-                var feesResponse = await IndyLedger.SubmitRequestAsync(await agentContext.Pool, feesRequest);
+                var feesRequest = await IndyPayments.BuildGetTxnFeesRequestAsync(agentContext.AriesStorage.Wallet, null, TokenConfiguration.MethodName);
+                var feesResponse = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, feesRequest);
 
                 var feesParsed = await IndyPayments.ParseGetTxnFeesResponseAsync(TokenConfiguration.MethodName, feesResponse);
                 _transactionFees = feesParsed.ToObject<IDictionary<string, ulong>>();
@@ -293,7 +293,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
             paymentRecord.ReferenceId = details.Id;
 
             await paymentRecord.TriggerAsync(PaymentTrigger.RequestSent);
-            await recordService.AddAsync(context.Wallet, paymentRecord);
+            await recordService.AddAsync(context.AriesStorage, paymentRecord);
 
 
 
@@ -335,12 +335,12 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         /// <inheritdoc />
         public async Task<PaymentAddressRecord> GetDefaultPaymentAddressAsync(IAgentContext agentContext)
         {
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             if (provisioning.DefaultPaymentAddressId == null)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Default PaymentAddressRecord not found");
             }
-            var paymentAddress = await recordService.GetAsync<PaymentAddressRecord>(agentContext.Wallet, provisioning.DefaultPaymentAddressId);
+            var paymentAddress = await recordService.GetAsync<PaymentAddressRecord>(agentContext.AriesStorage, provisioning.DefaultPaymentAddressId);
             return paymentAddress;
         }
 
@@ -353,8 +353,8 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                     "Payment record must be in state Paid or ReceiptReceived to verify it");
             }
 
-            var req = await IndyPayments.BuildVerifyPaymentRequestAsync(context.Wallet, null, paymentRecord.ReceiptId);
-            var res = await IndyLedger.SubmitRequestAsync(await context.Pool, req.Result);
+            var req = await IndyPayments.BuildVerifyPaymentRequestAsync(context.AriesStorage.Wallet, null, paymentRecord.ReceiptId);
+            var res = await IndyLedger.SubmitRequestAsync((await context.Pool).Pool, req.Result);
 
             var resParsed = JObject.Parse(await IndyPayments.ParseVerifyPaymentResponseAsync("sov", res));
             var receipts = resParsed["receipts"].ToObject<IList<IndyPaymentOutputSource>>()
