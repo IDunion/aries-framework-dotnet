@@ -56,7 +56,7 @@ namespace Hyperledger.Aries.Configuration
             if (taa != null)
             {
                 var digest = GetDigest(taa);
-                var provisioning = await _provisioningService.GetProvisioningAsync(context.Wallet);
+                var provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
 
                 if (provisioning.TaaAcceptance == null || provisioning.TaaAcceptance.Digest != digest)
                 {

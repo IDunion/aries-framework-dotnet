@@ -34,7 +34,7 @@ namespace Hyperledger.Aries.Decorators.Signature
 
             var sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
 
-            var sig = await Crypto.SignAsync(agentContext.Wallet, signerKey, sigData);
+            var sig = await Crypto.SignAsync(agentContext.AriesStorage.Wallet, signerKey, sigData);
 
             var sigDecorator = new SignatureDecorator
             {

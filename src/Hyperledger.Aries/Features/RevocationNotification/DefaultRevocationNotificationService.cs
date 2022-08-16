@@ -62,7 +62,7 @@ namespace Hyperledger.Aries.Features.RevocationNotification
             }
             
             await credentialRecord.TriggerAsync(CredentialTrigger.Revoke);
-            await _recordService.UpdateAsync(agentContext.Wallet, credentialRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, credentialRecord);
             _eventAggregator.Publish(new ServiceMessageProcessingEvent
             {
                 RecordId = credentialRecord.Id,
