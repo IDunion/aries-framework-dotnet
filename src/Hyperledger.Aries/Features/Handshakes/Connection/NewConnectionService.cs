@@ -257,7 +257,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <inheritdoc />
         public async Task<ConnectionRecord> ProcessInvitationAsync(IAgentContext agentContext, ConnectionInvitationMessage invitation)
         {
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, RecordService);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, RecordService);
 
             ConnectionRecord connection = new()
             {
@@ -316,7 +316,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             }
 
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, RecordService);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, RecordService);
 
             ConnectionRecord connection = new()
             {
@@ -349,11 +349,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogInformation(LoggingEvents.ProcessConnectionRequest, "Did {0}", request.Connection.Did);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, RecordService);
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, RecordService);
 
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
-            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.AriesStorage.Store, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.AriesStorage, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             if (request.Connection.DidDoc.Services != null &&
                 request.Connection.DidDoc.Services.Count > 0 &&
@@ -427,7 +427,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             //i.e there is no way for this agent to respond to messages. And or no keys specified
             Common.Connection connectionObj = await SignatureUtils.UnpackAndVerifyAsync<Common.Connection>(response.ConnectionSig);
 
-            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.AriesStorage.Store,
+            await DidUtils.StoreTheirDidAsync(RecordService, agentContext.AriesStorage,
                 new { did = connectionObj.Did, verkey = connectionObj.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             connection.TheirDid = connectionObj.Did;

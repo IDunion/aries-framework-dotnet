@@ -21,10 +21,10 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
     {
         private readonly IEventAggregator _eventAggregator;
         private readonly ILedgerService _ledgerService;
-        private readonly INewProvisioningService _provisioningService;
+        private readonly IProvisioningService _provisioningService;
         private readonly IWalletRecordService _recordService;
 
-        public NewDidExchangeService(ILedgerService ledgerService, IWalletRecordService recordService, INewProvisioningService provisioningService, IEventAggregator eventAggregator)
+        public NewDidExchangeService(ILedgerService ledgerService, IWalletRecordService recordService, IProvisioningService provisioningService, IEventAggregator eventAggregator)
         {
             _ledgerService = ledgerService;
             _recordService = recordService;
@@ -69,7 +69,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, _recordService, "{}");
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, _recordService, "{}");
 
             var connection = new ConnectionRecord
             {
@@ -115,7 +115,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         {
             await record.TriggerAsync(ConnectionTrigger.Request);
 
-            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, _recordService, "{}");
+            (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, _recordService, "{}");
             record.MyDid = DidUtils.ConvertVerkeyToDidKey(myVerKey);
             record.MyVk = myVerKey;
 
@@ -163,7 +163,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             }
             else
             {
-                (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, _recordService, "{}");
+                (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, _recordService, "{}");
                 connectionRecord.MyDid = DidUtils.ConvertVerkeyToDidKey(myVerKey);
                 connectionRecord.MyVk = myVerKey;
 
