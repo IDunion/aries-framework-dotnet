@@ -2,6 +2,7 @@
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Multiformats.Base;
 using Newtonsoft.Json;
 using Stateless.Graph;
@@ -297,11 +298,11 @@ namespace Hyperledger.Aries.Utils
         /// <param name="wallet">The wallet to store the DID in.</param>
         /// <param name="identityJson">The identity JSON.</param>
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
-        public static async Task StoreTheirDidAsync(IWalletRecordService recordService, Store wallet, string identityJson)
+        public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
         {
-            if (wallet is null)
+            if (storage.Store.storeHandle == default)
             {
-                throw new ArgumentNullException(nameof(wallet));
+                throw new ArgumentNullException(nameof(storage.Store));
             }
 
             if (string.IsNullOrEmpty(identityJson))
@@ -310,7 +311,7 @@ namespace Hyperledger.Aries.Utils
             }
 
             DidRecord theirDid = await CreateTheirDidAsync(identityJson);
-            await Upsert(recordService, wallet, theirDid);
+            await Upsert(recordService, storage, theirDid);
         }
 
         private static async Task<DidRecord> CreateTheirDidAsync(string identityJson)
@@ -325,16 +326,16 @@ namespace Hyperledger.Aries.Utils
             return record;
         }
 
-        private static async Task Upsert(IWalletRecordService recordService, Store wallet, DidRecord didRecord)
+        private static async Task Upsert(IWalletRecordService recordService, AriesStorage storage, DidRecord didRecord)
         {
-            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(wallet, didRecord.Did);
+            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(storage, didRecord.Did);
             if (existingRecord != null)
             {
-                await recordService.UpdateAsync(wallet, didRecord);
+                await recordService.UpdateAsync(storage, didRecord);
             }
             else
             {
-                await recordService.AddAsync(wallet, didRecord);
+                await recordService.AddAsync(storage, didRecord);
             }            
         }
 

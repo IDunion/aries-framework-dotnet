@@ -383,7 +383,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         routingKeys: service.RoutingKeys.ToArray(),
                         senderKey: provisioning.IssuerVerkey);
                     var recordId = await ProcessCredentialAsync(agentContext, credentialIssueMessage, null);
-                    return await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage.Store, recordId);
+                    return await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, recordId);
                 }
                 catch (AriesFrameworkException ex) when (ex.ErrorCode == ErrorCode.A2AMessageTransmissionError)
                 {
@@ -424,7 +424,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
-                masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage.Store, RecordService, provisioning.MasterSecretId),
+                masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
                 masterSecretId: provisioning.MasterSecretId,
                 credentialOfferJson: credential.OfferJson
 
@@ -495,7 +495,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
-                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage.Store, RecordService, provisioning.MasterSecretId),
+                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
