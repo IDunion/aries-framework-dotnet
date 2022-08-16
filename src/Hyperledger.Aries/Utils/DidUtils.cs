@@ -6,6 +6,7 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Stateless.Graph;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -264,7 +265,15 @@ namespace Hyperledger.Aries.Utils
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 
             //TODO : ??? - add next lines to recordService method or a new "keyService" ?
-            await recordService.AddKeyAsync(wallet, keyHandle, did);
+            Debug.WriteLine($"Adding key for verkey: {verKey}");
+
+            if (wallet.session == null)
+                _ = await AriesAskarStore.StartSessionAsync(wallet);
+
+            _ = await AriesAskarStore.InsertKeyAsync(
+                wallet.session,
+                keyHandle,
+                verKeyBase58);
 
             return (did, verKeyBase58);
         }

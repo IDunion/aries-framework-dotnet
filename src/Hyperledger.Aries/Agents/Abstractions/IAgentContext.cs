@@ -3,6 +3,7 @@ using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Agents
 {
@@ -13,11 +14,19 @@ namespace Hyperledger.Aries.Agents
     {
         /// <summary>Gets or sets the agent wallet.</summary>
         /// <value>The wallet.</value>
-        AriesStorage AriesStorage { get; set; }
+        Wallet Wallet { get; set; }
 
         /// <summary>Gets or sets the pool.</summary>
         /// <value>The pool.</value>
-        AriesPool AriesPool { get; set; }
+        PoolAwaitable Pool { get; set; }
+
+        /// <summary>Gets or sets the agent wallet.</summary>
+        /// <value>The aries-askar version of wallet.</value>
+        Store WalletStore { get; set; }
+
+        /// <summary>Gets or sets the pool handle.</summary>
+        /// <value>The indy-vdr version of pool handle.</value>
+        NewPoolAwaitable PoolHandle { get; set; }
 
         /// <summary>Name/value utility store to pass data
         /// along the execution pipeline.</summary>
