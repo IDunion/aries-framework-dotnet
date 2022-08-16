@@ -2,6 +2,7 @@
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
 
@@ -46,12 +47,14 @@ namespace Hyperledger.Aries.Agents
             var agent = await GetAgentAsync(args);
             return new DefaultAgentContext
             {
-                Wallet = await _walletService.GetWalletAsync(
+                AriesStorage = await _walletService.GetWalletAsync(
                     configuration: _agentOptions.WalletConfiguration,
                     credentials: _agentOptions.WalletCredentials),
-                Pool = new PoolAwaitable(() => _poolService.GetPoolAsync(
-                    poolName: _agentOptions.PoolName,
-                    protocolVersion: _agentOptions.ProtocolVersion)),
+                Pool  = new PoolAwaitable(
+                        () => _poolService.GetPoolAsync(
+                        poolName: _agentOptions.PoolName,
+                        protocolVersion: _agentOptions.ProtocolVersion)
+                    ),
                 SupportedMessages = agent.GetSupportedMessageTypes(),
                 Agent = await GetAgentAsync(args),
                 UseMessageTypesHttps = _agentOptions.UseMessageTypesHttps

@@ -46,7 +46,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <summary>
         /// The record service
         /// </summary>
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
 
         /// <summary>
         /// The provisioning service
@@ -87,7 +87,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         public NewProofService(
             IEventAggregator eventAggregator,
             IConnectionService connectionService,
-            INewWalletRecordService recordService,
+            IWalletRecordService recordService,
             INewProvisioningService provisioningService,
             INewLedgerService ledgerService,
             ITailsService tailsService,

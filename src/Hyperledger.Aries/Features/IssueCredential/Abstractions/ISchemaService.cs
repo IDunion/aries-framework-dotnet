@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Models.Records;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
@@ -68,7 +70,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="tag">The tag.</param>
         /// <param name="definitionRecord">The definition record.</param>
         /// <returns></returns>
-        Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(IAgentContext context, string tag, DefinitionRecord definitionRecord);
+        Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(IAgentContext context, string tag, DefinitionRecord definitionRecord);
 
         /// <summary>Creates the credential definition and registers it on the ledger.</summary>
         /// <param name="context">The agent context</param>
@@ -83,24 +85,24 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// Gets the schemas asynchronous.
         /// </summary>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <returns>A list of schema records that this issuer has created</returns>
-        Task<List<SchemaRecord>> ListSchemasAsync(Wallet wallet);
+        Task<List<SchemaRecord>> ListSchemasAsync(AriesStorage storage);
 
         /// <summary>
         /// Gets the credential definitions asynchronous.
         /// </summary>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The The indy-sdk or aries-askar Wallet.</param>
         /// <returns>A list of credential definition records that this issuer has created</returns>
-        Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(Wallet wallet);
+        Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(AriesStorage storage);
 
         /// <summary>
         /// Gets the credential definition asynchronous.
         /// </summary>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="credentialDefinitionId">The credential definition identifier.</param>
         /// <returns>The credential definition record.</returns>
-        Task<DefinitionRecord> GetCredentialDefinitionAsync(Wallet wallet, string credentialDefinitionId);
+        Task<DefinitionRecord> GetCredentialDefinitionAsync(AriesStorage storage, string credentialDefinitionId);
 
         /// <summary>
         /// Looks up the credential definition on the ledger.

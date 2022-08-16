@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Ledger.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -11,11 +12,11 @@ using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewPoolService : INewPoolService
+    public class NewPoolService : IPoolService
     {
         /// <summary>Collection of active pool handles.</summary>
-        protected static readonly ConcurrentDictionary<string, IntPtr> Pools =
-            new ConcurrentDictionary<string, IntPtr>();
+        protected static readonly ConcurrentDictionary<string, AriesPool> Pools =
+            new ConcurrentDictionary<string, AriesPool>();
 
         /// <summary>
         /// Concurrent collection of txn author agreements
@@ -32,7 +33,7 @@ namespace Hyperledger.Aries.Ledger
             new ConcurrentDictionary<string, IndyAml>();
 
         /// <inheritdoc />
-        public virtual async Task<IntPtr> GetPoolAsync(string poolName, int protocolVersion)
+        public virtual async Task<AriesPool> GetPoolAsync(string poolName, int protocolVersion)
         {
             await IndyVdrMod.SetProtocolVersionAsync(protocolVersion);
 
@@ -40,16 +41,17 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public virtual async Task<IntPtr> GetPoolAsync(string poolName)
+        public virtual async Task<AriesPool> GetPoolAsync(string poolName)
         {
-            if (Pools.TryGetValue(poolName, out IntPtr poolHandle))
+            if (Pools.TryGetValue(poolName, out AriesPool ariesPool))
             {
-                return poolHandle;
+                return ariesPool;
             }
+            ariesPool = new AriesPool();
+            ariesPool.PoolHandle = await IndyVdrPool.CreatePoolAsync();
 
-            poolHandle = await IndyVdrPool.CreatePoolAsync();
-            _ = Pools.TryAdd(poolName, poolHandle);
-            return poolHandle;
+            _ = Pools.TryAdd(poolName, ariesPool);
+            return ariesPool;
         }
 
         /// <inheritdoc />
@@ -84,16 +86,17 @@ namespace Hyperledger.Aries.Ledger
                 return taa;
             }
 
-            string poolConfig = JsonConvert.SerializeObject(new
-            {
-                protocol_version = "2"
-            });
+            //string poolConfig = JsonConvert.SerializeObject(new
+            //{
+            //    protocol_version = "2"
+            //});
 
-            _ = await IndyVdrMod.SetConfigAsync(poolConfig);
-            IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
-
+            //_ = await IndyVdrMod.SetConfigAsync(poolConfig);
+            //IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
+           
+            var ariesPool = await GetPoolAsync(poolName, 2);
             IntPtr req = await IndyVdrLedger.BuildGetTxnAuthorAgreementRequestAsync();
-            string res = await IndyVdrPool.SubmitPoolRequestAsync(poolHandle, req);
+            string res = await IndyVdrPool.SubmitPoolRequestAsync(ariesPool.PoolHandle, req);
 
             EnsureSuccessResponse(res);
 
@@ -126,19 +129,19 @@ namespace Hyperledger.Aries.Ledger
                 return aml;
             }
 
-            string poolConfig = JsonConvert.SerializeObject(new
-            {
-                protocol_version = "2"
-            });
+            //string poolConfig = JsonConvert.SerializeObject(new
+            //{
+            //    protocol_version = "2"
+            //});
 
-            _ = await IndyVdrMod.SetConfigAsync(poolConfig);
-            IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
-
+            //_ = await IndyVdrMod.SetConfigAsync(poolConfig);
+            //IntPtr poolHandle = await IndyVdrPool.CreatePoolAsync();
+            var ariesPool = await GetPoolAsync(poolName, 2);
             IntPtr req = await IndyVdrLedger.BuildGetAcceptanceMechanismsRequestAsync(
                 submitterDid: null,
                 timestamp: timestamp == DateTimeOffset.MinValue ? -1 : timestamp.ToUnixTimeSeconds(),
                 version: version);
-            string res = await IndyVdrPool.SubmitPoolRequestAsync(poolHandle, req);
+            string res = await IndyVdrPool.SubmitPoolRequestAsync(ariesPool.PoolHandle, req);
 
             EnsureSuccessResponse(res);
 

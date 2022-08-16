@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Storage
@@ -12,8 +13,8 @@ namespace Hyperledger.Aries.Storage
         /// <summary>
         /// Dictionary of open wallets
         /// </summary>
-        protected static readonly ConcurrentDictionary<string, Wallet> Wallets =
-            new ConcurrentDictionary<string, Wallet>();
+        protected static readonly ConcurrentDictionary<string, AriesStorage> Storages =
+            new ConcurrentDictionary<string, AriesStorage>();
 
         /// <summary>
         /// Mutex semaphore for opening a new (not cached) wallet
@@ -21,31 +22,31 @@ namespace Hyperledger.Aries.Storage
         private static readonly SemaphoreSlim OpenWalletSemaphore = new SemaphoreSlim(1,1);
 
         /// <inheritdoc />
-        public virtual async Task<Wallet> GetWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
+        public virtual async Task<AriesStorage> GetWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            var wallet = GetWalletFromCache(configuration);
+            AriesStorage ariesStorage = GetWalletFromCache(configuration);
 
-            if (wallet == null)
+            if (ariesStorage.Wallet == null)
             {
-                wallet = await OpenWalletWithMutexAsync(configuration, credentials);
+                ariesStorage = await OpenWalletWithMutexAsync(configuration, credentials);
             }
 
-            return wallet;
+            return ariesStorage;
         }
 
-        private async Task<Wallet> OpenWalletWithMutexAsync(WalletConfiguration configuration, WalletCredentials credentials)
+        private async Task<AriesStorage> OpenWalletWithMutexAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            Wallet wallet;
+            AriesStorage ariesStorage;
 
             await OpenWalletSemaphore.WaitAsync();
             try
             {
-                wallet = GetWalletFromCache(configuration);
+                ariesStorage = GetWalletFromCache(configuration);
 
-                if (wallet == null)
+                if (ariesStorage.Wallet == null)
                 {
-                    wallet = await Wallet.OpenWalletAsync(configuration.ToJson(), credentials.ToJson());
-                    Wallets.TryAdd(configuration.Id, wallet);
+                    ariesStorage.Wallet = await Wallet.OpenWalletAsync(configuration.ToJson(), credentials.ToJson());
+                    Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
             finally
@@ -53,19 +54,19 @@ namespace Hyperledger.Aries.Storage
                 OpenWalletSemaphore.Release();
             }
 
-            return wallet;
+            return ariesStorage;
         }
 
-        private Wallet GetWalletFromCache(WalletConfiguration configuration)
+        private AriesStorage GetWalletFromCache(WalletConfiguration configuration)
         {
-            if (Wallets.TryGetValue(configuration.Id, out var wallet))
+            if (Storages.TryGetValue(configuration.Id, out var ariesStorage))
             {
-                if (wallet.IsOpen)
-                    return wallet;
+                if (ariesStorage.Wallet.IsOpen)
+                    return ariesStorage;
 
-                Wallets.TryRemove(configuration.Id, out wallet);
+                Storages.TryRemove(configuration.Id, out ariesStorage);
             }
-            return null;
+            return new AriesStorage();
         }
 
         /// <inheritdoc />
@@ -77,12 +78,12 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            if (Wallets.TryRemove(configuration.Id, out var wallet))
+            if (Storages.TryRemove(configuration.Id, out var ariesStorage))
             {
-                if (wallet.IsOpen)
-                    await wallet.CloseAsync();
+                if (ariesStorage.Wallet.IsOpen)
+                    await ariesStorage.Wallet.CloseAsync();
 
-                wallet.Dispose();
+                ariesStorage.Wallet.Dispose();
             }
             await Wallet.DeleteWalletAsync(configuration.ToJson(), credentials.ToJson());
         }

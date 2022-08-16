@@ -74,6 +74,10 @@
         /// <summary>
         /// The did method is not supported
         /// </summary>
-        UnsupportedDidMethod
+        UnsupportedDidMethod,
+        /// <summary>
+        /// Wrong storage used
+        /// </summary>
+        InvalidStorageUsed
     }
 }

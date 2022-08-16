@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Indy.PoolApi;
 
 namespace Hyperledger.Aries.Contracts
@@ -19,14 +20,14 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// A handle to the pool.
         /// </returns>
-        Task<Pool> GetPoolAsync(string poolName, int protocolVersion);
+        Task<AriesPool> GetPoolAsync(string poolName, int protocolVersion);
 
         /// <summary>
         /// Opens the pool configuration with the specified name.
         /// </summary>
         /// <returns>The pool async.</returns>
         /// <param name="poolName">Pool name.</param>
-        Task<Pool> GetPoolAsync(string poolName);
+        Task<AriesPool> GetPoolAsync(string poolName);
 
         /// <summary>
         /// Gets the transaction author agreement if one is set on

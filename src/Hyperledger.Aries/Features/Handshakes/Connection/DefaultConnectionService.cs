@@ -73,7 +73,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
             
-            var connectionKey = await Crypto.CreateKeyAsync(agentContext.Wallet, "{}");
+            var connectionKey = await Crypto.CreateKeyAsync(agentContext.AriesStorage.Wallet, "{}");
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
             if (config.AutoAcceptConnection)
@@ -91,12 +91,12 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             foreach (var tag in config.Tags)
                 connection.SetTag(tag.Key, tag.Value);
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             if (string.IsNullOrEmpty(provisioning.Endpoint.Uri))
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState, "Provision record has no endpoint information specified");
 
-            await RecordService.AddAsync(agentContext.Wallet, connection);
+            await RecordService.AddAsync(agentContext.AriesStorage, connection);
 
             IList<string> routingKeys = null;
             if (provisioning.Endpoint.Verkey != null)
@@ -128,13 +128,13 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Connection state was invalid. Expected '{ConnectionState.Invited}', found '{connection.State}'");
 
-            await RecordService.DeleteAsync<ConnectionRecord>(agentContext.Wallet, invitationId);
+            await RecordService.DeleteAsync<ConnectionRecord>(agentContext.AriesStorage, invitationId);
         }
 
         /// <inheritdoc />
         public async Task<ConnectionRecord> ProcessInvitationAsync(IAgentContext agentContext, ConnectionInvitationMessage invitation)
         {
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
 
             var connection = new ConnectionRecord
             {
@@ -157,7 +157,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                     connection.SetTag(TagConstants.Alias, invitation.Label);
             }
 
-            await RecordService.AddAsync(agentContext.Wallet, connection);
+            await RecordService.AddAsync(agentContext.AriesStorage, connection);
             
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
@@ -187,7 +187,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             if (service == null) throw new ArgumentNullException(nameof(invitation.Services), "No service endpoint defined");
 
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
 
             var connection = new ConnectionRecord
             {
@@ -208,7 +208,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 if (string.IsNullOrEmpty(invitation.Label))
                     connection.SetTag(TagConstants.Alias, invitation.Label);
             }
-            await RecordService.AddAsync(agentContext.Wallet, connection);
+            await RecordService.AddAsync(agentContext.AriesStorage, connection);
 
             return connection;
         }
@@ -221,7 +221,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             
             await connection.TriggerAsync(ConnectionTrigger.Request);
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             var request = new ConnectionRequestMessage(agentContext.UseMessageTypesHttps)
             {
                 Connection = new Common.Connection
@@ -243,7 +243,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 });
             }
 
-            await RecordService.UpdateAsync(agentContext.Wallet, connection);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, connection);
 
             return (request, connection);
         }
@@ -261,11 +261,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogInformation(LoggingEvents.ProcessConnectionRequest, "Did {0}", request.Connection.Did);
             
-            var my = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            var my = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
             
             //TODO throw exception or a problem report if the connection request features a did doc that has no indy agent did doc convention featured
             //i.e there is no way for this agent to respond to messages. And or no keys specified
-            await Did.StoreTheirDidAsync(agentContext.Wallet, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
+            await Did.StoreTheirDidAsync(agentContext.AriesStorage.Wallet, new { did = request.Connection.Did, verkey = request.Connection.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             if (request.Connection.DidDoc.Services != null &&
                 request.Connection.DidDoc.Services.Count > 0 &&
@@ -293,7 +293,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             if (!connection.MultiPartyInvitation)
             {
                 await connection.TriggerAsync(ConnectionTrigger.Request);
-                await RecordService.UpdateAsync(agentContext.Wallet, connection);
+                await RecordService.UpdateAsync(agentContext.AriesStorage, connection);
 
                 EventAggregator.Publish(new ServiceMessageProcessingEvent
                 {
@@ -311,7 +311,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 newConnection.MultiPartyInvitation = false;
 
                 await newConnection.TriggerAsync(ConnectionTrigger.Request);
-                await RecordService.AddAsync(agentContext.Wallet, newConnection);
+                await RecordService.AddAsync(agentContext.AriesStorage, newConnection);
 
                 EventAggregator.Publish(new ServiceMessageProcessingEvent
                 {
@@ -334,7 +334,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             //i.e there is no way for this agent to respond to messages. And or no keys specified
             var connectionObj = await SignatureUtils.UnpackAndVerifyAsync<Common.Connection>(response.ConnectionSig);
 
-            await Did.StoreTheirDidAsync(agentContext.Wallet,
+            await Did.StoreTheirDidAsync(agentContext.AriesStorage.Wallet,
                 new { did = connectionObj.Did, verkey = connectionObj.DidDoc.Keys[0].PublicKeyBase58 }.ToJson());
 
             connection.TheirDid = connectionObj.Did;
@@ -345,7 +345,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             if (connectionObj.DidDoc.Services[0] is IndyAgentDidDocService service)
                 connection.Endpoint = new AgentEndpoint(service.ServiceEndpoint, null, service.RoutingKeys != null && service.RoutingKeys.Count > 0 ? service.RoutingKeys.ToArray() : null);
             
-            await RecordService.UpdateAsync(agentContext.Wallet, connection);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, connection);
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
                 RecordId = connection.Id,
@@ -368,10 +368,10 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                     $"Connection state was invalid. Expected '{ConnectionState.Negotiating}', found '{connection.State}'");
 
             await connection.TriggerAsync(ConnectionTrigger.Response);
-            await RecordService.UpdateAsync(agentContext.Wallet, connection);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, connection);
 
             // Send back response message
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             var connectionData = new Common.Connection
             {
@@ -393,7 +393,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogTrace(LoggingEvents.GetConnection, "ConnectionId {0}", connectionId);
 
-            var record = await RecordService.GetAsync<ConnectionRecord>(agentContext.Wallet, connectionId);
+            var record = await RecordService.GetAsync<ConnectionRecord>(agentContext.AriesStorage, connectionId);
 
             if (record == null)
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Connection record not found");
@@ -407,7 +407,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogTrace(LoggingEvents.ListConnections, "List Connections");
 
-            return RecordService.SearchAsync<ConnectionRecord>(agentContext.Wallet, query, null, count, skip);
+            return RecordService.SearchAsync<ConnectionRecord>(agentContext.AriesStorage, query, null, count, skip);
         }
 
         /// <inheritdoc />
@@ -415,7 +415,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         {
             Logger.LogTrace(LoggingEvents.DeleteConnection, "ConnectionId {0}", connectionId);
 
-            return await RecordService.DeleteAsync<ConnectionRecord>(agentContext.Wallet, connectionId);
+            return await RecordService.DeleteAsync<ConnectionRecord>(agentContext.AriesStorage, connectionId);
         }
 
         /// <inheritdoc />

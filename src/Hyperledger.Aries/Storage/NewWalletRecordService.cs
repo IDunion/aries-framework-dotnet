@@ -13,11 +13,12 @@ using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using Newtonsoft.Json;
 using aries_askar_dotnet.Models;
 using Stateless.Graph;
+using Hyperledger.Aries.Storage.Models;
 
 namespace Hyperledger.Aries.Storage
 {
     /// <inheritdoc />
-    public class NewWalletRecordService : INewWalletRecordService
+    public class NewWalletRecordService : IWalletRecordService
     {
         private readonly JsonSerializerSettings _jsonSettings;
 
@@ -36,20 +37,23 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task AddAsync<T>(Store wallet, T record)
+        public virtual async Task AddAsync<T>(AriesStorage storage, T record)
             where T : RecordBase, new()
         {
+            if (storage.Store == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
+
             Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
 
             record.CreatedAtUtc = DateTime.UtcNow;
 
-            if (wallet.session == null)
+            if (storage.Store.session == null)
             {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
             await AriesAskarStore.InsertAsync(
-                session : wallet.session,
+                session : storage.Store.session,
                 category : record.TypeName,
                 name : record.Id,
                 value : record.ToJson(_jsonSettings),
@@ -58,18 +62,18 @@ namespace Hyperledger.Aries.Storage
 
         /// <inheritdoc />
         // TODO : ??? - change SearchAsync to use the aries-askar methods
-        public virtual async Task<List<T>> SearchAsync<T>(Store wallet, ISearchQuery query, SearchOptions options, int count, int skip)
+        public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
             where T : RecordBase, new()
         {
-            if (wallet.session == null)
+            if (storage.Store.session == null)
             {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
             options ??= new SearchOptions();
 
             var search = await AriesAskarStore.StartScanAsync(
-                store : wallet,
+                store : storage.Store,
                 category : new T().TypeName,
                 tagFilter : (query ?? SearchQuery.Empty).ToJson(),
                 offset : skip,
@@ -110,16 +114,16 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task UpdateAsync(Store wallet, RecordBase record)
+        public virtual async Task UpdateAsync(AriesStorage storage, RecordBase record)
         {
             record.UpdatedAtUtc = DateTime.UtcNow;
-            if (wallet.session == null)
+            if (storage.Store.session == null)
             {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
             await AriesAskarStore.ReplaceAsync(
-                session : wallet.session,
+                session : storage.Store.session,
                 category : record.TypeName,
                 name : record.Id,
                 value : record.ToJson(_jsonSettings),
@@ -127,17 +131,17 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task<T> GetAsync<T>(Store wallet, string id) where T : RecordBase, new()
+        public virtual async Task<T> GetAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
-            if (wallet.session == null)
+            if (storage.Store.session == null)
             {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
             try
             {
                 IntPtr recordHandle = await AriesAskarStore.FetchAsync(
-                    wallet.session,
+                    storage.Store.session,
                     new T().TypeName,
                     id);
 
@@ -170,20 +174,20 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task<bool> DeleteAsync<T>(Store wallet, string id) where T : RecordBase, new()
+        public virtual async Task<bool> DeleteAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
-            if (wallet.session == null)
+            if (storage.Store.session == null)
             {
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
             try
             {
-                var record = await GetAsync<T>(wallet, id);
+                var record = await GetAsync<T>(storage, id);
                 var typeName = new T().TypeName;
 
                bool result = await AriesAskarStore.RemoveAsync(
-                    session : wallet.session, 
+                    session : storage.Store.session, 
                     category : typeName, 
                     name : id);
 
@@ -198,15 +202,15 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
-        public virtual async Task AddKeyAsync(Store wallet, IntPtr keyHandle, string did)
+        public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did)
         {
             Debug.WriteLine($"Adding key for did: {did}");
 
-            if (wallet.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(wallet);
+            if (storage.Store.session == null)
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
             _ = await AriesAskarStore.InsertKeyAsync(
-                wallet.session,
+                storage.Store.session,
                 keyHandle,
                 did);
         }

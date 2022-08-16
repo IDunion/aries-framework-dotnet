@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Contracts
@@ -21,10 +22,10 @@ namespace Hyperledger.Aries.Contracts
         /// <summary>
         /// Signs the outgoing request
         /// </summary>
-        /// <param name="wallet"></param>
+        /// <param name="storage"></param>
         /// <param name="submitterDid"></param>
         /// <param name="requestJson"></param>
         /// <returns></returns>
-        Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson);
+        Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson);
     }
 }

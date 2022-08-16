@@ -122,7 +122,7 @@ namespace Hyperledger.Aries.Utils
             recipientKey = DidUtils.IsDidKey(recipientKey) ? DidUtils.ConvertDidKeyToVerkey(recipientKey) : recipientKey;
 
             // Pack application level message
-            var msg = await PackAsync(agentContext.Wallet, recipientKey, message.ToByteArray(), senderKey);
+            var msg = await PackAsync(agentContext.AriesStorage.Wallet, recipientKey, message.ToByteArray(), senderKey);
 
             var previousKey = recipientKey;
 
@@ -134,7 +134,7 @@ namespace Hyperledger.Aries.Utils
                 {
                     var verkey = DidUtils.IsDidKey(routingKey) ? DidUtils.ConvertDidKeyToVerkey(routingKey) : routingKey;
                     // Anonpack
-                    msg = await PackAsync(agentContext.Wallet, verkey, new ForwardMessage(agentContext.UseMessageTypesHttps) { Message = JObject.Parse(msg.GetUTF8String()), To = previousKey });
+                    msg = await PackAsync(agentContext.AriesStorage.Wallet, verkey, new ForwardMessage(agentContext.UseMessageTypesHttps) { Message = JObject.Parse(msg.GetUTF8String()), To = previousKey });
                     previousKey = verkey;
                 }
             }
