@@ -25,7 +25,7 @@ namespace Hyperledger.Aries.Tests.Payments
 
             Assert.Equal(0UL, address.Balance);
 
-            var request = await Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Context.Wallet, Trustee.Did,
+            var request = await Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new IndyPaymentOutputSource { Recipient = address.Address, Amount = 42UL } }.ToJson(), null);
 
             var mintResponse = await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
@@ -54,7 +54,7 @@ namespace Hyperledger.Aries.Tests.Payments
             }
 
             // Mint tokens to the address to fund initially
-            var request = await Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Context.Wallet, Trustee.Did,
+            var request = await Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new { recipient = address[0].Address, amount = beginningAmount } }.ToJson(), null);
             await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
 
@@ -72,7 +72,7 @@ namespace Hyperledger.Aries.Tests.Payments
                 Address = address[1].Address,
                 Amount = transferAmount
             };
-            await recordService.AddAsync(Context.Wallet, paymentRecord);
+            await recordService.AddAsync(Context.AriesStorage, paymentRecord);
 
             // transfer tokens between two agents
             await paymentService.MakePaymentAsync(Context, paymentRecord, address[0]);
@@ -93,7 +93,7 @@ namespace Hyperledger.Aries.Tests.Payments
                 Address = address[1].Address,
                 Amount = transferAmount
             };
-            await recordService.AddAsync(Context.Wallet, paymentRecord1);
+            await recordService.AddAsync(Context.AriesStorage, paymentRecord1);
 
             // transfer tokens between two agents
             await paymentService.MakePaymentAsync(Context, paymentRecord1, address[0]);
@@ -114,7 +114,7 @@ namespace Hyperledger.Aries.Tests.Payments
                 Address = address[2].Address,
                 Amount = transferAmount
             };
-            await recordService.AddAsync(Context.Wallet, paymentRecord2);
+            await recordService.AddAsync(Context.AriesStorage, paymentRecord2);
 
             // transfer tokens from second to third agent
             await paymentService.MakePaymentAsync(Context, paymentRecord2, address[1]);

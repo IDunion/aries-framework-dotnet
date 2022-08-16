@@ -118,7 +118,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, await _holderWallet.Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
                     new CredentialPreviewAttribute("last_name", "Holder")
@@ -140,7 +140,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, await _holderWallet.Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute
                     {
@@ -164,7 +164,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         [Fact]
         public async Task CanCreateCredentialOffer()
         {
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             var result = await Scenarios.CreateDummySchemaAndNonRevokableCredDef(_issuerWallet, _schemaService, issuer.Did,
@@ -181,7 +181,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         [Fact]
         public async Task CanCreateCredentialOfferWithPreview()
         {
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             var result = await Scenarios.CreateDummySchemaAndNonRevokableCredDef(_issuerWallet, _schemaService, issuer.Did,
@@ -265,7 +265,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             // Create a schema and credential definition for this issuer
@@ -290,7 +290,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.Wallet, TestConstants.DefaultMasterSecret);
+            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.AriesStorage.Wallet, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -374,7 +374,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             // Create a schema and credential definition for this issuer
@@ -399,7 +399,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.Wallet, TestConstants.DefaultMasterSecret);
+            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.AriesStorage.Wallet, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             (var request, var _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -424,7 +424,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         public async Task IssueCredentialThrowsExceptionCredentialNotFound()
         {
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _credentialService.CreateCredentialAsync(_issuerWallet, "bad-credential-id"));
@@ -439,7 +439,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(_issuerWallet.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             // Create a schema and credential definition for this issuer
@@ -464,7 +464,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.Wallet, TestConstants.DefaultMasterSecret);
+            await AnonCreds.ProverCreateMasterSecretAsync(_holderWallet.AriesStorage.Wallet, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -501,8 +501,8 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task DisposeAsync()
         {
-            if (_issuerWallet != null) await _issuerWallet.Wallet.CloseAsync();
-            if (_holderWallet != null) await _holderWallet.Wallet.CloseAsync();
+            if (_issuerWallet != null) await _issuerWallet.AriesStorage.Wallet.CloseAsync();
+            if (_holderWallet != null) await _holderWallet.AriesStorage.Wallet.CloseAsync();
 
             await Wallet.DeleteWalletAsync(_issuerConfig, Credentials);
             await Wallet.DeleteWalletAsync(_holderConfig, Credentials);

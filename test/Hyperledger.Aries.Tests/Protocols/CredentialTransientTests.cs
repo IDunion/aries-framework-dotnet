@@ -26,7 +26,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             var issuerSchemaService = agents.Agent1.Host.Services.GetService<ISchemaService>();
             var issuerCredentialService = agents.Agent1.Host.Services.GetService<ICredentialService>();
 
-            var issuerProvisioning = await issuerProvisioningService.GetProvisioningAsync(agents.Agent1.Context.Wallet);
+            var issuerProvisioning = await issuerProvisioningService.GetProvisioningAsync(agents.Agent1.Context.AriesStorage);
             await PromoteTrustAnchor(issuerProvisioning.IssuerDid, issuerProvisioning.IssuerVerkey);
             
             var schemaId = await issuerSchemaService.CreateSchemaAsync(
@@ -75,7 +75,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             var issuerSchemaService = agents.Agent1.Host.Services.GetService<ISchemaService>();
             var issuerCredentialService = agents.Agent1.Host.Services.GetService<ICredentialService>();
 
-            var issuerProvisioning = await issuerProvisioningService.GetProvisioningAsync(agents.Agent1.Context.Wallet);
+            var issuerProvisioning = await issuerProvisioningService.GetProvisioningAsync(agents.Agent1.Context.AriesStorage);
             await PromoteTrustAnchor(issuerProvisioning.IssuerDid, issuerProvisioning.IssuerVerkey);
 
             var schemaId = await issuerSchemaService.CreateSchemaAsync(
@@ -115,7 +115,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
                 var holderRecord = await holderCredentialService.CreateCredentialAsync(agents.Agent2.Context, offerMessage);
                 issuerRecord = await issuerCredentialService.GetAsync(agents.Agent1.Context, issuerRecord.Id);
-                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.Wallet, credentialDefinitionId);
+                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.AriesStorage, credentialDefinitionId);
 
                 Assert.NotNull(holderRecord);
                 Assert.Equal(expected: CredentialState.Issued, actual: holderRecord.State);
@@ -144,7 +144,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
                 var holderRecord = await holderCredentialService.CreateCredentialAsync(agents.Agent2.Context, offerMessage);
                 issuerRecord = await issuerCredentialService.GetAsync(agents.Agent1.Context, issuerRecord.Id);
-                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.Wallet, credentialDefinitionId);
+                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.AriesStorage, credentialDefinitionId);
 
                 Assert.NotNull(holderRecord);
                 Assert.Equal(expected: CredentialState.Issued, actual: holderRecord.State);
@@ -173,7 +173,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
                 var holderRecord = await holderCredentialService.CreateCredentialAsync(agents.Agent2.Context, offerMessage);
                 issuerRecord = await issuerCredentialService.GetAsync(agents.Agent1.Context, issuerRecord.Id);
-                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.Wallet, credentialDefinitionId);
+                var definitionRecord = await agents.Agent1.Host.Services.GetService<ISchemaService>().GetCredentialDefinitionAsync(agents.Agent1.Context.AriesStorage, credentialDefinitionId);
 
                 Assert.NotNull(holderRecord);
                 Assert.Equal(expected: CredentialState.Issued, actual: holderRecord.State);
