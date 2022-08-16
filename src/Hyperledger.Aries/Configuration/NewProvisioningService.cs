@@ -71,9 +71,6 @@ namespace Hyperledger.Aries.Configuration
         /// <inheritdoc />
         public virtual async Task<ProvisioningRecord> GetProvisioningAsync(AriesStorage storage)
         {
-            if (storage.Store == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
-
             var record = await RecordService.GetAsync<ProvisioningRecord>(storage, ProvisioningRecord.UniqueRecordId);
 
             if (record == null)
@@ -85,9 +82,6 @@ namespace Hyperledger.Aries.Configuration
         /// <inheritdoc />
         public virtual async Task UpdateEndpointAsync(AriesStorage storage, AgentEndpoint endpoint)
         {
-            if (storage.Store == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
-
             var record = await GetProvisioningAsync(storage);
             record.Endpoint = endpoint;
 

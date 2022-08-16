@@ -73,10 +73,6 @@ namespace Hyperledger.Aries.Configuration
         /// <inheritdoc />
         public virtual async Task<ProvisioningRecord> GetProvisioningAsync(AriesStorage storage)
         {
-
-            if (storage.Store == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
-
             var record = await RecordService.GetAsync<ProvisioningRecord>(storage, ProvisioningRecord.UniqueRecordId);
 
             if (record == null)
@@ -112,6 +108,9 @@ namespace Hyperledger.Aries.Configuration
             var storage = await WalletService.GetWalletAsync(
                 configuration: agentOptions.WalletConfiguration,
                 credentials: agentOptions.WalletCredentials);
+
+            if (storage.Wallet == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
 
             // Configure agent endpoint
             AgentEndpoint endpoint = null;

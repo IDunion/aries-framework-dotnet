@@ -33,12 +33,12 @@ namespace Hyperledger.Aries.Utils
         /// Get a master secret from the wallet for use with <c>indy_shared_rs</c> methods. 
         /// </summary>
         /// <param name="id">The master secret id.</param>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="recordService">The record service.</param>
         /// <returns>The master secret as JSON.</returns>
-        public static async Task<string> GetMasterSecretJsonAsync(Store wallet, IWalletRecordService recordService, string id)
+        public static async Task<string> GetMasterSecretJsonAsync(AriesStorage storage, IWalletRecordService recordService, string id)
         {
-            MasterSecretRecord record = await recordService.GetAsync<MasterSecretRecord>(wallet, id);
+            MasterSecretRecord record = await recordService.GetAsync<MasterSecretRecord>(storage, id);
             return record?.MasterSecretJson;
         }
     }

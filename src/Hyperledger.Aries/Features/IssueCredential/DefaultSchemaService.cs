@@ -247,6 +247,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     string tag,
                     DefinitionRecord definitionRecord)
         {
+            if (context.AriesStorage.Wallet == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+
             var tailsHandle = await TailsService.CreateTailsAsync();
 
             var revocationRegistryDefinitionJson = new
