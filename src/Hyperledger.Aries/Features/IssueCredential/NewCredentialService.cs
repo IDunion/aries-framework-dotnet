@@ -414,7 +414,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             else
             {
-                (string newDid, _ ) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Store, RecordService);
+                (string newDid, _ ) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, RecordService);
                 proverDid = newDid;
             }
 

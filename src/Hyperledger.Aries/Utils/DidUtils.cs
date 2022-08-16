@@ -7,6 +7,7 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Stateless.Graph;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -214,16 +215,16 @@ namespace Hyperledger.Aries.Utils
         /// <returns>A tuple of strings. First is the did in format of "did":"method":"verkey". Second is the verkey </returns>
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<(string, string)> CreateAndStoreMyDidAsync(
-            Store wallet,
+            AriesStorage storage,
             IWalletRecordService recordService,
             string did = null,
             string seed = null,
             string cryptoType = "ed25519",
             bool cid = false)
         {
-            if (wallet is null)
+            if (storage.Store is null)
             {
-                throw new ArgumentNullException(nameof(wallet));
+                throw new ArgumentNullException(nameof(storage.Store));
             }
 
             KeyAlg keyAlg = cryptoType switch
@@ -264,8 +265,34 @@ namespace Hyperledger.Aries.Utils
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 
-            //TODO : ??? - add next lines to recordService method or a new "keyService" ?
-            await recordService.AddKeyAsync(wallet, keyHandle, did);
+            DidRecord didRecord = new DidRecord { 
+                Id = did,
+                Did = did,
+                Verkey = verKeyBase58
+            };
+
+            var signKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+            var signKeyBase58 = Multibase.Base58.Encode(signKey);
+            KeyRecord keyRecord = new KeyRecord
+            {
+                Id = verKeyBase58,
+                Verkey = verKeyBase58,
+                Signkey = signKeyBase58
+            };
+
+            await recordService.AddAsync(storage, didRecord);
+            await recordService.AddAsync(storage, keyRecord);
+
+            /***TODO : ??? - inserKey still needed, when adding DidRecord and KeyRecord like indy-sdk?? ***/
+            Debug.WriteLine($"Adding key for did: {did}");
+
+            if (storage.Store.session == null)
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+
+            _ = await AriesAskarStore.InsertKeyAsync(
+                storage.Store.session,
+                keyHandle,
+                did);
 
             return (did, verKeyBase58);
         }
@@ -300,7 +327,7 @@ namespace Hyperledger.Aries.Utils
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
         {
-            if (storage.Store.storeHandle == default)
+            if (storage.Store is null)
             {
                 throw new ArgumentNullException(nameof(storage.Store));
             }
