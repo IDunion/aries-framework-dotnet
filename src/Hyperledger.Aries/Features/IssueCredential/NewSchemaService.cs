@@ -34,7 +34,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>The record service</summary>
         protected readonly IWalletRecordService RecordService;
         /// <summary>The ledger service</summary>
-        protected readonly INewLedgerService LedgerService;
+        protected readonly ILedgerService LedgerService;
         private readonly IPaymentService paymentService;
 
         /// <summary>The tails service</summary>
@@ -58,7 +58,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public NewSchemaService(
             IProvisioningService provisioningService,
             IWalletRecordService recordService,
-            INewLedgerService ledgerService,
+            ILedgerService ledgerService,
             IPaymentService paymentService,
             ITailsService tailsService,
             IOptions<AgentOptions> agentOptions)
