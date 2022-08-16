@@ -11,6 +11,8 @@ namespace Hyperledger.Aries.Decorators.Attachments
 {
     public static class AttachmentContentExtensions
     {
+        /*** TODO : ??? - Implement sign and verify for DefaultV2Services -> aries-askar KeyApi***/
+
         /// <summary>
         /// Sign attachment content using json web signature
         /// </summary>
