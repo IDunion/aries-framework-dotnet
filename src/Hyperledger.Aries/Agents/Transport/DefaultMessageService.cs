@@ -107,7 +107,7 @@ namespace Hyperledger.Aries.Agents
             var response = await dispatcher.DispatchAsync(uri, new PackedMessageContext(wireMsg));
             if (response is PackedMessageContext responseContext)
             {
-                return await UnpackAsync(agentContext.Wallet, responseContext, senderKey);
+                return await UnpackAsync(agentContext.AriesStorage.Wallet, responseContext, senderKey);
             }
             throw new InvalidOperationException("Invalid or empty response");
         }

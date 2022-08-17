@@ -51,7 +51,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var content = new AttachmentContent {Base64 = base64Content};
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
-            await content.SignWithJsonWebSignature(_agent.AriesStorage.Wallet, key);
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
             
             Assert.NotNull(content.JsonWebSignature);
             Assert.NotNull(content.JsonWebSignature.Header);
@@ -65,7 +65,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var content = new AttachmentContent();
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
-            await Assert.ThrowsAsync<NullReferenceException>(async () => await content.SignWithJsonWebSignature(_agent.AriesStorage.Wallet, key));
+            await Assert.ThrowsAsync<NullReferenceException>(async () => await content.SignWithJsonWebSignature(_agent.AriesStorage, key));
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
-            await content.SignWithJsonWebSignature(_agent.AriesStorage.Wallet, key);
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
 
             var result = await content.VerifyJsonWebSignature();
             
@@ -87,7 +87,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
-            await content.SignWithJsonWebSignature(_agent.AriesStorage.Wallet, key);
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
 
             content.Base64 = "Changed content".ToBase64Url();
 
