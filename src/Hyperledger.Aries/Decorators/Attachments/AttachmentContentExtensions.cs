@@ -11,6 +11,7 @@ using Multiformats.Base;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using Hyperledger.Aries.Decorators.Signature;
 
 namespace Hyperledger.Aries.Decorators.Attachments
 {
