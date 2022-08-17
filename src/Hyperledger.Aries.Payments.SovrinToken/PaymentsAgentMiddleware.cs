@@ -43,12 +43,12 @@ namespace Hyperledger.Aries.Payments.SovrinToken
                     Amount = requestDecorator.Details.Total.Amount.Value
                 };
                 await record.TriggerAsync(PaymentTrigger.RequestReceived);
-                await _recordService.AddAsync(agentContext.Wallet, record);
+                await _recordService.AddAsync(agentContext.AriesStorage, record);
 
                 if (messageContext.ContextRecord != null)
                 {
                     messageContext.ContextRecord.SetTag("PaymentRecordId", record.Id);
-                    await _recordService.UpdateAsync(agentContext.Wallet, messageContext.ContextRecord);
+                    await _recordService.UpdateAsync(agentContext.AriesStorage, messageContext.ContextRecord);
                 }
             }
 
@@ -56,7 +56,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
             if (receiptDecorator != null)
             {
                 var search = await _recordService.SearchAsync<PaymentRecord>(
-                    wallet: agentContext.Wallet,
+                    storage: agentContext.AriesStorage,
                     query: SearchQuery.Equal(nameof(PaymentRecord.ReferenceId), receiptDecorator.RequestId),
                     options: null,
                     count: 5);
@@ -67,11 +67,11 @@ namespace Hyperledger.Aries.Payments.SovrinToken
 
                 if (search.Any())
                 {
-                    await _recordService.UpdateAsync(agentContext.Wallet, record);
+                    await _recordService.UpdateAsync(agentContext.AriesStorage, record);
                 }
                 else
                 {
-                    await _recordService.AddAsync(agentContext.Wallet, record);
+                    await _recordService.AddAsync(agentContext.AriesStorage, record);
                 }
             }
         }

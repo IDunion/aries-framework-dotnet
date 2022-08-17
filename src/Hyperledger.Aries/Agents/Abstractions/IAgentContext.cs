@@ -12,9 +12,7 @@ namespace Hyperledger.Aries.Agents
     /// </summary>
     public interface IAgentContext
     {
-        /// <summary>Gets or sets the agent wallet.</summary>
-        /// <value>The wallet.</value>
-        Wallet Wallet { get; set; }
+        public AriesStorage AriesStorage { get; set; }
 
         /// <summary>Gets or sets the pool.</summary>
         /// <value>The pool.</value>

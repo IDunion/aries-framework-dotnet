@@ -65,7 +65,7 @@ namespace Hyperledger.Aries.Agents.Edge
                 // OK
             }
             var agentContext = await agentProvider.GetContextAsync();
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             // Check if connection has been established with mediator agent
             if (provisioning.GetTag(MediatorConnectionIdTagName) == null)
@@ -79,10 +79,10 @@ namespace Hyperledger.Aries.Agents.Edge
                 // Messages will always be sent directly with return routing enabled
                 record = await connectionService.GetAsync(agentContext, record.Id);
                 record.Endpoint = new AgentEndpoint(record.Endpoint.Uri, null, null);
-                await recordService.UpdateAsync(agentContext.Wallet, record);
+                await recordService.UpdateAsync(agentContext.AriesStorage, record);
 
                 provisioning.SetTag(MediatorConnectionIdTagName, record.Id);
-                await recordService.UpdateAsync(agentContext.Wallet, provisioning);
+                await recordService.UpdateAsync(agentContext.AriesStorage, provisioning);
             }
 
             await edgeClientService.CreateInboxAsync(agentContext, options.MetaData);

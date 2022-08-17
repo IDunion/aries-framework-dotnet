@@ -27,7 +27,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.Schemas
     )
     {
       IAgentContext agentContext = await AgentProvider.GetContextAsync();
-      List<SchemaRecord> schemaRecords = await SchemaService.ListSchemasAsync(agentContext.Wallet);
+      List<SchemaRecord> schemaRecords = await SchemaService.ListSchemasAsync(agentContext.AriesStorage);
       SchemaRecord schemaRecord = schemaRecords.FirstOrDefault(aSchemaRecord => aSchemaRecord.Id == aGetSchemaRequest.SchemaId);
 
       var response = new GetSchemaResponse(aGetSchemaRequest.CorrelationId, schemaRecord);

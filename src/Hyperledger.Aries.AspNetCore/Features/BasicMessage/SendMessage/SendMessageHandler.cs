@@ -45,7 +45,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.BasicMessaging
     {
       var defaultAgentContext = new DefaultAgentContext
       {
-        Wallet = await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials)
+        AriesStorage = await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials)
       };
 
       DateTime sentTime = DateTime.UtcNow;
@@ -69,7 +69,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.BasicMessaging
         await ConnectionService.GetAsync(defaultAgentContext, aSendMessageRequest.ConnectionId);
 
       // Save the outgoing message to the local wallet for chat history purposes
-      await WalletRecordService.AddAsync(defaultAgentContext.Wallet, messageRecord);
+      await WalletRecordService.AddAsync(defaultAgentContext.AriesStorage, messageRecord);
 
       // Send an agent message using the secure connection
       await MessageService.SendAsync(defaultAgentContext, basicMessage, connectionRecord);

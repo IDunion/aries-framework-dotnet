@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
+using Hyperledger.Aries.Decorators.Attachments;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Storage;
@@ -56,7 +57,7 @@ namespace Hyperledger.Aries.Routing.Edge
 
         public virtual async Task CreateInboxAsync(IAgentContext agentContext, Dictionary<string, string> metadata = null)
         {
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             if (provisioning.GetTag(MediatorInboxIdTagName) != null)
             {
                 return;
@@ -68,17 +69,17 @@ namespace Hyperledger.Aries.Routing.Edge
 
             provisioning.SetTag(MediatorInboxIdTagName, response.InboxId);
             provisioning.SetTag(MediatorInboxKeyTagName, response.InboxKey);
-            await recordService.UpdateAsync(agentContext.Wallet, provisioning);
+            await recordService.UpdateAsync(agentContext.AriesStorage, provisioning);
         }
 
         internal async Task<ConnectionRecord> GetMediatorConnectionAsync(IAgentContext agentContext)
         {
-            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             if (provisioning.GetTag(MediatorConnectionIdTagName) == null)
             {
                 return null;
             }
-            var connection = await recordService.GetAsync<ConnectionRecord>(agentContext.Wallet, provisioning.GetTag(MediatorConnectionIdTagName));
+            var connection = await recordService.GetAsync<ConnectionRecord>(agentContext.AriesStorage, provisioning.GetTag(MediatorConnectionIdTagName));
             if (connection == null) throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Couldn't locate a connection to mediator agent");
             if (connection.State != ConnectionState.Connected) throw new AriesFrameworkException(ErrorCode.RecordInInvalidState, $"You must be connected to the mediator agent. Current state is {connection.State}");
 
@@ -139,6 +140,31 @@ namespace Hyperledger.Aries.Routing.Edge
             {
                 await messageService.SendAsync(agentContext, message, connection);
             }
+        }
+
+        public Task<string> CreateBackupAsync(IAgentContext context, string seed)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Attachment>> RetrieveBackupAsync(IAgentContext context, string seed, long offset = 0)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<long>> ListBackupsAsync(IAgentContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<AgentOptions> RestoreFromBackupAsync(IAgentContext edgeContext, string seed, List<Attachment> backupData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<AgentOptions> RestoreFromBackupAsync(IAgentContext edgeContext, string seed)
+        {
+            throw new NotImplementedException();
         }
     }
 }

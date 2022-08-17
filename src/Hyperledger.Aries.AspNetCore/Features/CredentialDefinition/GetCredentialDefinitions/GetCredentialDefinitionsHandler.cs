@@ -30,7 +30,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.CredentialDefinitions
       IAgentContext agentContext = await AgentProvider.GetContextAsync();
 
       List<DefinitionRecord> definitionRecords = 
-        await SchemaService.ListCredentialDefinitionsAsync(agentContext.Wallet);
+        await SchemaService.ListCredentialDefinitionsAsync(agentContext.AriesStorage);
 
       var response = 
         new GetCredentialDefinitionsResponse(aGetCredentialDefinitionsRequest.CorrelationId, definitionRecords);

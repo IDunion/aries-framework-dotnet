@@ -2,6 +2,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.Wallets
 {
   using Hyperledger.Aries.Configuration;
   using Hyperledger.Aries.Storage;
+  using Hyperledger.Aries.Storage.Models;
   using Hyperledger.Indy.WalletApi;
   using MediatR;
   using Microsoft.Extensions.Options;
@@ -32,10 +33,10 @@ namespace Hyperledger.Aries.AspNetCore.Features.Wallets
       CancellationToken aCancellationToken
     )
     {
-      Wallet wallet = 
+      AriesStorage storage = 
         await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials);
 
-      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(wallet);
+      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(storage);
       var getWalletResponse = new GetWalletResponse(aGetWalletRequest.CorrelationId, provisioningRecord);
 
       return getWalletResponse;

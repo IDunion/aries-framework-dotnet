@@ -300,7 +300,7 @@ namespace Hyperledger.Aries.TestHarness
                 .Where(x => x.MessageType == MessageTypes.IssueCredentialNames.OfferCredential)
                 .Subscribe(x => offerSlim.Release());
 
-            var issuerProv = await provisionService.GetProvisioningAsync(issuer.Context.Wallet);
+            var issuerProv = await provisionService.GetProvisioningAsync(issuer.Context.AriesStorage);
 
             var (definitionId, _) = await Scenarios.CreateDummySchemaAndNonRevokableCredDef(issuer.Context, schemaService,
                 issuerProv.IssuerDid, credentialAttributes.Select(_ => _.Name).ToArray());
@@ -383,7 +383,7 @@ namespace Hyperledger.Aries.TestHarness
             var schemaService = issuer.GetService<ISchemaService>();
             var provisionService = issuer.GetService<IProvisioningService>();
 
-            var issuerProv = await provisionService.GetProvisioningAsync(issuer.Context.Wallet);
+            var issuerProv = await provisionService.GetProvisioningAsync(issuer.Context.AriesStorage);
 
             var (definitionId, _) = await Scenarios.CreateDummySchemaAndNonRevokableCredDef(issuer.Context, schemaService,
                 issuerProv.IssuerDid, credentialAttributes.Select(_ => _.Name).ToArray());
