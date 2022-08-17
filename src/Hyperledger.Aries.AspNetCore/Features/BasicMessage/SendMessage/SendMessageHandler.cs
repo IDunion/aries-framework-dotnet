@@ -5,6 +5,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.BasicMessaging
   using Aries.Features.BasicMessage;
   using Aries.Features.Handshakes.Common;
   using Aries.Features.Handshakes.Connection;
+  using Hyperledger.Aries.Storage.Models;
   using MediatR;
   using Microsoft.Extensions.Options;
   using Storage;

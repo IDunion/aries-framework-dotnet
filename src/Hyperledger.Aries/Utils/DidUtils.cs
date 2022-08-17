@@ -154,8 +154,7 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentException($"Value {didKey} is no did:key", nameof(didKey));
             }
 
-            //string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
-            string base58EncodedKey = "";
+            string base58EncodedKey = didKey.Substring($"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length);
             byte[] bytes = Multibase.Base58.Decode(base58EncodedKey);
             byte[] codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
             if (codec.SequenceEqual(MULTICODEC_PREFIX_ED25519))

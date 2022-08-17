@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.TestHarness.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,8 +43,10 @@ namespace Hyperledger.TestHarness.Mock
             {
                 Context = new DefaultAgentContext
                 {
+                    // TODO ??? is Wallet set in ariesStorage?
                     AriesStorage = await provider.GetService<IWalletService>().GetWalletAsync(configuration, credentials),
-                    Pool = new PoolAwaitable(PoolUtils.GetPoolAsync),
+                    // Wallet = await provider.GetService<IWalletService>().GetWalletAsync(configuration, credentials),
+                    Pool = PoolAwaitable.FromPool(new AriesPool(await PoolUtils.GetPoolAsync())),
                     SupportedMessages = AgentUtils.GetDefaultMessageTypes(),
                     UseMessageTypesHttps = useMessageTypesHttps
                 },
@@ -53,8 +56,8 @@ namespace Hyperledger.TestHarness.Mock
 
         public static async Task Dispose(MockAgent agent)
         {
-            agent.Context.Wallet.Dispose();
-            await agent.Context.Wallet.CloseAsync();
+            agent.Context.AriesStorage.Wallet.Dispose();
+            await agent.Context.AriesStorage.Wallet.CloseAsync();
         }
     }
 }

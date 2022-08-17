@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.TestHarness.Utils
@@ -25,8 +27,8 @@ namespace Hyperledger.TestHarness.Utils
 
             return new DefaultAgentContext
             {
-                Wallet = await Wallet.OpenWalletAsync(config, credentials),
-                Pool = withPool ? new PoolAwaitable(PoolUtils.GetPoolAsync) : PoolAwaitable.FromPool(null),
+                AriesStorage = new AriesStorage( wallet: await Wallet.OpenWalletAsync(config, credentials)),
+                Pool = withPool ? PoolAwaitable.FromPool(new AriesPool(await PoolUtils.GetPoolAsync())) : PoolAwaitable.FromPool(null),
                 SupportedMessages = supportedMessageTypes,
                 UseMessageTypesHttps = useMessageTypesHttps
             };

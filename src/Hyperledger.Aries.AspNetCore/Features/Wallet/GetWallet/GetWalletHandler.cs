@@ -33,10 +33,10 @@ namespace Hyperledger.Aries.AspNetCore.Features.Wallets
       CancellationToken aCancellationToken
     )
     {
-      AriesStorage storage = 
-        await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials);
+      AriesStorage ariesStorage = await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials);
+      Wallet wallet = ariesStorage.Wallet;
 
-      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(storage);
+      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(ariesStorage);
       var getWalletResponse = new GetWalletResponse(aGetWalletRequest.CorrelationId, provisioningRecord);
 
       return getWalletResponse;
