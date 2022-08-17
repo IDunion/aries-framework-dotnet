@@ -5,6 +5,10 @@ using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Indy.CryptoApi;
 using Newtonsoft.Json;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
+using System.Text;
 
 namespace Hyperledger.Aries.Decorators.Signature
 {
@@ -34,7 +38,8 @@ namespace Hyperledger.Aries.Decorators.Signature
 
             var sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
 
-            var sig = await Crypto.SignAsync(agentContext.Wallet, signerKey, sigData);
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(agentContext.AriesStorage.Store.session, signerKey),0);
+            var sig = await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, Encoding.ASCII.GetBytes(dataJson), aries_askar_dotnet.Models.SignatureType.EdDSA);
 
             var sigDecorator = new SignatureDecorator
             {
