@@ -3,6 +3,7 @@ using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
@@ -37,7 +38,7 @@ namespace Hyperledger.Aries.Decorators.Signature
 
             byte[] sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
 
-            byte[] sig = await CreateSignature(agentContext.AriesStorage, signerKey, dataJson.GetBytesFromBase64());
+            byte[] sig = await CreateSignature(agentContext.AriesStorage, signerKey, sigData);
 
             SignatureDecorator sigDecorator = new()
             {
