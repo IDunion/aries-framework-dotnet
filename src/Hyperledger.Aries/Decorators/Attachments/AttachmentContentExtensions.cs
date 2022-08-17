@@ -10,6 +10,7 @@ using Multiformats.Base;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using Hyperledger.Aries.Agents;
 
 namespace Hyperledger.Aries.Decorators.Attachments
 {
@@ -124,6 +125,32 @@ namespace Hyperledger.Aries.Decorators.Attachments
             
                 return await Crypto.VerifyAsync(verkey, Encoding.ASCII.GetBytes(message),
                     content.JsonWebSignature.Signature.GetBytesFromBase64());
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        /*** TODO : ??? - combine with VerifyJsonWebSignature and use AgentContext.AriesStoarge for distinguishing between Crypt.Verify and AriesAskarKey.VerifySignatureFromKeyAsync ***/
+        /// <summary>
+        /// Verify the json web signature of an attachment
+        /// </summary>
+        /// <param name="content">The attachment content to be verified.</param>
+        /// <returns>True - signature is valid; False - signature is missing or invalid.</returns>
+        public static async Task<bool> VerifyJsonWebSignatureAskar(this AttachmentContent content, IAgentContext agentContext)
+        {
+            try
+            {
+                var did = content.JsonWebSignature.Header.Kid;
+
+                var verkey = DidUtils.ConvertDidKeyToVerkey(did);
+
+                var message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
+                
+                /*** TODO : ??? - which SignatureType / KeyAlg ?***/
+                IntPtr publicVerKey = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(verkey));
+                return await AriesAskarKey.VerifySignatureFromKeyAsync(publicVerKey, Encoding.ASCII.GetBytes(message),
+                    content.JsonWebSignature.Signature.GetBytesFromBase64(), SignatureType.EdDSA);
             }
             catch (Exception)
             {
