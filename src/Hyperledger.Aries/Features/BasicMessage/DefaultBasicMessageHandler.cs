@@ -42,7 +42,7 @@ namespace Hyperledger.Aries.Features.BasicMessage
                 SentTime = DateTime.TryParse(message.SentTime, out var dateTime) ? dateTime : DateTime.UtcNow,
                 Direction = MessageDirection.Incoming
             };
-            await _recordService.AddAsync(agentContext.Wallet, record);
+            await _recordService.AddAsync(agentContext.AriesStorage, record);
             messageContext.ContextRecord = record;
 
             return null;

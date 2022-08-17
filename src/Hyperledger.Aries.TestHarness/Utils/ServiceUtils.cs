@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 using Moq;
 
@@ -23,7 +24,7 @@ namespace Hyperledger.TestHarness.Utils
 
             var provisionServiceMock = new Mock<IProvisioningService>();
 
-            provisionServiceMock.Setup(x => x.GetProvisioningAsync(It.IsAny<Wallet>()))
+            provisionServiceMock.Setup(x => x.GetProvisioningAsync(It.IsAny<AriesStorage>()))
                 .Returns(Task.FromResult(provisionRecord.Object));
 
             return provisionServiceMock.Object;

@@ -22,7 +22,7 @@ namespace Hyperledger.TestHarness.Mock
 
         public Task<MessageContext> HandleInboundAsync(MessageContext messageContext) => ProcessAsync(Context, messageContext);
 
-        public async Task Dispose() => await Context.Wallet.CloseAsync();
+        public async Task Dispose() => await Context.AriesStorage.Wallet.CloseAsync();
 
         protected override void ConfigureHandlers()
         {

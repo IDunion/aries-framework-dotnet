@@ -42,7 +42,7 @@ namespace Hyperledger.Aries.Features.OutOfBand
         {
             config ??= new InviteConfiguration();
             var (_, record) = await _connectionService.CreateInvitationAsync(agentContext, config);
-            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             
             var invitation = new InvitationMessage
             {
@@ -69,7 +69,7 @@ namespace Hyperledger.Aries.Features.OutOfBand
             var parentThreadId = invitation.GetThreadId();
             record.SetTag(TagConstants.ParentThreadId, parentThreadId);
             
-            await _recordService.UpdateAsync(agentContext.Wallet, record);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, record);
 
             return (invitation, record);
         }

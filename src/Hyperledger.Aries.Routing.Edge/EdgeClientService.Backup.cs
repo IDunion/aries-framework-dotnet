@@ -33,12 +33,12 @@ namespace Hyperledger.Aries.Routing.Edge
             var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             var json = new { path, key = seed }.ToJson();
 
-            await context.Wallet.ExportAsync(json);
+            await context.AriesStorage.Wallet.ExportAsync(json);
 
             var bytesArray = await Task.Run(() => File.ReadAllBytes(path));
 
             var backupVerkey = await EnsureBackupKeyAsync(context, seed);
-            var signedBytesArray = await Crypto.SignAsync(context.Wallet, backupVerkey, bytesArray);
+            var signedBytesArray = await Crypto.SignAsync(context.AriesStorage.Wallet, backupVerkey, bytesArray);
 
             var payload = bytesArray.ToBase64String();
 
@@ -78,7 +78,7 @@ namespace Hyperledger.Aries.Routing.Edge
         {
             try
             {
-                var didResult = await Did.CreateAndStoreMyDidAsync(context.Wallet, new
+                var didResult = await Did.CreateAndStoreMyDidAsync(context.AriesStorage.Wallet, new
                 {
                     did = InternalBackupDid,
                     seed = seed
@@ -88,11 +88,11 @@ namespace Hyperledger.Aries.Routing.Edge
             catch (IndyException ex) when (ex.SdkErrorCode == 600)
             {
                 var key = await Did.ReplaceKeysStartAsync(
-                    context.Wallet,
+                    context.AriesStorage.Wallet,
                     InternalBackupDid,
                     new { seed = seed }.ToJson());
 
-                await Did.ReplaceKeysApplyAsync(context.Wallet, InternalBackupDid);
+                await Did.ReplaceKeysApplyAsync(context.AriesStorage.Wallet, InternalBackupDid);
                 return key;
             }
         }
@@ -103,7 +103,7 @@ namespace Hyperledger.Aries.Routing.Edge
             var publicKey = await EnsureBackupKeyAsync(context, seed);
 
             var decodedKey = Multibase.Base58.Decode(publicKey);
-            var publicKeySigned = await Crypto.SignAsync(context.Wallet, publicKey, decodedKey);
+            var publicKeySigned = await Crypto.SignAsync(context.AriesStorage.Wallet, publicKey, decodedKey);
 
             var retrieveBackupResponseMessage = new RetrieveBackupAgentMessage()
             {
@@ -161,7 +161,7 @@ namespace Hyperledger.Aries.Routing.Edge
         /// <inheritdoc />
         public async Task<List<long>> ListBackupsAsync(IAgentContext context)
         {
-            var publicKey = await Did.KeyForLocalDidAsync(context.Wallet, InternalBackupDid);
+            var publicKey = await Did.KeyForLocalDidAsync(context.AriesStorage.Wallet, InternalBackupDid);
 
             var listBackupsMessage = new ListBackupsAgentMessage()
             {

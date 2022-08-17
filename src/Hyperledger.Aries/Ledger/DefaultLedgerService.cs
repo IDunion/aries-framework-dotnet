@@ -240,6 +240,7 @@ namespace Hyperledger.Aries.Ledger
                 request = requestWithFees.Result;
             }
             var signedRequest = await _signingService.SignRequestAsync(context, submitterDid, request);
+            var pool_test = context.Pool.GetAwaiter().GetResult();
             var response = await IndyLedger.SubmitRequestAsync((await context.Pool).Pool, signedRequest);
 
             EnsureSuccessResponse(response);

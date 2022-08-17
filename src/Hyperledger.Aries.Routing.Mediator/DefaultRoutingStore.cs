@@ -26,13 +26,13 @@ namespace Hyperledger.Aries.Routing
                 Id = destinationRoute,
                 InboxId = inboxId
             };
-            await recordService.AddAsync(agentContext.Wallet, routeRecord);
+            await recordService.AddAsync(agentContext.AriesStorage, routeRecord);
         }
 
         public async Task<string> FindRouteAsync(string destinationRoute)
         {
             var agentContext = await agentProvider.GetContextAsync();
-            var routeRecord = await recordService.GetAsync<RouteRecord>(agentContext.Wallet, destinationRoute);
+            var routeRecord = await recordService.GetAsync<RouteRecord>(agentContext.AriesStorage, destinationRoute);
 
             return routeRecord.InboxId;
         }
