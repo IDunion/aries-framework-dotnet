@@ -20,7 +20,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             // Configure agent1 as issuer
             var issuerConfiguration = await pair.Agent1.Provider.GetRequiredService<IProvisioningService>()
-                .GetProvisioningAsync(pair.Agent1.Context.Wallet);
+                .GetProvisioningAsync(pair.Agent1.Context.AriesStorage);
             await PromoteTrustAnchor(issuerConfiguration.IssuerDid, issuerConfiguration.IssuerVerkey);
 
             var schemaId = await pair.Agent1.Provider.GetRequiredService<ISchemaService>()

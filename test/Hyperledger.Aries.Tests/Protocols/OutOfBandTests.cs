@@ -157,8 +157,8 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task DisposeAsync()
         {
-            if (_sender != null) await _sender.Wallet.CloseAsync();
-            if (_receiver != null) await _receiver.Wallet.CloseAsync();
+            if (_sender != null) await _sender.AriesStorage.Wallet.CloseAsync();
+            if (_receiver != null) await _receiver.AriesStorage.Wallet.CloseAsync();
 
             await Wallet.DeleteWalletAsync(_senderConfig, Credentials);
             await Wallet.DeleteWalletAsync(_receiverConfig, Credentials);

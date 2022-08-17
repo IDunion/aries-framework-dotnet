@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 using Xunit;
 
@@ -18,17 +19,17 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            Task<Wallet> openWalletTask1 = walletService.GetWalletAsync(config, creds);
-            Task<Wallet> openWalletTask2 = walletService.GetWalletAsync(config, creds);
-            Task<Wallet> openWalletTask3 = walletService.GetWalletAsync(config, creds);
-            Task<Wallet> openWalletTask4 = walletService.GetWalletAsync(config, creds);
+            Task<AriesStorage> openWalletTask1 = walletService.GetWalletAsync(config, creds);
+            Task<AriesStorage> openWalletTask2 = walletService.GetWalletAsync(config, creds);
+            Task<AriesStorage> openWalletTask3 = walletService.GetWalletAsync(config, creds);
+            Task<AriesStorage> openWalletTask4 = walletService.GetWalletAsync(config, creds);
 
             await Task.WhenAll(openWalletTask1, openWalletTask2, openWalletTask3, openWalletTask4);
 
-            Assert.True(openWalletTask1.Result.IsOpen);
-            Assert.True(openWalletTask2.Result.IsOpen);
-            Assert.True(openWalletTask3.Result.IsOpen);
-            Assert.True(openWalletTask4.Result.IsOpen);
+            Assert.True(openWalletTask1.Result.Wallet.IsOpen);
+            Assert.True(openWalletTask2.Result.Wallet.IsOpen);
+            Assert.True(openWalletTask3.Result.Wallet.IsOpen);
+            Assert.True(openWalletTask4.Result.Wallet.IsOpen);
         }
 
         [Fact]
@@ -41,10 +42,10 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            var wallet = await walletService.GetWalletAsync(config, creds);
+            var storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
         }
 
         [Fact(DisplayName = "Should create wallet with RAW key derivation")]
@@ -61,10 +62,10 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            var wallet = await walletService.GetWalletAsync(config, creds);
+            var storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
         }
 
         [Fact]
@@ -77,17 +78,17 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            var wallet = await walletService.GetWalletAsync(config, creds);
+            var storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage);
+            Assert.True(storage.Wallet.IsOpen);
 
-            await wallet.CloseAsync();
+            await storage.Wallet.CloseAsync();
 
-            wallet = await walletService.GetWalletAsync(config, creds);
+            storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
         }
 
         [Fact]
@@ -100,17 +101,17 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            var wallet = await walletService.GetWalletAsync(config, creds);
+            var storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
 
-            wallet.Dispose();
+            storage.Wallet.Dispose();
 
-            wallet = await walletService.GetWalletAsync(config, creds);
+            storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
         }
 
         [Fact]
@@ -123,10 +124,10 @@ namespace Hyperledger.Aries.Tests
 
             await walletService.CreateWalletAsync(config, creds);
 
-            var wallet = await walletService.GetWalletAsync(config, creds);
+            var storage = await walletService.GetWalletAsync(config, creds);
 
-            Assert.NotNull(wallet);
-            Assert.True(wallet.IsOpen);
+            Assert.NotNull(storage.Wallet);
+            Assert.True(storage.Wallet.IsOpen);
 
             await walletService.DeleteWalletAsync(config, creds);
 

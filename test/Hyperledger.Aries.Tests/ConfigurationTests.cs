@@ -143,7 +143,7 @@ namespace Hyperledger.Aries.Tests
             provisioned.Should().BeTrue();
 
             // Cleanup
-            await pool.CloseAsync();
+            await pool.Pool.CloseAsync();
             await Pool.DeletePoolLedgerConfigAsync(poolName);
             await hostBuilder.StopAsync();
         }
@@ -187,7 +187,7 @@ namespace Hyperledger.Aries.Tests
             record.Endpoint.Should().NotBeNull();
             record.Endpoint.Verkey.Should().NotBeNull();
 
-            await wallet.CloseAsync();
+            await wallet.Wallet.CloseAsync();
             await walletService.DeleteWalletAsync(walletConfiguration, walletCredentials);
         }
 

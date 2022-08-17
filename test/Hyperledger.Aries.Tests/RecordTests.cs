@@ -17,9 +17,9 @@ namespace Hyperledger.Aries.Tests
             var record = new ConnectionRecord { Id = "123" };
             record.SetTag("tag1", "tagValue1");
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, "123");
+            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, "123");
 
             Assert.NotNull(retrieved);
             Assert.Equal(retrieved.Id, record.Id);
@@ -36,10 +36,10 @@ namespace Hyperledger.Aries.Tests
             var record = new ConnectionRecord { Id = Guid.NewGuid().ToString() };
             record.SetTag(tagName, tagValue);
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
             var search =
-                await recordService.SearchAsync<ConnectionRecord>(Context.Wallet,
+                await recordService.SearchAsync<ConnectionRecord>(Context.AriesStorage,
                     SearchQuery.Equal(tagName, tagValue), null, 100);
 
             var retrieved = search.Single();
@@ -61,16 +61,16 @@ namespace Hyperledger.Aries.Tests
             var record = new ConnectionRecord { Id = id };
             record.SetTag(tagName, tagValue);
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, id);
+            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, id);
 
             retrieved.MyDid = "123";
             retrieved.SetTag(tagName, "value");
 
-            await recordService.UpdateAsync(Context.Wallet, retrieved);
+            await recordService.UpdateAsync(Context.AriesStorage, retrieved);
 
-            var updated = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, id);
+            var updated = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, id);
 
             Assert.NotNull(updated);
             Assert.Equal(updated.Id, record.Id);
@@ -82,7 +82,7 @@ namespace Hyperledger.Aries.Tests
         [Fact]
         public async Task ReturnsNullForNonExistentRecord()
         {
-            var record = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, Guid.NewGuid().ToString());
+            var record = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, Guid.NewGuid().ToString());
             Assert.Null(record);
         }
 
@@ -90,7 +90,7 @@ namespace Hyperledger.Aries.Tests
         public async Task ReturnsEmptyListForNonExistentRecord()
         {
             var record = await recordService.SearchAsync<ConnectionRecord>(
-                Context.Wallet,
+                Context.AriesStorage,
                 SearchQuery.Equal(Guid.NewGuid().ToString(), Guid.NewGuid().ToString()), null, 100);
             Assert.False(record.Any());
         }
@@ -120,9 +120,9 @@ namespace Hyperledger.Aries.Tests
 
             Assert.Null(record.CreatedAtUtc);
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, "123");
+            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, "123");
 
             Assert.NotNull(retrieved);
             Assert.Equal(retrieved.Id, record.Id);
@@ -134,17 +134,17 @@ namespace Hyperledger.Aries.Tests
         {
             var record = new ConnectionRecord { Id = "123" };
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, "123");
+            var retrieved = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, "123");
 
             Assert.NotNull(retrieved);
             Assert.Equal(retrieved.Id, record.Id);
             Assert.Null(retrieved.UpdatedAtUtc);
 
-            await recordService.UpdateAsync(Context.Wallet, retrieved);
+            await recordService.UpdateAsync(Context.AriesStorage, retrieved);
 
-            retrieved = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, "123");
+            retrieved = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, "123");
 
             Assert.NotNull(retrieved);
             Assert.Equal(retrieved.Id, record.Id);
@@ -155,17 +155,17 @@ namespace Hyperledger.Aries.Tests
         public async Task ReturnsRecordsFilteredByCreatedAt()
         {
             var record = new ConnectionRecord { Id = "123" };
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
             var now = DateTime.UtcNow;
             await Task.Delay(TimeSpan.FromSeconds(1));
 
             record = new ConnectionRecord { Id = "456" };
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
             var records = await recordService.SearchAsync<ConnectionRecord>(
-                Context.Wallet,
+                Context.AriesStorage,
                 SearchQuery.Greater(nameof(ConnectionRecord.CreatedAtUtc), now), null, 100);
 
             Assert.True(records.Count == 1);
