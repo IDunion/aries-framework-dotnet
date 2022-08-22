@@ -78,6 +78,6 @@
         /// <summary>
         /// Wrong storage used
         /// </summary>
-        InvalidStorageUsed
+        InvalidStorage
     }
 }
