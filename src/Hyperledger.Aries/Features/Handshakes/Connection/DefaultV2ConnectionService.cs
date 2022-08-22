@@ -81,6 +81,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <inheritdoc />
         public virtual async Task<(ConnectionInvitationMessage, ConnectionRecord)> CreateInvitationAsync(IAgentContext agentContext, InviteConfiguration config = null)
         {
+            if (agentContext.AriesStorage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             config ??= new InviteConfiguration();
             ConnectionRecord connection = new() { Role = ConnectionRole.Inviter };
             connection.Id = config.ConnectionId ?? connection.Id;
