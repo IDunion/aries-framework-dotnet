@@ -188,7 +188,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, CredentialDefinitionConfiguration configuration)
         {
             if (context.AriesStorage.Wallet == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, "The provided wallet is null.");
 
             if (configuration == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Configuration must be specified.");
             if (configuration.SchemaId == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "SchemaId must be specified.");
@@ -248,7 +248,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     DefinitionRecord definitionRecord)
         {
             if (context.AriesStorage.Wallet == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, "The provided wallet is null.");
 
             var tailsHandle = await TailsService.CreateTailsAsync();
 

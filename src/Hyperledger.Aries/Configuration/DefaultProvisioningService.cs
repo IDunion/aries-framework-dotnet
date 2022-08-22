@@ -110,7 +110,7 @@ namespace Hyperledger.Aries.Configuration
                 credentials: agentOptions.WalletCredentials);
 
             if (storage.Wallet == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, "The provided wallet is null.");
 
             // Configure agent endpoint
             AgentEndpoint endpoint = null;

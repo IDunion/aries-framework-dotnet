@@ -41,7 +41,7 @@ namespace Hyperledger.Aries.Storage
             where T : RecordBase, new()
         {
             if (storage.Store == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided storage is null.");
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, "The provided storage is null.");
 
             Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
 
