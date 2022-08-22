@@ -116,6 +116,10 @@ namespace Hyperledger.Aries.Utils
         /// <returns>The response async.</returns>
         public static async Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, string recipientKey, string[] routingKeys = null, string senderKey = null)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Wallet)} which must not be null.");
+            }
             if (message == null) throw new ArgumentNullException(nameof(message));
             if (recipientKey == null) throw new ArgumentNullException(nameof(recipientKey));
             

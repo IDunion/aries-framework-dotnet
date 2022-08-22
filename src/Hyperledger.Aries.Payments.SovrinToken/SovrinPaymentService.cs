@@ -54,6 +54,11 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         /// <inheritdoc />
         public async Task<PaymentAddressRecord> CreatePaymentAddressAsync(IAgentContext agentContext, AddressOptions configuration = null)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             var address = await IndyPayments.CreatePaymentAddressAsync(agentContext.AriesStorage.Wallet, TokenConfiguration.MethodName,
                 new { seed = configuration?.Seed }.ToJson());
 
@@ -99,6 +104,11 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         /// <inheritdoc />
         public async Task RefreshBalanceAsync(IAgentContext agentContext, PaymentAddressRecord paymentAddress = null)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             if (paymentAddress == null)
             {
                 var provisioning = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
@@ -126,6 +136,11 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         public async Task MakePaymentAsync(IAgentContext agentContext, PaymentRecord paymentRecord,
             PaymentAddressRecord addressFromRecord = null)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             if (paymentRecord.Amount == 0)
             {
                 throw new AriesFrameworkException(ErrorCode.InvalidRecordData, "Cannot make a payment with 0 amount");
@@ -266,6 +281,11 @@ namespace Hyperledger.Aries.Payments.SovrinToken
 
         private async Task<IDictionary<string, ulong>> GetTransactionFeesAsync(IAgentContext agentContext)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             if (_transactionFees == null)
             {
                 var feesRequest = await IndyPayments.BuildGetTxnFeesRequestAsync(agentContext.AriesStorage.Wallet, null, TokenConfiguration.MethodName);
@@ -345,16 +365,21 @@ namespace Hyperledger.Aries.Payments.SovrinToken
         }
 
         /// <inheritdoc />
-        public async Task<bool> VerifyPaymentAsync(IAgentContext context, PaymentRecord paymentRecord)
+        public async Task<bool> VerifyPaymentAsync(IAgentContext agentContext, PaymentRecord paymentRecord)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             if (paymentRecord.State != PaymentState.Paid && paymentRecord.State != PaymentState.ReceiptReceived)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     "Payment record must be in state Paid or ReceiptReceived to verify it");
             }
 
-            var req = await IndyPayments.BuildVerifyPaymentRequestAsync(context.AriesStorage.Wallet, null, paymentRecord.ReceiptId);
-            var res = await IndyLedger.SubmitRequestAsync((await context.Pool).Pool, req.Result);
+            var req = await IndyPayments.BuildVerifyPaymentRequestAsync(agentContext.AriesStorage.Wallet, null, paymentRecord.ReceiptId);
+            var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req.Result);
 
             var resParsed = JObject.Parse(await IndyPayments.ParseVerifyPaymentResponseAsync("sov", res));
             var receipts = resParsed["receipts"].ToObject<IList<IndyPaymentOutputSource>>()

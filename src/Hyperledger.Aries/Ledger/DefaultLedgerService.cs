@@ -219,12 +219,17 @@ namespace Hyperledger.Aries.Ledger
             return jobj["result"]["data"].ToObject<IList<AuthorizationRule>>();
         }
 
-        private async Task<string> SignAndSubmitAsync(IAgentContext context, string submitterDid, string request, TransactionCost paymentInfo)
+        private async Task<string> SignAndSubmitAsync(IAgentContext agentContext, string submitterDid, string request, TransactionCost paymentInfo)
         {
             if (paymentInfo != null)
             {
+                if (agentContext.AriesStorage.Wallet is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+                }
+
                 var requestWithFees = await IndyPayments.AddRequestFeesAsync(
-                    wallet: context.AriesStorage.Wallet,
+                    wallet: agentContext.AriesStorage.Wallet,
                     submitterDid: null,
                     reqJson: request,
                     inputsJson: paymentInfo.PaymentAddress.Sources.Select(x => x.Source).ToJson(),
@@ -239,8 +244,8 @@ namespace Hyperledger.Aries.Ledger
                     extra: null);
                 request = requestWithFees.Result;
             }
-            var signedRequest = await _signingService.SignRequestAsync(context, submitterDid, request);
-            var response = await IndyLedger.SubmitRequestAsync((await context.Pool).Pool, signedRequest);
+            var signedRequest = await _signingService.SignRequestAsync(agentContext, submitterDid, request);
+            var response = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, signedRequest);
 
             EnsureSuccessResponse(response);
 

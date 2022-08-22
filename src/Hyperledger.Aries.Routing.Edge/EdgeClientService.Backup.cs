@@ -23,8 +23,13 @@ namespace Hyperledger.Aries.Routing.Edge
         const string InternalBackupDid = "22222222AriesBackupDid";
 
         /// <inheritdoc />
-        public async Task<string> CreateBackupAsync(IAgentContext context, string seed)
+        public async Task<string> CreateBackupAsync(IAgentContext agentContext, string seed)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             if (seed.Length != 32)
             {
                 throw new ArgumentException($"{nameof(seed)} should be 32 characters");
@@ -33,12 +38,12 @@ namespace Hyperledger.Aries.Routing.Edge
             var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             var json = new { path, key = seed }.ToJson();
 
-            await context.AriesStorage.Wallet.ExportAsync(json);
+            await agentContext.AriesStorage.Wallet.ExportAsync(json);
 
             var bytesArray = await Task.Run(() => File.ReadAllBytes(path));
 
-            var backupVerkey = await EnsureBackupKeyAsync(context, seed);
-            var signedBytesArray = await Crypto.SignAsync(context.AriesStorage.Wallet, backupVerkey, bytesArray);
+            var backupVerkey = await EnsureBackupKeyAsync(agentContext, seed);
+            var signedBytesArray = await Crypto.SignAsync(agentContext.AriesStorage.Wallet, backupVerkey, bytesArray);
 
             var payload = bytesArray.ToBase64String();
 
@@ -60,7 +65,7 @@ namespace Hyperledger.Aries.Routing.Edge
                 }
             };
 
-            var connection = await GetMediatorConnectionAsync(context).ConfigureAwait(false);
+            var connection = await GetMediatorConnectionAsync(agentContext).ConfigureAwait(false);
 
             if (connection == null)
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound,
@@ -69,16 +74,21 @@ namespace Hyperledger.Aries.Routing.Edge
             File.Delete(path);
 
             await messageService
-                .SendReceiveAsync<StoreBackupResponseAgentMessage>(context, backupMessage, connection)
+                .SendReceiveAsync<StoreBackupResponseAgentMessage>(agentContext, backupMessage, connection)
                 .ConfigureAwait(false);
             return backupVerkey;
         }
 
-        private static async Task<string> EnsureBackupKeyAsync(IAgentContext context, string seed)
+        private static async Task<string> EnsureBackupKeyAsync(IAgentContext agentContext, string seed)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             try
             {
-                var didResult = await Did.CreateAndStoreMyDidAsync(context.AriesStorage.Wallet, new
+                var didResult = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, new
                 {
                     did = InternalBackupDid,
                     seed = seed
@@ -88,11 +98,11 @@ namespace Hyperledger.Aries.Routing.Edge
             catch (IndyException ex) when (ex.SdkErrorCode == 600)
             {
                 var key = await Did.ReplaceKeysStartAsync(
-                    context.AriesStorage.Wallet,
+                    agentContext.AriesStorage.Wallet,
                     InternalBackupDid,
                     new { seed = seed }.ToJson());
 
-                await Did.ReplaceKeysApplyAsync(context.AriesStorage.Wallet, InternalBackupDid);
+                await Did.ReplaceKeysApplyAsync(agentContext.AriesStorage.Wallet, InternalBackupDid);
                 return key;
             }
         }
@@ -159,20 +169,25 @@ namespace Hyperledger.Aries.Routing.Edge
         }
 
         /// <inheritdoc />
-        public async Task<List<long>> ListBackupsAsync(IAgentContext context)
+        public async Task<List<long>> ListBackupsAsync(IAgentContext agentContext)
         {
-            var publicKey = await Did.KeyForLocalDidAsync(context.AriesStorage.Wallet, InternalBackupDid);
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
+            var publicKey = await Did.KeyForLocalDidAsync(agentContext.AriesStorage.Wallet, InternalBackupDid);
 
             var listBackupsMessage = new ListBackupsAgentMessage()
             {
                 BackupId = publicKey,
             };
 
-            var connection = await GetMediatorConnectionAsync(context).ConfigureAwait(false);
+            var connection = await GetMediatorConnectionAsync(agentContext).ConfigureAwait(false);
             if (connection == null)
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Couldn't locate a connection to mediator agent");
 
-            var response = await messageService.SendReceiveAsync<ListBackupsResponseAgentMessage>(context, listBackupsMessage, connection).ConfigureAwait(false);
+            var response = await messageService.SendReceiveAsync<ListBackupsResponseAgentMessage>(agentContext, listBackupsMessage, connection).ConfigureAwait(false);
             return response.BackupList.ToList();
         }
 

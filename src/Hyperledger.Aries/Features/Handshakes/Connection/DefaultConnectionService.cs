@@ -67,6 +67,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         public virtual async Task<(ConnectionInvitationMessage, ConnectionRecord)> CreateInvitationAsync(IAgentContext agentContext,
             InviteConfiguration config = null)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             config = config ?? new InviteConfiguration();
             var connection = new ConnectionRecord { Role = ConnectionRole.Inviter};
             connection.Id = config.ConnectionId ?? connection.Id; 
@@ -128,12 +133,22 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Connection state was invalid. Expected '{ConnectionState.Invited}', found '{connection.State}'");
 
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             await RecordService.DeleteAsync<ConnectionRecord>(agentContext.AriesStorage, invitationId);
         }
 
         /// <inheritdoc />
         public async Task<ConnectionRecord> ProcessInvitationAsync(IAgentContext agentContext, ConnectionInvitationMessage invitation)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             var my = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
 
             var connection = new ConnectionRecord
@@ -259,6 +274,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <inheritdoc />
         public virtual async Task<string> ProcessRequestAsync(IAgentContext agentContext, ConnectionRequestMessage request, ConnectionRecord connection)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             Logger.LogInformation(LoggingEvents.ProcessConnectionRequest, "Did {0}", request.Connection.Did);
             
             var my = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");

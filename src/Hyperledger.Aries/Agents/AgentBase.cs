@@ -171,6 +171,11 @@ namespace Hyperledger.Aries.Agents
                 {
                     if (inboundMessageContext.ReturnRoutingRequested())
                     {
+                        if (agentContext.AriesStorage.Wallet is null)
+                        {
+                            throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+                        }
+
                         var result = inboundMessageContext.Connection != null
                             ? await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
                             : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked.SenderVerkey, response.ToByteArray());
@@ -195,6 +200,11 @@ namespace Hyperledger.Aries.Agents
         private async Task<(UnpackedMessageContext, UnpackResult)> UnpackAsync(IAgentContext agentContext, PackedMessageContext message)
         {
             UnpackResult unpacked;
+
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
 
             try
             {

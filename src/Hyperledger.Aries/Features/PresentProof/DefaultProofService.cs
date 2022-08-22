@@ -108,6 +108,10 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<string> CreateProofAsync(IAgentContext agentContext,
             ProofRequest proofRequest, RequestedCredentials requestedCredentials)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
             var provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             var credentialObjects = new List<CredentialInfo>();
@@ -306,6 +310,11 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             using (var search =
                 await AnonCreds.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage.Wallet, proofRequest.ToJson()))
             {

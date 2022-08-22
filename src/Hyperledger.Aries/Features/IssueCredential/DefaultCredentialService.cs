@@ -185,6 +185,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Credential state was invalid. Expected '{CredentialState.Issued}', found '{credentialRecord.State}'");
 
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             // Check if the state machine is valid for revocation
@@ -242,6 +247,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public async Task DeleteCredentialAsync(IAgentContext agentContext, string credentialId)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             var credentialRecord = await GetAsync(agentContext, credentialId);
             try
             {
@@ -388,6 +398,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             else
             {
+                if (agentContext.AriesStorage.Wallet is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+                }
+
                 var newDid = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
                 proverDid = newDid.Did;
             }
@@ -435,6 +450,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> ProcessCredentialAsync(IAgentContext agentContext, CredentialIssueMessage credential,
             ConnectionRecord connection)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             var credentialAttachment = credential.Credentials.FirstOrDefault(x => x.Id == "libindy-cred-0")
                                        ?? throw new ArgumentException("Credential attachment not found");
 
@@ -486,6 +506,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public async Task<(CredentialOfferMessage, CredentialRecord)> CreateOfferAsync(
             IAgentContext agentContext, OfferConfiguration config, string connectionId)
         {
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            }
+
             Logger.LogInformation(LoggingEvents.CreateCredentialOffer, "DefinitionId {0}, IssuerDid {1}",
                 config.CredentialDefinitionId, config.IssuerDid);
 
@@ -722,6 +747,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage,
                         definitionRecord.CurrentRevocationRegistryId);
                 tailsReader = await TailsService.OpenTailsAsync(revocationRecord.TailsFile);
+            }
+
+            if (agentContext.AriesStorage.Wallet is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
             }
 
             try
