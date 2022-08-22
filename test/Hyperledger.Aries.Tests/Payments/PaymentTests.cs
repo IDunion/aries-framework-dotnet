@@ -31,7 +31,7 @@ namespace Hyperledger.Aries.Tests.Payments
         public async Task CreateSchemaWithFeesAsync()
         {
             var schemaService = Host.Services.GetService<ISchemaService>();
-            var prov = await provisioningService.GetProvisioningAsync(Context.Wallet);
+            var prov = await provisioningService.GetProvisioningAsync(Context.AriesStorage);
 
             await PromoteTrustAnchor(prov.IssuerDid, prov.IssuerVerkey);
 
@@ -42,7 +42,7 @@ namespace Hyperledger.Aries.Tests.Payments
 
             Assert.NotNull(schemaId);
 
-            var address = await recordService.GetAsync<PaymentAddressRecord>(Context.Wallet, prov.DefaultPaymentAddressId);
+            var address = await recordService.GetAsync<PaymentAddressRecord>(Context.AriesStorage, prov.DefaultPaymentAddressId);
 
             Assert.Equal(7UL, address.Balance);
 
@@ -57,7 +57,7 @@ namespace Hyperledger.Aries.Tests.Payments
             await SetFeesForPublicXferTransactionsAsync(2);
 
             // Mint tokens to the address to fund initially
-            var request = await IndyPayments.BuildMintRequestAsync(Context.Wallet, Trustee.Did,
+            var request = await IndyPayments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new { recipient = addressFrom.Address, amount = 15 } }.ToJson(), null);
             await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
 
@@ -70,7 +70,7 @@ namespace Hyperledger.Aries.Tests.Payments
                 Address = addressTo.Address,
                 Amount = 10
             };
-            await recordService.AddAsync(Context.Wallet, paymentRecord);
+            await recordService.AddAsync(Context.AriesStorage, paymentRecord);
             await paymentService.MakePaymentAsync(Context, paymentRecord, addressFrom);
 
             var fee = await paymentService.GetTransactionFeeAsync(Context, TransactionTypes.XFER_PUBLIC);
@@ -99,7 +99,7 @@ namespace Hyperledger.Aries.Tests.Payments
         
         private async Task SetFeesForSchemaTransactionsAsync(ulong amount)
         {
-            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                                 { "fees_for_schema", amount }
@@ -144,7 +144,7 @@ namespace Hyperledger.Aries.Tests.Payments
 
         private async Task SetFeesForPublicXferTransactionsAsync(ulong amount)
         {
-            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                                 { "fees_for_xfer", amount }
@@ -166,7 +166,7 @@ namespace Hyperledger.Aries.Tests.Payments
 
         private async Task UnsetFeesForPublicXferTransactionsAsync()
         {
-            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                                 { "fees_for_xfer", 0 }
@@ -186,7 +186,7 @@ namespace Hyperledger.Aries.Tests.Payments
 
         private async Task UnsetFeesForSchemaTransactionsAsync()
         {
-            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                                 { "fees_for_schema", 0 }
@@ -229,7 +229,7 @@ namespace Hyperledger.Aries.Tests.Payments
         //[Fact(DisplayName = "Set transaction fees")]
         public async Task SetTransactionFees()
         {
-            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            var request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                     { "101", 1 },
@@ -241,7 +241,7 @@ namespace Hyperledger.Aries.Tests.Payments
             Assert.Equal("REPLY", jResponse["op"].ToString());
 
             // Cleanup and revert back fees to 0
-            request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.Wallet, Trustee.Did, TokenConfiguration.MethodName,
+            request = await IndyPayments.BuildSetTxnFeesRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, TokenConfiguration.MethodName,
                 new Dictionary<string, ulong>
                 {
                     { "101", 0 },

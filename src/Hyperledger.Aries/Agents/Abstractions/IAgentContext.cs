@@ -3,6 +3,7 @@ using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Agents
 {
@@ -11,9 +12,7 @@ namespace Hyperledger.Aries.Agents
     /// </summary>
     public interface IAgentContext
     {
-        /// <summary>Gets or sets the agent wallet.</summary>
-        /// <value>The wallet.</value>
-        AriesStorage AriesStorage { get; set; }
+        public AriesStorage AriesStorage { get; set; }
 
         /// <summary>Gets or sets the pool.</summary>
         /// <value>The pool.</value>

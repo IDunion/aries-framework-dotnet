@@ -39,7 +39,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.Connections
       (ConnectionInvitationMessage connectionInvitationMessage, ConnectionRecord connectionRecord) =
         await ConnectionService.CreateInvitationAsync(agentContext, aCreateInvitationRequest.InviteConfiguration);
 
-      string endpointUri = (await ProvisioningService.GetProvisioningAsync(agentContext.Wallet)).Endpoint.Uri;
+      string endpointUri = (await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage)).Endpoint.Uri;
       string encodedInvitation = connectionInvitationMessage.ToJson().ToBase64Url();
       var response =
         new CreateInvitationResponse

@@ -83,7 +83,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task DisposeAsync()
         {
-            if (_holderContext != null) await _holderContext.Wallet.CloseAsync();
+            if (_holderContext != null) await _holderContext.AriesStorage.Wallet.CloseAsync();
 
             await Wallet.DeleteWalletAsync(HolderConfiguration, Credentials);
         }

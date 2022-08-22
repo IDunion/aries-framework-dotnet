@@ -15,7 +15,7 @@ namespace Hyperledger.Aries.Tests
         public async Task CanCreateAndResolveSchema()
         {
             var schemaService = Host.Services.GetService<ISchemaService>();
-            var record = await provisioningService.GetProvisioningAsync(Context.Wallet);
+            var record = await provisioningService.GetProvisioningAsync(Context.AriesStorage);
 
             await PromoteTrustAnchor(record.IssuerDid, record.IssuerVerkey);
 
@@ -56,7 +56,7 @@ namespace Hyperledger.Aries.Tests
             var schemaService = Host.Services.GetService<ISchemaService>();
             var provisioningService = Host.Services.GetService<IProvisioningService>();
 
-            var record = await provisioningService.GetProvisioningAsync(Context.Wallet);
+            var record = await provisioningService.GetProvisioningAsync(Context.AriesStorage);
 
             await PromoteTrustAnchor(record.IssuerDid, record.IssuerVerkey);
 
@@ -92,7 +92,7 @@ namespace Hyperledger.Aries.Tests
             Assert.Equal(schemaName, resultSchemaName);
             Assert.Equal(schemaVersion, resultSchemaVersion);
 
-            var recordResult = await schemaService.GetCredentialDefinitionAsync(Context.Wallet, credId);
+            var recordResult = await schemaService.GetCredentialDefinitionAsync(Context.AriesStorage, credId);
 
             Assert.Equal(schemaId, recordResult.SchemaId);
         }

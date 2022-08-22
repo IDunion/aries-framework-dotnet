@@ -41,7 +41,7 @@ namespace Hyperledger.TestHarness
             var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
             await Host.StopAsync();
 
-            await Context.Wallet.CloseAsync();
+            await Context.AriesStorage.Wallet.CloseAsync();
             await Wallet.DeleteWalletAsync(walletOptions.WalletConfiguration.ToJson(), walletOptions.WalletCredentials.ToJson());
             Host.Dispose();
         }
@@ -75,7 +75,7 @@ namespace Hyperledger.TestHarness
 
             Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
 
-            Trustee = await Did.CreateAndStoreMyDidAsync(Context.Wallet,
+            Trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet,
                 new { seed = "000000000000000000000000Trustee1" }.ToJson());
             Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
@@ -88,9 +88,9 @@ namespace Hyperledger.TestHarness
 
         async Task<CreateAndStoreMyDidResult> PromoteTrustee(string seed)
         {
-            var trustee = await Did.CreateAndStoreMyDidAsync(Context.Wallet, new { seed = seed }.ToJson());
+            var trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet, new { seed = seed }.ToJson());
 
-            await Ledger.SignAndSubmitRequestAsync(await Context.Pool, Context.Wallet, Trustee.Did,
+            await Ledger.SignAndSubmitRequestAsync((await Context.Pool).Pool, Context.AriesStorage.Wallet, Trustee.Did,
                 await Ledger.BuildNymRequestAsync(Trustee.Did, trustee.Did, trustee.VerKey, null, "TRUSTEE"));
 
             return trustee;
@@ -98,36 +98,36 @@ namespace Hyperledger.TestHarness
 
         protected async Task PromoteTrustAnchor(string did, string verkey)
         {
-            await Ledger.SignAndSubmitRequestAsync(await Context.Pool, Context.Wallet, Trustee.Did,
+            await Ledger.SignAndSubmitRequestAsync((await Context.Pool).Pool, Context.AriesStorage.Wallet, Trustee.Did,
                 await Ledger.BuildNymRequestAsync(Trustee.Did, did, verkey, null, "ENDORSER"));
         }
 
         protected async Task PromoteTrustAnchor()
         {
-            var record = await Host.Services.GetService<IProvisioningService>().GetProvisioningAsync(Context.Wallet);
+            var record = await Host.Services.GetService<IProvisioningService>().GetProvisioningAsync(Context.AriesStorage);
             if (record.IssuerDid == null || record.IssuerVerkey == null)
                 throw new AriesFrameworkException(ErrorCode.InvalidRecordData, "Agent not set up as issuer");
 
-            await Ledger.SignAndSubmitRequestAsync(await Context.Pool, Context.Wallet, Trustee.Did,
+            await Ledger.SignAndSubmitRequestAsync((await Context.Pool).Pool, Context.AriesStorage.Wallet, Trustee.Did,
                 await Ledger.BuildNymRequestAsync(Trustee.Did, record.IssuerDid, record.IssuerVerkey, null, "ENDORSER"));
         }
 
         protected async Task<string> TrusteeMultiSignAndSubmitRequestAsync(string request)
         {
-            var singedRequest1 = await Ledger.MultiSignRequestAsync(Context.Wallet, Trustee.Did, request);
-            var singedRequest2 = await Ledger.MultiSignRequestAsync(Context.Wallet, Trustee2.Did, singedRequest1);
-            var singedRequest3 = await Ledger.MultiSignRequestAsync(Context.Wallet, Trustee3.Did, singedRequest2);
+            var singedRequest1 = await Ledger.MultiSignRequestAsync(Context.AriesStorage.Wallet, Trustee.Did, request);
+            var singedRequest2 = await Ledger.MultiSignRequestAsync(Context.AriesStorage.Wallet, Trustee2.Did, singedRequest1);
+            var singedRequest3 = await Ledger.MultiSignRequestAsync(Context.AriesStorage.Wallet, Trustee3.Did, singedRequest2);
 
-            return await Ledger.SubmitRequestAsync(await Context.Pool, singedRequest3);
+            return await Ledger.SubmitRequestAsync((await Context.Pool).Pool, singedRequest3);
         }
 
         protected async Task FundDefaultAccountAsync(ulong amount)
         {
-            var record = await provisioningService.GetProvisioningAsync(Context.Wallet);
-            var addressRecord = await recordService.GetAsync<PaymentAddressRecord>(Context.Wallet, record.DefaultPaymentAddressId);
+            var record = await provisioningService.GetProvisioningAsync(Context.AriesStorage);
+            var addressRecord = await recordService.GetAsync<PaymentAddressRecord>(Context.AriesStorage, record.DefaultPaymentAddressId);
 
             // Mint tokens to the address to fund initially
-            var request = await IndyPayments.BuildMintRequestAsync(Context.Wallet, Trustee.Did,
+            var request = await IndyPayments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new { recipient = addressRecord.Address, amount = amount } }.ToJson(), null);
             await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
 
@@ -136,7 +136,7 @@ namespace Hyperledger.TestHarness
 
         protected async Task FundAccountAsync(ulong amount, string address)
         {
-            var request = await IndyPayments.BuildMintRequestAsync(Context.Wallet, Trustee.Did,
+            var request = await IndyPayments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new { recipient = address, amount = amount } }.ToJson(), null);
             await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
         }

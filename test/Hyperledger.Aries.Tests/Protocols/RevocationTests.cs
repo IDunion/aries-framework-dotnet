@@ -64,7 +64,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             HolderMessageService = PairedAgents.Agent2.Provider.GetService<IMessageService>();
             
             IssuerConfiguration = await PairedAgents.Agent1.Provider.GetRequiredService<IProvisioningService>()
-                .GetProvisioningAsync(IssuerAgentContext.Wallet);
+                .GetProvisioningAsync(IssuerAgentContext.AriesStorage);
             await PromoteTrustAnchor(IssuerConfiguration.IssuerDid, IssuerConfiguration.IssuerVerkey);
             
             _credentialSchemaId = await PairedAgents.Agent1.Provider.GetRequiredService<ISchemaService>()

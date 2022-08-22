@@ -33,9 +33,9 @@ namespace Hyperledger.Aries.Tests
         {
             var record = new PaymentRecord();
             
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var result = await recordService.GetAsync<PaymentRecord>(Context.Wallet, record.Id);
+            var result = await recordService.GetAsync<PaymentRecord>(Context.AriesStorage, record.Id);
             
             Assert.Equal(0, result.RecordVersion);
         }
@@ -45,9 +45,9 @@ namespace Hyperledger.Aries.Tests
         {
             var record = new ConnectionRecord();
             
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var result = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, record.Id);
+            var result = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, record.Id);
             
             Assert.Equal(ConnectionRole.Inviter, result.Role);
         }
@@ -57,9 +57,9 @@ namespace Hyperledger.Aries.Tests
         {
             var record = new ConnectionRecord();
 
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var result = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, record.Id);
+            var result = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, record.Id);
             
             Assert.Equal(HandshakeProtocol.Connections, result.HandshakeProtocol);
         }
@@ -69,9 +69,9 @@ namespace Hyperledger.Aries.Tests
         {
             var record = new ConnectionRecord() {HandshakeProtocol = HandshakeProtocol.DidExchange};
             
-            await recordService.AddAsync(Context.Wallet, record);
+            await recordService.AddAsync(Context.AriesStorage, record);
 
-            var result = await recordService.GetAsync<ConnectionRecord>(Context.Wallet, record.Id);
+            var result = await recordService.GetAsync<ConnectionRecord>(Context.AriesStorage, record.Id);
             
             Assert.Equal(HandshakeProtocol.DidExchange, result.HandshakeProtocol);
         }

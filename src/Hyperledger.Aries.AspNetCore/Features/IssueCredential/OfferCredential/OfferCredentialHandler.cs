@@ -40,7 +40,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.IssueCredentials
     )
     {
       IAgentContext agentContext = await AgentProvider.GetContextAsync();
-      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.Wallet);
+      ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
       ConnectionRecord connectionRecord = await ConnectionService.GetAsync(agentContext, aOfferCredentialRequest.ConnectionId);
 
       (CredentialOfferMessage credentialOfferMessage, _) = 

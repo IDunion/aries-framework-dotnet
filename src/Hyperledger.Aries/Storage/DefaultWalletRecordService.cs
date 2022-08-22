@@ -142,5 +142,10 @@ namespace Hyperledger.Aries.Storage
                 return false;
             }
         }
+
+        public Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

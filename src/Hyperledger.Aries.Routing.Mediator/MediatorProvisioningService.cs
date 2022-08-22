@@ -51,7 +51,7 @@ namespace Hyperledger.Aries.Agents.Edge
             }
 
             var agentContext = await agentProvider.GetContextAsync();
-            var provsioningRecord = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provsioningRecord = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             if (provsioningRecord.GetTag(EdgeInvitationTagName) != null)
             {
@@ -66,8 +66,8 @@ namespace Hyperledger.Aries.Agents.Edge
 
             record.SetTag(InvitationTagName, invitation.ToJson());
             provsioningRecord.SetTag(EdgeInvitationTagName, record.Id);
-            await recordService.UpdateAsync(agentContext.Wallet, provsioningRecord);
-            await recordService.UpdateAsync(agentContext.Wallet, record);
+            await recordService.UpdateAsync(agentContext.AriesStorage, provsioningRecord);
+            await recordService.UpdateAsync(agentContext.AriesStorage, record);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

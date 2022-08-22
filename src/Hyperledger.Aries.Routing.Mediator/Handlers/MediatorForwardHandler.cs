@@ -42,7 +42,7 @@ namespace Hyperledger.Aries.Routing
         protected override async Task<AgentMessage> ProcessAsync(ForwardMessage message, IAgentContext agentContext, UnpackedMessageContext messageContext)
         {
             var inboxId = await routingStore.FindRouteAsync(message.To);
-            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.Wallet, inboxId);
+            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.AriesStorage, inboxId);
 
             var edgeWallet = await walletService.GetWalletAsync(inboxRecord.WalletConfiguration, inboxRecord.WalletCredentials);
 

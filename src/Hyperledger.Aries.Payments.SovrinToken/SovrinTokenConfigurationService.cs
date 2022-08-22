@@ -58,7 +58,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
             {
                 var context = await agentProvider.GetContextAsync();
 
-                var provisioning = await provisioningService.GetProvisioningAsync(context.Wallet);
+                var provisioning = await provisioningService.GetProvisioningAsync(context.AriesStorage);
                 if (provisioning.DefaultPaymentAddressId == null)
                 {
                     if (addressOptions.Seed == null)
@@ -70,7 +70,7 @@ namespace Hyperledger.Aries.Payments.SovrinToken
 
                     provisioning.DefaultPaymentAddressId = address.Id;
                     provisioning.SetTag("AddressSeed", addressOptions.Seed);
-                    await recordService.UpdateAsync(context.Wallet, provisioning);
+                    await recordService.UpdateAsync(context.AriesStorage, provisioning);
                 }
             }
             catch (Exception e)

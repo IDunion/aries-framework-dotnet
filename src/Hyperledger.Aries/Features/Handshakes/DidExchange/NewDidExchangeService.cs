@@ -66,7 +66,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         /// <inheritdoc/>
         public async Task<(DidExchangeRequestMessage, ConnectionRecord)> CreateRequestAsync(IAgentContext agentContext, string did)
         {
-            var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, did);
+            var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, _recordService, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
 
             (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, _recordService, "{}");
@@ -85,7 +85,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 
             var didDoc = new AttachmentContent
             { Base64 = connection.MyDidDoc(provisioningRecord).ToJson().ToBase64Url() };
-            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Store, myVerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myVerKey);
 
             var attachment = new Attachment
             {
@@ -122,7 +122,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             var didDoc = new AttachmentContent
             { Base64 = record.MyDidDoc(provisioningRecord).ToJson().ToBase64Url() };
-            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Store, myVerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myVerKey);
 
             var attachment = new Attachment
             {
@@ -170,7 +170,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 var didDoc = new AttachmentContent
                 { Base64 = connectionRecord.MyDidDoc(provisioningRecord).ToJson().ToBase64Url() };
-                await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Store, connectionRecord.MyVk);
+                await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, connectionRecord.MyVk);
 
                 attachment = new Attachment
                 {
@@ -231,7 +231,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             }
             else if (invitation.Services.FirstOrDefault() is string resolvableDid)
             {
-                var recipientKey = await DidUtils.KeyForDidAsync(agentContext, resolvableDid);
+                var recipientKey = await DidUtils.KeyForDidAsync(agentContext, _recordService, resolvableDid);
                 var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, resolvableDid);
 
                 connectionRecord = new ConnectionRecord

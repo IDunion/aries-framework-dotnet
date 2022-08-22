@@ -154,8 +154,7 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentException($"Value {didKey} is no did:key", nameof(didKey));
             }
 
-            //string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
-            string base58EncodedKey = "";
+            string base58EncodedKey = didKey.Substring($"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length);
             byte[] bytes = Multibase.Base58.Decode(base58EncodedKey);
             byte[] codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
             if (codec.SequenceEqual(MULTICODEC_PREFIX_ED25519))
@@ -366,14 +365,55 @@ namespace Hyperledger.Aries.Utils
             }            
         }
 
-        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, string did)
+        /// <summary>
+        /// Gets the verification key for the specified DID.
+        /// </summary>
+        /// <remarks>
+        /// If the provided <paramref name="wallet"/> of the agent context does not contain the verification key associated with the specified DID then 
+        /// an attempt will be made to look up the key from the provided agent context <paramref name="pool"/>. If resolved from the agent context <paramref name="pool"/>
+        /// then the DID and key will be automatically cached in the <paramref name="wallet"/>.
+        /// <note type="note">
+        /// The <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
+        /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
+        /// </note>
+        /// </remarks>
+        /// <param name="agentContext"></param>
+        /// <param name="did">The DID to get the verification key for.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
+        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
         {
-            throw new NotImplementedException();
+            AriesStorage storage = agentContext.AriesStorage;
+            if (storage.Wallet is null)
+            {
+                throw new ArgumentNullException(nameof(storage.Wallet));
+            }
+
+            DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+            return didRecord.Verkey;
         }
 
+        /// <summary>
+        /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+        /// </summary>
+        /// <returns>The verkey async.</returns>
+        /// <param name="did">Did.</param>
+        /// <param name="verKey">Full verkey.</param>
         public static async Task<string> AbbreviateVerkeyAsync(string did, string verKey)
         {
-            throw new NotImplementedException();
+            string decodedDid = Multibase.Base58.Decode(did).ToString();
+            string decodedVerKey = Multibase.Base58.Decode(verKey).ToString();
+            string firstPart = decodedVerKey.Substring(0, 16);
+            string secondPart = decodedVerKey.Substring(17, decodedVerKey.Length - 1);
+
+            if (decodedDid.Equals(firstPart))
+            {
+                return $"~{secondPart}";
+            }
+            else
+            {
+                return verKey;
+            };
         }
 
         private static async Task<string> BuildFullVerkey(string dest, string str)

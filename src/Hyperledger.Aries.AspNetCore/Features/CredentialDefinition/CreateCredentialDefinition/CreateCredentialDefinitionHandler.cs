@@ -36,7 +36,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.CredentialDefinitions
     {
       IAgentContext agentContext = await AgentProvider.GetContextAsync();
 
-      ProvisioningRecord issuerProvisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.Wallet);
+      ProvisioningRecord issuerProvisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
       string credentialDefinitionId =
         await SchemaService.CreateCredentialDefinitionAsync
         (

@@ -103,7 +103,7 @@ namespace Hyperledger.Aries.TestHarness
             Pool pool, string proverMasterSecretId, bool revocable, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
         {
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(issuerContext.Wallet,
+            var issuer = await Did.CreateAndStoreMyDidAsync(issuerContext.AriesStorage.Wallet,
                 new { seed = TestConstants.StewardSeed }.ToJson());
 
             // Create a schema and credential definition for this issuer
@@ -132,7 +132,7 @@ namespace Hyperledger.Aries.TestHarness
                 await credentialService.ProcessOfferAsync(holderContext, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await AnonCreds.ProverCreateMasterSecretAsync(holderContext.Wallet, proverMasterSecretId);
+            await AnonCreds.ProverCreateMasterSecretAsync(holderContext.AriesStorage.Wallet, proverMasterSecretId);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await credentialService.CreateRequestAsync(holderContext, holderCredentialId);

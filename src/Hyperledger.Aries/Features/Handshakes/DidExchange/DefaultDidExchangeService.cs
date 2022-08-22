@@ -104,7 +104,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 
             var didDoc = new AttachmentContent
                 {Base64 = connection.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Wallet, myDid.VerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myDid.VerKey);
             
             var attachment = new Attachment
             {
@@ -140,7 +140,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             var didDoc = new AttachmentContent
                 {Base64 = record.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Wallet, myDid.VerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myDid.VerKey);
             
             var attachment = new Attachment
             {
@@ -263,7 +263,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 var didDoc = new AttachmentContent
                     {Base64 = connectionRecord.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-                await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage.Wallet, connectionRecord.MyVk);
+                await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, connectionRecord.MyVk);
             
                 attachment = new Attachment
                 {

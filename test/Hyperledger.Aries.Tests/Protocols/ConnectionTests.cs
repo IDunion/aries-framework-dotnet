@@ -192,7 +192,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     DidDoc = new ConnectionRecord
                     {
                         MyVk = "6vyxuqpe3UBcTmhF3Wmmye2UVroa51Lcd9smQKFB5QX1"
-                    }.MyDidDoc(await _provisioningService.GetProvisioningAsync(_issuerWallet.Wallet))
+                    }.MyDidDoc(await _provisioningService.GetProvisioningAsync(_issuerWallet.AriesStorage))
                 }
             }, connectionRecord);
 
@@ -231,7 +231,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     DidDoc = new ConnectionRecord
                     {
                         MyVk = "6vyxuqpe3UBcTmhF3Wmmye2UVroa51Lcd9smQKFB5QX1"
-                    }.MyDidDoc(await _provisioningService.GetProvisioningAsync(_issuerWallet.Wallet))
+                    }.MyDidDoc(await _provisioningService.GetProvisioningAsync(_issuerWallet.AriesStorage))
                 }
             }, connectionRecord);
 
@@ -326,9 +326,9 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task DisposeAsync()
         {
-            if (_issuerWallet != null) await _issuerWallet.Wallet.CloseAsync();
-            if (_holderWallet != null) await _holderWallet.Wallet.CloseAsync();
-            if (_holderWalletTwo != null) await _holderWalletTwo.Wallet.CloseAsync();
+            if (_issuerWallet != null) await _issuerWallet.AriesStorage.Wallet.CloseAsync();
+            if (_holderWallet != null) await _holderWallet.AriesStorage.Wallet.CloseAsync();
+            if (_holderWalletTwo != null) await _holderWalletTwo.AriesStorage.Wallet.CloseAsync();
 
             await Wallet.DeleteWalletAsync(_issuerConfig, Credentials);
             await Wallet.DeleteWalletAsync(_holderConfig, Credentials);

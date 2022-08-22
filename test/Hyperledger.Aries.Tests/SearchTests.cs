@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 using Xunit;
 
@@ -14,6 +15,7 @@ namespace Hyperledger.Aries.Tests
         private const string Credentials = "{\"key\":\"test_wallet_key\"}";
 
         private Wallet _wallet;
+        private AriesStorage _ariesStorage;
 
         private readonly IWalletRecordService _recordService;
 
@@ -34,18 +36,19 @@ namespace Hyperledger.Aries.Tests
             finally
             {
                 _wallet = await Wallet.OpenWalletAsync(Config, Credentials);
+                _ariesStorage = new AriesStorage(wallet: _wallet);
             }
         }
 
         [Fact]
         public async Task CanFilterSearchableProperties()
         {
-            await _recordService.AddAsync(_wallet,
+            await _recordService.AddAsync(_ariesStorage,
                 new ConnectionRecord {Id= "1", State = ConnectionState.Invited});
-            await _recordService.AddAsync(_wallet,
+            await _recordService.AddAsync(_ariesStorage,
                 new ConnectionRecord {Id = "2", State = ConnectionState.Connected});
 
-            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_wallet,
+            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_ariesStorage,
                 SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Invited.ToString("G")), null, 10);
 
             Assert.Single(searchResult);
@@ -71,12 +74,12 @@ namespace Hyperledger.Aries.Tests
             record3.SetTag("tagName", "tagValue");
             
 
-            await _recordService.AddAsync(_wallet, record1);
-            await _recordService.AddAsync(_wallet, record2);
-            await _recordService.AddAsync(_wallet, record3);
+            await _recordService.AddAsync(_ariesStorage, record1);
+            await _recordService.AddAsync(_ariesStorage, record2);
+            await _recordService.AddAsync(_ariesStorage, record3);
 
 
-            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_wallet,
+            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_ariesStorage,
                 SearchQuery.And(
                     SearchQuery.Equal("State", ConnectionState.Connected.ToString("G")),
                     SearchQuery.Equal("tagName", "tagValue")
@@ -97,11 +100,11 @@ namespace Hyperledger.Aries.Tests
             };
             record.SetTag("tagName", "tagValue");
 
-            await _recordService.AddAsync(_wallet, record);
-            await _recordService.AddAsync(_wallet,
+            await _recordService.AddAsync(_ariesStorage, record);
+            await _recordService.AddAsync(_ariesStorage,
                 new ConnectionRecord {Id = Guid.NewGuid().ToString(), State = ConnectionState.Connected});
 
-            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_wallet,
+            var searchResult = await _recordService.SearchAsync<ConnectionRecord>(_ariesStorage,
                 SearchQuery.And(
                     SearchQuery.Equal("State", ConnectionState.Connected.ToString("G")),
                     SearchQuery.Equal("tagName", "tagValue")
