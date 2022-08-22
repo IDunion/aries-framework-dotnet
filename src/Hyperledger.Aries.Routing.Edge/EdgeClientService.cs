@@ -141,30 +141,5 @@ namespace Hyperledger.Aries.Routing.Edge
                 await messageService.SendAsync(agentContext, message, connection);
             }
         }
-
-        public Task<string> CreateBackupAsync(IAgentContext context, string seed)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<Attachment>> RetrieveBackupAsync(IAgentContext context, string seed, long offset = 0)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<long>> ListBackupsAsync(IAgentContext context)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<AgentOptions> RestoreFromBackupAsync(IAgentContext edgeContext, string seed, List<Attachment> backupData)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<AgentOptions> RestoreFromBackupAsync(IAgentContext edgeContext, string seed)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
