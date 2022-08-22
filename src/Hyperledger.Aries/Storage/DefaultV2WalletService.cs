@@ -10,7 +10,7 @@ using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 namespace Hyperledger.Aries.Storage
 {
     /// <inheritdoc />
-    public class NewWalletService : IWalletService
+    public class DefaultV2WalletService : IWalletService
     {
         /// <summary>
         /// Dictionary of open wallets

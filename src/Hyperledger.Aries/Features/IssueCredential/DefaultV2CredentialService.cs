@@ -47,7 +47,7 @@ using Hyperledger.Aries.Features.IssueCredential.Models;
 namespace Hyperledger.Aries.Features.IssueCredential
 {
     /// <inheritdoc />
-    public class NewCredentialService : ICredentialService
+    public class DefaultV2CredentialService : ICredentialService
     {
         /// <summary>
         /// The event aggregator.
@@ -112,7 +112,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="paymentService">The payment service.</param>
         /// <param name="messageService">The message service</param>
         /// <param name="logger">The logger.</param>
-        public NewCredentialService(
+        public DefaultV2CredentialService(
             IEventAggregator eventAggregator,
             ILedgerService ledgerService,
             IConnectionService connectionService,

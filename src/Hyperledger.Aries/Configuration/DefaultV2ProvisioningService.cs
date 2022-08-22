@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace Hyperledger.Aries.Configuration
 {
     /// <inheritdoc />
-    public class NewProvisioningService : IProvisioningService
+    public class DefaultV2ProvisioningService : IProvisioningService
     {
         /// <summary>The record service</summary>
         // ReSharper disable InconsistentNaming
@@ -32,7 +32,7 @@ namespace Hyperledger.Aries.Configuration
         /// <param name="walletRecord">The wallet record.</param>
         /// <param name="walletService">The wallet service.</param>
         /// <param name="agentOptions"></param>
-        public NewProvisioningService(
+        public DefaultV2ProvisioningService(
             IWalletRecordService walletRecord,
             IWalletService walletService,
             IOptions<AgentOptions> agentOptions)

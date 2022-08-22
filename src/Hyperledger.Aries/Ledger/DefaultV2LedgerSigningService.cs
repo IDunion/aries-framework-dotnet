@@ -10,11 +10,11 @@ using Hyperledger.Aries.Storage.Models;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class NewLedgerSigningService : ILedgerSigningService
+    public class DefaultV2LedgerSigningService : ILedgerSigningService
     {
         private readonly IProvisioningService provisioningService;
 
-        public NewLedgerSigningService(IProvisioningService provisioningService)
+        public DefaultV2LedgerSigningService(IProvisioningService provisioningService)
         {
             this.provisioningService = provisioningService;
         }
