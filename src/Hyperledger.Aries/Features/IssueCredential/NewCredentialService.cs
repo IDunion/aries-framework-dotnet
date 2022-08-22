@@ -57,7 +57,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// The ledger service
         /// </summary>
-        protected readonly INewLedgerService LedgerService;
+        protected readonly ILedgerService LedgerService;
 
         /// <summary>
         /// The connection service
@@ -67,12 +67,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// The record service
         /// </summary>
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
 
         /// <summary>
         /// The schema service
         /// </summary>
-        protected readonly INewSchemaService SchemaService;
+        protected readonly ISchemaService SchemaService;
 
         /// <summary>
         /// The tails service
@@ -82,7 +82,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// The provisioning service
         /// </summary>
-        protected readonly INewProvisioningService ProvisioningService;
+        protected readonly IProvisioningService ProvisioningService;
 
         /// <summary>
         /// Payment Service
@@ -114,12 +114,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="logger">The logger.</param>
         public NewCredentialService(
             IEventAggregator eventAggregator,
-            INewLedgerService ledgerService,
+            ILedgerService ledgerService,
             IConnectionService connectionService,
-            INewWalletRecordService recordService,
-            INewSchemaService schemaService,
+            IWalletRecordService recordService,
+            ISchemaService schemaService,
             ITailsService tailsService,
-            INewProvisioningService provisioningService,
+            IProvisioningService provisioningService,
             IPaymentService paymentService,
             IMessageService messageService,
             ILogger<DefaultCredentialService> logger)
@@ -139,7 +139,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public virtual async Task<CredentialRecord> GetAsync(IAgentContext agentContext, string credentialId)
         {
-            var record = await RecordService.GetAsync<CredentialRecord>(agentContext.WalletStore, credentialId);
+            var record = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credentialId);
 
             if (record == null)
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Credential record not found");
@@ -150,7 +150,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public virtual Task<List<CredentialRecord>> ListAsync(IAgentContext agentContext, ISearchQuery query = null,
             int count = 100, int skip = 0) =>
-            RecordService.SearchAsync<CredentialRecord>(agentContext.WalletStore, query, null, count, skip);
+            RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, query, null, count, skip);
 
         /// <inheritdoc />
         public virtual async Task RejectOfferAsync(IAgentContext agentContext, string credentialId)
@@ -162,7 +162,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     $"Credential state was invalid. Expected '{CredentialState.Offered}', found '{credential.State}'");
 
             await credential.TriggerAsync(CredentialTrigger.Reject);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credential);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credential);
         }
 
         /// <inheritdoc />
@@ -174,7 +174,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Credential state was invalid. Expected '{CredentialState.Offered}', found '{credentialRecord.State}'");
 
-            await RecordService.DeleteAsync<ConnectionRecord>(agentContext.WalletStore, offerId);
+            await RecordService.DeleteAsync<ConnectionRecord>(agentContext.AriesStorage, offerId);
         }
 
         /// <inheritdoc />
@@ -187,7 +187,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     $"Credential state was invalid. Expected '{CredentialState.Requested}', found '{credential.State}'");
 
             await credential.TriggerAsync(CredentialTrigger.Reject);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credential);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credential);
         }
 
         /// <inheritdoc />
@@ -199,13 +199,13 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Credential state was invalid. Expected '{CredentialState.Issued}', found '{credentialRecord.State}'");
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             // Check if the state machine is valid for revocation
             await credentialRecord.TriggerAsync(CredentialTrigger.Revoke);
 
             var revocationRecord =
-                await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.WalletStore,
+                await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage,
                     credentialRecord.RevocationRegistryId);
 
             // Revoke the credential
@@ -236,12 +236,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 paymentInfo: paymentInfo);
 
             if (paymentInfo != null)
-                await RecordService.UpdateAsync(agentContext.WalletStore, paymentInfo.PaymentAddress);
+                await RecordService.UpdateAsync(agentContext.AriesStorage, paymentInfo.PaymentAddress);
 
             // Update local credential record
-            await RecordService.UpdateAsync(agentContext.WalletStore, credentialRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credentialRecord);
             // Update local revocation record
-            await RecordService.UpdateAsync(agentContext.WalletStore, revocationRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
 
             if (!sendRevocationNotification)
                 return;
@@ -271,14 +271,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
             //try
             //{
             //    /** TODO : ??? - No such function in SharedRS **/
-            //    await AnonCreds.ProverDeleteCredentialAsync(agentContext.WalletStore, credentialRecord.CredentialId);
+            //    await AnonCreds.ProverDeleteCredentialAsync(agentContext.AriesStorage.Store, credentialRecord.CredentialId);
             //}
             //catch
             //{
             //    // OK
             //}
 
-            await RecordService.DeleteAsync<CredentialRecord>(agentContext.WalletStore, credentialId);
+            await RecordService.DeleteAsync<CredentialRecord>(agentContext.AriesStorage, credentialId);
         }
 
         /// <inheritdoc />
@@ -347,7 +347,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             credentialRecord.SetTag(TagConstants.Role, TagConstants.Holder);
             credentialRecord.SetTag(TagConstants.LastThreadId, threadId);
 
-            await RecordService.AddAsync(agentContext.WalletStore, credentialRecord);
+            await RecordService.AddAsync(agentContext.AriesStorage, credentialRecord);
 
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
@@ -371,7 +371,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialRecordId = await ProcessOfferAsync(agentContext, message, null);
 
                 var (request, record) = await CreateRequestAsync(agentContext, credentialRecordId);
-                var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+                var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
                 try
                 {
@@ -383,7 +383,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         routingKeys: service.RoutingKeys.ToArray(),
                         senderKey: provisioning.IssuerVerkey);
                     var recordId = await ProcessCredentialAsync(agentContext, credentialIssueMessage, null);
-                    return await RecordService.GetAsync<CredentialRecord>(agentContext.WalletStore, recordId);
+                    return await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, recordId);
                 }
                 catch (AriesFrameworkException ex) when (ex.ErrorCode == ErrorCode.A2AMessageTransmissionError)
                 {
@@ -414,17 +414,17 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             else
             {
-                (string newDid, _ ) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.WalletStore, RecordService);
+                (string newDid, _ ) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, RecordService);
                 proverDid = newDid;
             }
 
             var definition = await LedgerService.LookupDefinitionAsync(agentContext, credential.CredentialDefinitionId);
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
-                masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.WalletStore, RecordService, provisioning.MasterSecretId),
+                masterSecretJson : await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
                 masterSecretId: provisioning.MasterSecretId,
                 credentialOfferJson: credential.OfferJson
 
@@ -433,7 +433,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             // Update local credential record with new info
             credential.CredentialRequestMetadataJson = CredentialRequestMetadataJson;
             await credential.TriggerAsync(CredentialTrigger.Request);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credential);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credential);
             var threadId = credential.GetTag(TagConstants.LastThreadId);
 
             var response = new CredentialRequestMessage(agentContext.UseMessageTypesHttps)
@@ -490,12 +490,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialRecord.RevocationRegistryId = revRegId;
             }
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
-                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.WalletStore, RecordService, provisioning.MasterSecretId),
+                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
@@ -507,7 +507,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             credentialRecord.CredentialId = credentialProcessedId;
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credentialRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credentialRecord);
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
                 RecordId = credentialRecord.Id,
@@ -541,7 +541,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 CredentialUtils.ValidateCredentialPreviewAttributes(config.CredentialAttributeValues);
             }
 
-            DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.WalletStore,config.CredentialDefinitionId);
+            DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.AriesStorage, config.CredentialDefinitionId);
             string credDefJson = definition.GetTag(TagConstants.CredDefJson);
             string offerJson = await IndySharedRsOffer.CreateCredentialOfferJsonAsync(
                 await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credDefJson, "schema_id"),
@@ -574,7 +574,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         credentialRecord.Tags.Add(tag.Key, tag.Value);
                 }
 
-            await RecordService.AddAsync(agentContext.WalletStore, credentialRecord);
+            await RecordService.AddAsync(agentContext.AriesStorage, credentialRecord);
             return (new CredentialOfferMessage(agentContext.UseMessageTypesHttps)
             {
                 Id = threadId,
@@ -621,10 +621,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             var (message, record) = await CreateOfferAsync(agentContext, config, null);
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             message.AddDecorator(provisioning.ToServiceDecorator(config.UseDidKeyFormat), DecoratorNames.ServiceDecorator);
 
-            await RecordService.UpdateAsync(agentContext.WalletStore, record);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, record);
             return (message, record);
         }
 
@@ -649,7 +649,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             credential.RequestJson = credentialAttachment.Data.Base64.GetBytesFromBase64().GetUTF8String();
             credential.ConnectionId = connection?.Id;
             await credential.TriggerAsync(CredentialTrigger.Request);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credential);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credential);
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
                 RecordId = credential.Id,
@@ -678,7 +678,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialRecord.CredentialAttributesValues = values;
 
             var definitionRecord =
-                await SchemaService.GetCredentialDefinitionAsync(agentContext.WalletStore,
+                await SchemaService.GetCredentialDefinitionAsync(agentContext.AriesStorage,
                     credentialRecord.CredentialDefinitionId);
             if (credentialRecord.ConnectionId != null)
             {
@@ -688,11 +688,15 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         $"Connection state was invalid. Expected '{ConnectionState.Connected}', found '{connection.State}'");
             }
 
-            var (issuedCredential, revocationRecord) = await IssueCredentialSafeAsync(agentContext, definitionRecord,
-                credentialRecord);
+            (AriesIssuerCreateCredentialResult issuedCredential, RevocationRegistryRecord revocationRecord) = 
+                await IssueCredentialSafeAsync(
+                    agentContext, 
+                    definitionRecord,
+                    credentialRecord);
+
             if (definitionRecord.SupportsRevocation)
             {
-                var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.WalletStore);
+                var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 var paymentInfo =
                     await PaymentService.GetTransactionCostAsync(agentContext, TransactionTypes.REVOC_REG_ENTRY);
 
@@ -713,12 +717,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                 if (paymentInfo != null)
                 {
-                    await RecordService.UpdateAsync(agentContext.WalletStore, paymentInfo.PaymentAddress);
+                    await RecordService.UpdateAsync(agentContext.AriesStorage, paymentInfo.PaymentAddress);
                 }
             }
 
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
-            await RecordService.UpdateAsync(agentContext.WalletStore, credentialRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, credentialRecord);
             var threadId = credentialRecord.GetTag(TagConstants.LastThreadId);
 
             var credentialMsg = new CredentialIssueMessage(agentContext.UseMessageTypesHttps)
@@ -743,7 +747,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             return (credentialMsg, credentialRecord);
         }
 
-        private async Task<(SharedRsIssuerCreateCredentialResult, RevocationRegistryRecord)> IssueCredentialSafeAsync(
+        private async Task<(AriesIssuerCreateCredentialResult, RevocationRegistryRecord)> IssueCredentialSafeAsync(
             IAgentContext agentContext,
             DefinitionRecord definitionRecord,
             CredentialRecord credentialRecord)
@@ -752,7 +756,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             if (definitionRecord.SupportsRevocation)
             {
                 revocationRecord =
-                    await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.WalletStore,
+                    await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage,
                         definitionRecord.CurrentRevocationRegistryId);
             }
 
@@ -780,10 +784,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                 /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
                 revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
-                await RecordService.UpdateAsync(agentContext.WalletStore, revocationRecord);
+                await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
 
                 return (
-                    new SharedRsIssuerCreateCredentialResult(
+                    new AriesIssuerCreateCredentialResult(
                         credentialJson : credentialJson,
                         revocId : await IndySharedRsCred.GetCredentialAttributeAsync(credentialJson, "rev_reg_id"),
                         revocRegDeltaJson : revocationRegistryDeltaJson
@@ -812,7 +816,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 definitionRecord);
 
             definitionRecord.CurrentRevocationRegistryId = nextRevocationRecord.Id;
-            await RecordService.UpdateAsync(agentContext.WalletStore, definitionRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, definitionRecord);
             long.TryParse(revocationRegistryResult.RevRegId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out var revRegistryNewIndex);
 
             (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
@@ -832,10 +836,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
             nextRevocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
-            await RecordService.UpdateAsync(agentContext.WalletStore, nextRevocationRecord);
+            await RecordService.UpdateAsync(agentContext.AriesStorage, nextRevocationRecord);
 
             return (
-                new SharedRsIssuerCreateCredentialResult(
+                new AriesIssuerCreateCredentialResult(
                     credentialJson: credentialJson, 
                     revocId: await IndySharedRsCred.GetCredentialAttributeAsync(credentialJson, "rev_reg_id"),  //Alternative: revocationRegistryResult.RevRegId
                     revocRegDeltaJson: revocationRegistryDeltaJson),

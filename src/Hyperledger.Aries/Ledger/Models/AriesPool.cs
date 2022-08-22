@@ -1,21 +1,24 @@
-﻿using aries_askar_dotnet.Models;
-using Hyperledger.Indy.WalletApi;
+﻿using Hyperledger.Indy.PoolApi;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Hyperledger.Aries.Ledger.Models
 {
     public class AriesPool
     {
         /// <summary>
-        /// The indy-sdk version of PoolAwaitable.
+        /// The indy-sdk version of Pool.
         /// </summary>
-        public PoolAwaitable Pool { get; set; }
+        public Pool Pool { get; set; }
 
         /// <summary>
-        /// The indy-vdr version of PoolAwaitable.
+        /// The indy-vdr version of Pool handle.
         /// </summary>
-        public PoolHandleAwaitable PoolHandle { get; set; }
+        public IntPtr PoolHandle { get; set; }
+
+        public AriesPool(Pool pool = null, IntPtr poolHandle = default)
+        {
+            Pool = pool;
+            PoolHandle = poolHandle;
+        }
     }
 }

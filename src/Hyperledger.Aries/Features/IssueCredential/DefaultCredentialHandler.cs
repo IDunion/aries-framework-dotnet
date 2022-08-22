@@ -156,7 +156,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             var credential = await _credentialService.GetAsync(agentContext, credentialId);
             credential.CredentialAttributesValues = values.Select(x => new CredentialPreviewAttribute { Name = x.Key, Value = x.Value.Raw, MimeType = CredentialMimeTypes.TextMimeType }).ToList();
-            await _recordService.UpdateAsync(agentContext.Wallet, credential);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, credential);
 
             return credential;
         }

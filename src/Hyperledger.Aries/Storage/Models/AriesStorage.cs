@@ -14,5 +14,11 @@ namespace Hyperledger.Aries.Storage.Models
         /// The aries-askar version of wallet
         /// </summary>
         public Store Store { get; set; }
+
+        public AriesStorage(Wallet wallet = null, Store store = null)
+        {
+            Wallet = wallet;
+            Store = store;
+        }
     }
 }

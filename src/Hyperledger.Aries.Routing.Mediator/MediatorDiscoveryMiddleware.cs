@@ -43,7 +43,7 @@ namespace Hyperledger.Aries.Routing
         public async Task<AgentPublicConfiguration> GetConfigurationAsync()
         {
             var agentContext = await agentProvider.GetContextAsync();
-            var provisioningRecord = await provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioningRecord = await provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             var connectionId = provisioningRecord.GetTag(MediatorProvisioningService.EdgeInvitationTagName);
 
             if (connectionId == null)

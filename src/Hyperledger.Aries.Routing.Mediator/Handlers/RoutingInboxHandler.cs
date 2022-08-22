@@ -96,7 +96,7 @@ namespace Hyperledger.Aries.Routing
             };
             try
             {
-                await recordService.AddAsync(agentContext.Wallet, deviceRecord);
+                await recordService.AddAsync(agentContext.AriesStorage, deviceRecord);
             }
             catch (WalletItemAlreadyExistsException)
             {
@@ -110,7 +110,7 @@ namespace Hyperledger.Aries.Routing
         private async Task DeleteInboxItemsAsync(IAgentContext agentContext, ConnectionRecord connection, DeleteInboxItemsMessage deleteInboxItemsMessage)
         {
             var inboxId = connection.GetTag("InboxId");
-            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.Wallet, inboxId);
+            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.AriesStorage, inboxId);
 
             var edgeWallet = await walletService.GetWalletAsync(inboxRecord.WalletConfiguration, inboxRecord.WalletCredentials);
 
@@ -130,7 +130,7 @@ namespace Hyperledger.Aries.Routing
         private async Task<GetInboxItemsResponseMessage> GetInboxItemsAsync(IAgentContext agentContext, ConnectionRecord connection, GetInboxItemsMessage getInboxItemsMessage)
         {
             var inboxId = connection.GetTag("InboxId");
-            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.Wallet, inboxId);
+            var inboxRecord = await recordService.GetAsync<InboxRecord>(agentContext.AriesStorage, inboxId);
 
             var edgeWallet = await walletService.GetWalletAsync(inboxRecord.WalletConfiguration, inboxRecord.WalletCredentials);
 
@@ -191,8 +191,8 @@ namespace Hyperledger.Aries.Routing
                 }
             }
 
-            await recordService.AddAsync(agentContext.Wallet, inboxRecord);
-            await recordService.UpdateAsync(agentContext.Wallet, connection);
+            await recordService.AddAsync(agentContext.AriesStorage, inboxRecord);
+            await recordService.UpdateAsync(agentContext.AriesStorage, connection);
 
             return new CreateInboxResponseMessage
             {

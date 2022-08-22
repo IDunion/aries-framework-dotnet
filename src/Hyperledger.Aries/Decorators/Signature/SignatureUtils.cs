@@ -1,10 +1,14 @@
-﻿using System;
+﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.CryptoApi;
+using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Indy.CryptoApi;
-using Newtonsoft.Json;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
+using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
 namespace Hyperledger.Aries.Decorators.Signature
 {
@@ -29,14 +33,14 @@ namespace Hyperledger.Aries.Decorators.Signature
         /// <returns>Async signature decorator.</returns>
         public static async Task<SignatureDecorator> SignDataAsync<T>(IAgentContext agentContext, T data, string signerKey)
         {
-            var dataJson = data.ToJson();
-            var epochData = BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            string dataJson = data.ToJson();
+            byte[] epochData = BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-            var sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
+            byte[] sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
 
-            var sig = await Crypto.SignAsync(agentContext.Wallet, signerKey, sigData);
+            byte[] sig = await CreateSignature(agentContext.AriesStorage, signerKey, sigData);
 
-            var sigDecorator = new SignatureDecorator
+            SignatureDecorator sigDecorator = new()
             {
                 SignatureType = DefaultSignatureType,
                 SignatureData = sigData.ToBase64UrlString(),
@@ -45,6 +49,26 @@ namespace Hyperledger.Aries.Decorators.Signature
             };
 
             return sigDecorator;
+        }
+
+        public static async Task<byte[]> CreateSignature(AriesStorage storage, string key, byte[] message)
+        {
+            byte[] signature;
+            if ((storage.Wallet == null && storage.Store == null) || (storage.Wallet != null && storage.Store != null))
+            {
+                throw new ArgumentException("Invalid storage.");
+            }
+            else if (storage.Wallet != null)
+            {
+                signature = await Crypto.SignAsync(storage.Wallet, key, message);
+            }
+            else
+            {
+                IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(storage.Store.session, key), 0);
+                signature = await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, message, aries_askar_dotnet.Models.SignatureType.EdDSA);
+            }
+
+            return signature;
         }
 
         /// <summary>
@@ -60,8 +84,8 @@ namespace Hyperledger.Aries.Decorators.Signature
                 message: decorator.SignatureData.GetBytesFromBase64(),
                 signature: decorator.Signature.GetBytesFromBase64()))
             {
-                var sigDataBytes = decorator.SignatureData.GetBytesFromBase64();
-                var sigDataString = sigDataBytes.Skip(8).ToArray().GetUTF8String();
+                byte[] sigDataBytes = decorator.SignatureData.GetBytesFromBase64();
+                string sigDataString = sigDataBytes.Skip(8).ToArray().GetUTF8String();
                 return sigDataString.ToObject<T>();
             }
             throw new AriesFrameworkException(ErrorCode.InvalidMessage, "The signed payload was invalid");

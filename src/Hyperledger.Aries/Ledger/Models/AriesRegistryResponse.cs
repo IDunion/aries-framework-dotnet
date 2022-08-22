@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Hyperledger.Aries.Ledger.Models
 {
-    public class SharedRsResponse
+    public class AriesRegistryResponse
     {
         //
         // Zusammenfassung:
@@ -22,10 +22,19 @@ namespace Hyperledger.Aries.Ledger.Models
         //     The object json.
         public string ObjectJson { get; set; }
 
-        public SharedRsResponse(string id, string objectJson)
+        //
+        // Zusammenfassung:
+        //     Gets the timestamp.
+        //
+        // Wert:
+        //     The timestamp.
+        public ulong Timestamp { get; set; }
+
+        public AriesRegistryResponse(string id, string objectJson, ulong timestamp)
         {
             Id = id;
             ObjectJson = objectJson;
+            Timestamp = timestamp;
         }
     }
 }

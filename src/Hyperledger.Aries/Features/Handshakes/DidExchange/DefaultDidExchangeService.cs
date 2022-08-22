@@ -58,7 +58,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             }
             else if (invitation.Services.FirstOrDefault() is string resolvableDid)
             {
-                var recipientKey = await Did.KeyForDidAsync(await agentContext.Pool, agentContext.Wallet, resolvableDid);
+                var recipientKey = await Did.KeyForDidAsync((await agentContext.Pool).Pool, agentContext.AriesStorage.Wallet, resolvableDid);
                 var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, resolvableDid);
 
                 connectionRecord = new ConnectionRecord
@@ -77,7 +77,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             
             connectionRecord.SetTag(TagConstants.ParentThreadId, invitation.GetThreadId());
             
-            await _recordService.AddAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.AddAsync(agentContext.AriesStorage, connectionRecord);
 
             return connectionRecord;
         }
@@ -85,10 +85,10 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         /// <inheritdoc/>
         public async Task<(DidExchangeRequestMessage, ConnectionRecord)> CreateRequestAsync(IAgentContext agentContext, string did)
         {
-            var theirVerkey = await Did.KeyForDidAsync(await agentContext.Pool, agentContext.Wallet, did);
+            var theirVerkey = await Did.KeyForDidAsync((await agentContext.Pool).Pool, agentContext.AriesStorage.Wallet, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
             
-            var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
 
             var connection = new ConnectionRecord
             {
@@ -100,11 +100,11 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 State = ConnectionState.Negotiating,
             };
             
-            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             var didDoc = new AttachmentContent
                 {Base64 = connection.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-            await didDoc.SignWithJsonWebSignature(agentContext.Wallet, myDid.VerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myDid.VerKey);
             
             var attachment = new Attachment
             {
@@ -124,7 +124,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             connection.SetTag(TagConstants.LastThreadId, request.GetThreadId());
             connection.SetTag(TagConstants.ParentThreadId, request.GetParentThreadId());
             
-            await _recordService.AddAsync(agentContext.Wallet, connection);
+            await _recordService.AddAsync(agentContext.AriesStorage, connection);
 
             return (request, connection);
         }
@@ -133,14 +133,14 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         {
             await record.TriggerAsync(ConnectionTrigger.Request);
             
-            var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+            var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
             record.MyDid = DidUtils.ConvertVerkeyToDidKey(myDid.VerKey);
             record.MyVk = myDid.VerKey;
 
-            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.Wallet);
+            var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
             var didDoc = new AttachmentContent
                 {Base64 = record.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-            await didDoc.SignWithJsonWebSignature(agentContext.Wallet, myDid.VerKey);
+            await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, myDid.VerKey);
             
             var attachment = new Attachment
             {
@@ -162,7 +162,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             request.ThreadFrom(request.Id, parentThread);
             record.SetTag(TagConstants.LastThreadId, request.Id);
 
-            await _recordService.UpdateAsync(agentContext.Wallet, record);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, record);
 
             return (request, record);
         }
@@ -171,7 +171,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         public async Task<ConnectionRecord> ProcessRequestAsync(IAgentContext agentContext,
             DidExchangeRequestMessage requestMessage, ConnectionRecord record = null)
         {
-            var existingConnectionRecords = await _recordService.SearchAsync<ConnectionRecord>(agentContext.Wallet,
+            var existingConnectionRecords = await _recordService.SearchAsync<ConnectionRecord>(agentContext.AriesStorage,
                 SearchQuery.Equal(TagConstants.ParentThreadId, requestMessage.GetParentThreadId()));
             record ??= existingConnectionRecords?.SingleOrDefault();
             
@@ -211,7 +211,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 record.Endpoint = agentEndpoint;
                 
                 record.SetTag(TagConstants.LastThreadId, requestMessage.Id);
-                await _recordService.UpdateAsync(agentContext.Wallet, record);
+                await _recordService.UpdateAsync(agentContext.AriesStorage, record);
             }
             else
             {
@@ -228,7 +228,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 
                 record.SetTag(TagConstants.LastThreadId, requestMessage.GetThreadId());
                 record.SetTag(TagConstants.ParentThreadId, requestMessage.GetParentThreadId());
-                await _recordService.AddAsync(agentContext.Wallet, record);
+                await _recordService.AddAsync(agentContext.AriesStorage, record);
             }
             
             _eventAggregator.Publish(
@@ -250,20 +250,20 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             Attachment attachment = null;
             if (connectionRecord.GetTag(TagConstants.UsePublicDid) == "true")
             {
-                var provisioning = await _provisioningService.GetProvisioningAsync(agentContext.Wallet);
+                var provisioning = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 connectionRecord.MyDid = DidUtils.ToDid(DidUtils.DidSovMethodSpec, provisioning.IssuerDid) ?? throw new AriesFrameworkException(ErrorCode.NoPublicDid);
                 connectionRecord.MyVk = provisioning.IssuerVerkey ?? throw new AriesFrameworkException(ErrorCode.NoPublicDid);
             } 
             else
             {
-                var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.Wallet, "{}");
+                var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");
                 connectionRecord.MyDid = DidUtils.ConvertVerkeyToDidKey(myDid.VerKey);
                 connectionRecord.MyVk = myDid.VerKey;
                 
-                var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.Wallet);
+                var provisioningRecord = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
                 var didDoc = new AttachmentContent
                     {Base64 = connectionRecord.MyDidDoc(provisioningRecord).ToJson().ToBase64Url()};
-                await didDoc.SignWithJsonWebSignature(agentContext.Wallet, connectionRecord.MyVk);
+                await didDoc.SignWithJsonWebSignature(agentContext.AriesStorage, connectionRecord.MyVk);
             
                 attachment = new Attachment
                 {
@@ -280,7 +280,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 DidDoc = attachment
             };
             response.ThreadFrom(connectionRecord.GetTag(TagConstants.LastThreadId), connectionRecord.GetTag(TagConstants.ParentThreadId));
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
 
             return (response, connectionRecord);
         }
@@ -323,7 +323,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                     throw new NotImplementedException("Resolvable Dids cannot be replaced.");
             };
 
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
             
             _eventAggregator.Publish(new ServiceMessageProcessingEvent()
             {
@@ -339,7 +339,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         public async Task<(DidExchangeCompleteMessage, ConnectionRecord)> CreateComplete(IAgentContext agentContext, ConnectionRecord connectionRecord)
         {
             await connectionRecord.TriggerAsync(ConnectionTrigger.Complete);
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
 
             var completeMessage = new DidExchangeCompleteMessage
             {
@@ -355,7 +355,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             ConnectionRecord connectionRecord)
         {
             await connectionRecord.TriggerAsync(ConnectionTrigger.Complete);
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
             
             _eventAggregator.Publish(new ServiceMessageProcessingEvent
             {
@@ -371,7 +371,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         public async Task<(DidExchangeProblemReportMessage, ConnectionRecord)> AbandonDidExchange(IAgentContext agentContext, ConnectionRecord connectionRecord)
         {
             await connectionRecord.TriggerAsync(ConnectionTrigger.Abandon);
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
             
             var myRole = connectionRecord.Role;
             var problemCode = myRole == ConnectionRole.Invitee
@@ -387,7 +387,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         public async Task<ConnectionRecord> ProcessProblemReportMessage(IAgentContext agentContext, DidExchangeProblemReportMessage problemReportMessage, ConnectionRecord connectionRecord)
         {
             await connectionRecord.TriggerAsync(ConnectionTrigger.Abandon);
-            await _recordService.UpdateAsync(agentContext.Wallet, connectionRecord);
+            await _recordService.UpdateAsync(agentContext.AriesStorage, connectionRecord);
 
             _eventAggregator.Publish(new ServiceMessageProcessingEvent
             {

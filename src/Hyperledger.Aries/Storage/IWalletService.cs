@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Storage
@@ -14,7 +15,7 @@ namespace Hyperledger.Aries.Storage
         /// <returns>The wallet async.</returns>
         /// <param name="configuration">Configuration.</param>
         /// <param name="credentials">Credentials.</param>
-        Task<Wallet> GetWalletAsync(WalletConfiguration configuration, WalletCredentials credentials);
+        Task<AriesStorage> GetWalletAsync(WalletConfiguration configuration, WalletCredentials credentials);
 
         /// <summary>
         /// Creates the wallet async.

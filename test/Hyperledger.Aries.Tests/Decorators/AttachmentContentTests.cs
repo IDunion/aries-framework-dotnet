@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Decorators.Attachments;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Xunit;
@@ -26,15 +27,20 @@ namespace Hyperledger.Aries.Tests.Decorators
                 // OK
             }
             
+            //_agent = new DefaultAgentContext
+            //{
+            //    Wallet = await Wallet.OpenWalletAsync(_walletConfig, Credentials),
+            //};
+            // TODO ??? correct refactor?
             _agent = new DefaultAgentContext
             {
-                Wallet = await Wallet.OpenWalletAsync(_walletConfig, Credentials),
+                AriesStorage = new AriesStorage(wallet: await Wallet.OpenWalletAsync(_walletConfig, Credentials)),
             };
         }
 
         public async Task DisposeAsync()
         {
-            if (_agent != null) await _agent.Wallet.CloseAsync();
+            if (_agent != null) await _agent.AriesStorage.Wallet.CloseAsync();
             await Wallet.DeleteWalletAsync(_walletConfig, Credentials);
         }
 
@@ -43,9 +49,9 @@ namespace Hyperledger.Aries.Tests.Decorators
         {
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
-            await content.SignWithJsonWebSignature(_agent.Wallet, key);
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
             
             Assert.NotNull(content.JsonWebSignature);
             Assert.NotNull(content.JsonWebSignature.Header);
@@ -57,9 +63,9 @@ namespace Hyperledger.Aries.Tests.Decorators
         public async Task SignAttachmentThrowsIfContentIsNull()
         {
             var content = new AttachmentContent();
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
-            await Assert.ThrowsAsync<NullReferenceException>(async () => await content.SignWithJsonWebSignature(_agent.Wallet, key));
+            await Assert.ThrowsAsync<NullReferenceException>(async () => await content.SignWithJsonWebSignature(_agent.AriesStorage, key));
         }
 
         [Fact]
@@ -67,8 +73,8 @@ namespace Hyperledger.Aries.Tests.Decorators
         {
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
-            await content.SignWithJsonWebSignature(_agent.Wallet, key);
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
 
             var result = await content.VerifyJsonWebSignature();
             
@@ -80,8 +86,8 @@ namespace Hyperledger.Aries.Tests.Decorators
         {
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
-            await content.SignWithJsonWebSignature(_agent.Wallet, key);
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
+            await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
 
             content.Base64 = "Changed content".ToBase64Url();
 

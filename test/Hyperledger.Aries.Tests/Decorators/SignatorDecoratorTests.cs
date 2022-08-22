@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Decorators.Signature;
 using Hyperledger.Aries.Features.Handshakes.Common;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Xunit;
@@ -26,15 +27,20 @@ namespace Hyperledger.Aries.Tests.Decorators
                 // OK
             }
             
+            //_agent = new DefaultAgentContext
+            //{
+            //    Wallet = await Wallet.OpenWalletAsync(_walletConfig, Credentials),
+            //};
+            // TODO ??? correct refactor?
             _agent = new DefaultAgentContext
             {
-                Wallet = await Wallet.OpenWalletAsync(_walletConfig, Credentials),
+                AriesStorage = new AriesStorage(wallet: await Wallet.OpenWalletAsync(_walletConfig, Credentials)),
             };
         }
 
         public async Task DisposeAsync()
         {
-            if (_agent != null) await _agent.Wallet.CloseAsync();
+            if (_agent != null) await _agent.AriesStorage.Wallet.CloseAsync();
             await Wallet.DeleteWalletAsync(_walletConfig, Credentials);
         }
 
@@ -46,7 +52,7 @@ namespace Hyperledger.Aries.Tests.Decorators
                 Did = "test"
             };
 
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
             var sigData = await SignatureUtils.SignDataAsync(_agent, data, key);
             
@@ -64,7 +70,7 @@ namespace Hyperledger.Aries.Tests.Decorators
                 Did = "test"
             };
 
-            var key = await Crypto.CreateKeyAsync(_agent.Wallet, "{}");
+            var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
             var sigData = await SignatureUtils.SignDataAsync(_agent, data, key);
             

@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
@@ -10,20 +11,23 @@ using Multiformats.Base;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using Hyperledger.Aries.Decorators.Signature;
 using Hyperledger.Aries.Agents;
 
 namespace Hyperledger.Aries.Decorators.Attachments
 {
     public static class AttachmentContentExtensions
     {
+        /*** TODO : ??? - Implement sign and verify for DefaultV2Services -> aries-askar KeyApi***/
+
         /// <summary>
         /// Sign attachment content using json web signature
         /// </summary>
         /// <param name="content">The attachment content to be signed.</param>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The Storage of Wallet or Store object.</param>
         /// <param name="verkey">The verkey to be used for the signing.</param>
         /// <exception cref="NullReferenceException">Throws if payload is null.</exception>
-        public static async Task SignWithJsonWebSignature(this AttachmentContent content, Wallet wallet, string verkey)
+        public static async Task SignWithJsonWebSignature(this AttachmentContent content, AriesStorage storage, string verkey)
         {
             if (!DidUtils.IsVerkey(verkey))
             {
@@ -50,7 +54,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
 
             var message = $"{protectedHeader}.{payload}";
 
-            var signature = (await Crypto.SignAsync(wallet, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
+            var signature = (await SignatureUtils.CreateSignature(storage, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
 
             content.JsonWebSignature = new JsonWebSignature
             {

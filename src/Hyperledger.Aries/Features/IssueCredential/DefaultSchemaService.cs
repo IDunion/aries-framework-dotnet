@@ -16,6 +16,8 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
 using Flurl;
+using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.Features.IssueCredential.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -82,11 +84,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
             await LedgerService.RegisterSchemaAsync(context, issuerDid, schema.SchemaJson, paymentInfo);
 
-            await RecordService.AddAsync(context.Wallet, schemaRecord);
+            await RecordService.AddAsync(context.AriesStorage, schemaRecord);
 
             if (paymentInfo != null)
             {
-                await RecordService.UpdateAsync(context.Wallet, paymentInfo.PaymentAddress);
+                await RecordService.UpdateAsync(context.AriesStorage, paymentInfo.PaymentAddress);
             }
 
             return schemaRecord.Id;
@@ -96,7 +98,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string name,
             string version, string[] attributeNames)
         {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.IssuerDid == null)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "This wallet is not provisioned with issuer");
@@ -162,8 +164,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public virtual Task<List<SchemaRecord>> ListSchemasAsync(Wallet wallet) =>
-            RecordService.SearchAsync<SchemaRecord>(wallet, null, null, 100);
+        public virtual Task<List<SchemaRecord>> ListSchemasAsync(AriesStorage storage) =>
+            RecordService.SearchAsync<SchemaRecord>(storage, null, null, 100);
 
         /// <inheritdoc />
         [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(IAgentContext, CredentialDefinitionConfiguration)'")]
@@ -185,6 +187,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, CredentialDefinitionConfiguration configuration)
         {
+            if (context.AriesStorage.Wallet == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+
             if (configuration == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Configuration must be specified.");
             if (configuration.SchemaId == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "SchemaId must be specified.");
             if (configuration.EnableRevocation &&
@@ -193,11 +198,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             var schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
             var credentialDefinition = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(
-                wallet: context.Wallet,
+                wallet: context.AriesStorage.Wallet,
                 issuerDid: configuration.IssuerDid,
                 schemaJson: schema.ObjectJson,
                 tag: configuration.Tag,
@@ -231,17 +236,20 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 definitionRecord.CurrentRevocationRegistryId = revocationRecord.Id;
             }
 
-            await RecordService.AddAsync(context.Wallet, definitionRecord);
+            await RecordService.AddAsync(context.AriesStorage, definitionRecord);
 
             return credentialDefinition.CredDefId;
         }
 
         /// <inheritdoc />
-        public async Task<(IssuerCreateAndStoreRevocRegResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
+        public async Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
                     IAgentContext context,
                     string tag,
                     DefinitionRecord definitionRecord)
         {
+            if (context.AriesStorage.Wallet == null)
+                throw new AriesFrameworkException(ErrorCode.InvalidStorageUsed, "The provided wallet is null.");
+
             var tailsHandle = await TailsService.CreateTailsAsync();
 
             var revocationRegistryDefinitionJson = new
@@ -250,7 +258,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 max_cred_num = definitionRecord.MaxCredentialCount
             }.ToJson();
             var revocationRegistry = await AnonCreds.IssuerCreateAndStoreRevocRegAsync(
-                wallet: context.Wallet,
+                wallet: context.AriesStorage.Wallet,
                 issuerDid: definitionRecord.IssuerDid,
                 type: null,
                 tag: tag,
@@ -282,7 +290,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 data: revocationDefinition.ToString(),
                 paymentInfo: null);
 
-            await RecordService.AddAsync(context.Wallet, revocationRecord);
+            await RecordService.AddAsync(context.AriesStorage, revocationRecord);
 
             await LedgerService.SendRevocationRegistryEntryAsync(
                 context: context,
@@ -292,7 +300,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 value: revocationRegistry.RevRegEntryJson,
                 paymentInfo: null);
 
-            return (revocationRegistry, revocationRecord);
+            RevocationRegistryResult revocationRegistryResult = new RevocationRegistryResult(
+                revocationRegistryId: revocationRegistry.RevRegId, 
+                revocationRegistryDefinitionJson: revocationRegistry.RevRegDefJson, 
+                revocationRegistryDefinitionPrivateJson: null,
+                revocationRegistryJson: revocationRegistry.RevRegEntryJson
+                );
+            
+            return (revocationRegistryResult, revocationRecord);
         }
 
         /// <inheritdoc />
@@ -300,7 +315,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId,
             string tag, bool supportsRevocation, int maxCredentialCount)
         {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.Wallet);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.IssuerDid == null)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound,
@@ -326,11 +341,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(Wallet wallet) =>
-            RecordService.SearchAsync<DefinitionRecord>(wallet, null, null, 100);
+        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(AriesStorage storage) =>
+            RecordService.SearchAsync<DefinitionRecord>(storage, null, null, 100);
 
         /// <inheritdoc />
-        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(Wallet wallet, string credentialDefinitionId) =>
-            RecordService.GetAsync<DefinitionRecord>(wallet, credentialDefinitionId);
+        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(AriesStorage storage, string credentialDefinitionId) =>
+            RecordService.GetAsync<DefinitionRecord>(storage, credentialDefinitionId);
     }
 }

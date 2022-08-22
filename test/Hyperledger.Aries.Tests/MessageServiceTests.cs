@@ -13,6 +13,7 @@ using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Features.Routing;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
@@ -187,7 +188,7 @@ namespace Hyperledger.Aries.Tests
             var recipient = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
             var sender = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipient.VerKey, new string[0], sender.VerKey);
 
             var unpackRes = await CryptoUtils.UnpackAsync(_wallet, encrypted);
@@ -208,7 +209,7 @@ namespace Hyperledger.Aries.Tests
             var sender = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
             var routingRecipient = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipient.VerKey, new[] { routingRecipient.VerKey }, sender.VerKey);
 
             var unpackRes = await CryptoUtils.UnpackAsync(_wallet, encrypted);
@@ -235,7 +236,7 @@ namespace Hyperledger.Aries.Tests
 
             var recipient = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipient.VerKey);
 
             var unpackRes = await CryptoUtils.UnpackAsync(_wallet, encrypted);
@@ -263,7 +264,7 @@ namespace Hyperledger.Aries.Tests
                 RoutingTwo = await Did.CreateAndStoreMyDidAsync(_wallet, "{}")
             };
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             // Prepare the message for transport by packing the agent message with multiple forward messages
             var transportMessage = await CryptoUtils.PrepareAsync(
                 agentContext: agentContext,
@@ -310,7 +311,7 @@ namespace Hyperledger.Aries.Tests
             var recipient = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
             var routingRecipient = await Did.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipient.VerKey, new[] { routingRecipient.VerKey });
 
             var unpackRes = await CryptoUtils.UnpackAsync(_wallet, encrypted);
@@ -346,7 +347,7 @@ namespace Hyperledger.Aries.Tests
                 TheirVk = Guid.NewGuid().ToString()
             };
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () =>
                 await _messagingService.SendAsync(agentContext, new MockAgentMessage(), connection));
             Assert.True(ex.ErrorCode == ErrorCode.InvalidMessage);
@@ -368,7 +369,7 @@ namespace Hyperledger.Aries.Tests
                 TheirVk = Guid.NewGuid().ToString()
             };
 
-            var agentContext = new AgentContext() { Wallet = _wallet };
+            var agentContext = new AgentContext() { AriesStorage = new AriesStorage(wallet: _wallet) };
             var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () =>
                 await _messagingService.SendAsync(agentContext, new MockAgentMessage { Id = Guid.NewGuid().ToString() }, connection));
             Assert.True(ex.ErrorCode == ErrorCode.InvalidMessage);

@@ -12,21 +12,11 @@ namespace Hyperledger.Aries.Agents
     /// </summary>
     public interface IAgentContext
     {
-        /// <summary>Gets or sets the agent wallet.</summary>
-        /// <value>The wallet.</value>
-        Wallet Wallet { get; set; }
+        public AriesStorage AriesStorage { get; set; }
 
         /// <summary>Gets or sets the pool.</summary>
         /// <value>The pool.</value>
         PoolAwaitable Pool { get; set; }
-
-        /// <summary>Gets or sets the agent wallet.</summary>
-        /// <value>The aries-askar version of wallet.</value>
-        Store WalletStore { get; set; }
-
-        /// <summary>Gets or sets the pool handle.</summary>
-        /// <value>The indy-vdr version of pool handle.</value>
-        NewPoolAwaitable PoolHandle { get; set; }
 
         /// <summary>Name/value utility store to pass data
         /// along the execution pipeline.</summary>

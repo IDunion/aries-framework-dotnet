@@ -108,7 +108,7 @@ namespace Hyperledger.Aries.Tests.Routing
         {
             var seed = "00000000000000000000000000000000";
             var path = SetupDirectoriesAndReturnPath(seed);
-            var myDid = await Did.CreateAndStoreMyDidAsync(EdgeContext.Wallet, "{}");
+            var myDid = await Did.CreateAndStoreMyDidAsync(EdgeContext.AriesStorage.Wallet, "{}");
             await EdgeClient.CreateBackupAsync(EdgeContext, seed);
             // Create a DID that we will retrieve and compare from imported wallet
             
@@ -117,7 +117,7 @@ namespace Hyperledger.Aries.Tests.Routing
 
             var newWallet = await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials);
             
-            var myKey = await Did.KeyForLocalDidAsync(newWallet, myDid.Did);
+            var myKey = await Did.KeyForLocalDidAsync(newWallet.Wallet, myDid.Did);
             Assert.Equal(myKey, myDid.VerKey);
         }
 

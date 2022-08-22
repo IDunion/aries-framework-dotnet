@@ -21,19 +21,20 @@ using System.Linq;
 using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Utils;
+using Hyperledger.Aries.Storage.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
     /// <inheritdoc />
-    public class NewSchemaService : INewSchemaService
+    public class NewSchemaService : ISchemaService
     {
         /// <summary>The provisioning service</summary>
         // ReSharper disable InconsistentNaming
-        protected readonly INewProvisioningService ProvisioningService;
+        protected readonly IProvisioningService ProvisioningService;
         /// <summary>The record service</summary>
-        protected readonly INewWalletRecordService RecordService;
+        protected readonly IWalletRecordService RecordService;
         /// <summary>The ledger service</summary>
-        protected readonly INewLedgerService LedgerService;
+        protected readonly ILedgerService LedgerService;
         private readonly IPaymentService paymentService;
 
         /// <summary>The tails service</summary>
@@ -55,9 +56,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="tailsService">Tails service.</param>
         /// <param name="agentOptions">The agent options.</param>
         public NewSchemaService(
-            INewProvisioningService provisioningService,
-            INewWalletRecordService recordService,
-            INewLedgerService ledgerService,
+            IProvisioningService provisioningService,
+            IWalletRecordService recordService,
+            ILedgerService ledgerService,
             IPaymentService paymentService,
             ITailsService tailsService,
             IOptions<AgentOptions> agentOptions)
@@ -89,11 +90,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
             await LedgerService.RegisterSchemaAsync(context, issuerDid, schemaJson, paymentInfo);
 
-            await RecordService.AddAsync(context.WalletStore, schemaRecord);
+            await RecordService.AddAsync(context.AriesStorage, schemaRecord);
 
             if (paymentInfo != null)
             {
-                await RecordService.UpdateAsync(context.WalletStore, paymentInfo.PaymentAddress);
+                await RecordService.UpdateAsync(context.AriesStorage, paymentInfo.PaymentAddress);
             }
 
             return schemaRecord.Id;
@@ -103,7 +104,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string name,
             string version, string[] attributeNames)
         {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.IssuerDid == null)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, "This wallet is not provisioned with issuer");
@@ -169,8 +170,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public virtual Task<List<SchemaRecord>> ListSchemasAsync(Store wallet) =>
-            RecordService.SearchAsync<SchemaRecord>(wallet, null, null, 100);
+        public virtual Task<List<SchemaRecord>> ListSchemasAsync(AriesStorage storage) =>
+            RecordService.SearchAsync<SchemaRecord>(storage, null, null, 100);
 
         /// <inheritdoc />
         [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(INewAgentContext, CredentialDefinitionConfiguration)'")]
@@ -200,7 +201,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             var schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync(
@@ -243,7 +244,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 definitionRecord.CurrentRevocationRegistryId = revocationRecord.Id;
             }
 
-            await RecordService.AddAsync(context.WalletStore, definitionRecord);
+            await RecordService.AddAsync(context.AriesStorage, definitionRecord);
 
             return credentialDefinitionId;
         }
@@ -307,7 +308,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 data: revocationDefinition.ToString(),
                 paymentInfo: null);
 
-            await RecordService.AddAsync(context.WalletStore, revocationRecord);
+            await RecordService.AddAsync(context.AriesStorage, revocationRecord);
 
             await LedgerService.SendRevocationRegistryEntryAsync(
                 context: context,
@@ -332,7 +333,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId,
             string tag, bool supportsRevocation, int maxCredentialCount)
         {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.WalletStore);
+            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.IssuerDid == null)
             {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound,
@@ -358,11 +359,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(Store wallet) =>
-            RecordService.SearchAsync<DefinitionRecord>(wallet, null, null, 100);
+        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(AriesStorage storage) =>
+            RecordService.SearchAsync<DefinitionRecord>(storage, null, null, 100);
 
         /// <inheritdoc />
-        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(Store wallet, string credentialDefinitionId) =>
-            RecordService.GetAsync<DefinitionRecord>(wallet, credentialDefinitionId);
+        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(AriesStorage storage, string credentialDefinitionId) =>
+            RecordService.GetAsync<DefinitionRecord>(storage, credentialDefinitionId);
     }
 }
