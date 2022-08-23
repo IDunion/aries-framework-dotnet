@@ -208,7 +208,7 @@ namespace Hyperledger.Aries.Ledger.V2
         /// <returns></returns>
         protected async Task<string> SignAndSubmitRequestAsync(IAgentContext context, string signingDid, IntPtr requestHandle)
         {
-            var provisioning = await _provisioningService.GetProvisioningAsync(context.Wallet);
+            var provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.TaaAcceptance != null)
             {
                 var agreementAcceptance = await RequestApi.PrepareTxnAuthorAgreementAcceptanceAsync(
