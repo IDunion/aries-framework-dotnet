@@ -22,17 +22,17 @@ namespace Hyperledger.TestHarness
 {
     public abstract class TestSingleWallet : IAsyncLifetime
     {
-        protected IAgentContext Context { get; private set; }
-        public CreateAndStoreMyDidResult Trustee { get; private set; }
-        public CreateAndStoreMyDidResult Trustee2 { get; private set; }
-        public CreateAndStoreMyDidResult Trustee3 { get; private set; }
+        protected IAgentContext Context { get; set; }
+        public CreateAndStoreMyDidResult Trustee { get; protected set; }
+        public CreateAndStoreMyDidResult Trustee2 { get; protected set; }
+        public CreateAndStoreMyDidResult Trustee3 { get; protected set; }
 
         protected IProvisioningService provisioningService;
         protected IWalletRecordService recordService;
         protected IPaymentService paymentService;
         protected ILedgerService ledgerService;
 
-        protected IHost Host { get; private set; }
+        public IHost Host { get; set; }
 
         protected virtual string GetPoolName() => "TestPool";
         protected virtual string GetIssuerSeed() => null;
@@ -73,33 +73,38 @@ namespace Hyperledger.TestHarness
             await Host.StartAsync();
             await Pool.SetProtocolVersionAsync(2);
 
+            provisioningService = Host.Services.GetService<IProvisioningService>();
+            recordService = Host.Services.GetService<IWalletRecordService>();
+            paymentService = Host.Services.GetService<IPaymentService>();
+            ledgerService = Host.Services.GetService<ILedgerService>();
+            
             Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
 
             Trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet,
                 new { seed = "000000000000000000000000Trustee1" }.ToJson());
             Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
-
-            provisioningService = Host.Services.GetService<IProvisioningService>();
-            recordService = Host.Services.GetService<IWalletRecordService>();
-            paymentService = Host.Services.GetService<IPaymentService>();
-            ledgerService = Host.Services.GetService<ILedgerService>();
         }
 
-        async Task<CreateAndStoreMyDidResult> PromoteTrustee(string seed)
+        protected async Task<CreateAndStoreMyDidResult> PromoteTrustee(string seed)
         {
             var trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet, new { seed = seed }.ToJson());
 
-            await Ledger.SignAndSubmitRequestAsync((await Context.Pool).Pool, Context.AriesStorage.Wallet, Trustee.Did,
-                await Ledger.BuildNymRequestAsync(Trustee.Did, trustee.Did, trustee.VerKey, null, "TRUSTEE"));
+            try
+            {
+                await ledgerService.RegisterNymAsync(Context, Trustee.Did, trustee.Did, trustee.VerKey, "TRUSTEE");
+            }
+            catch (Exception)
+            {
+                // Do nothing - this is expected if the trustee is already registered
+            }
 
             return trustee;
         }
 
         protected async Task PromoteTrustAnchor(string did, string verkey)
         {
-            await Ledger.SignAndSubmitRequestAsync((await Context.Pool).Pool, Context.AriesStorage.Wallet, Trustee.Did,
-                await Ledger.BuildNymRequestAsync(Trustee.Did, did, verkey, null, "ENDORSER"));
+            await ledgerService.RegisterNymAsync(Context, Trustee.Did, did, verkey, "ENDORSER");
         }
 
         protected async Task PromoteTrustAnchor()
@@ -139,6 +144,45 @@ namespace Hyperledger.TestHarness
             var request = await IndyPayments.BuildMintRequestAsync(Context.AriesStorage.Wallet, Trustee.Did,
                 new[] { new { recipient = address, amount = amount } }.ToJson(), null);
             await TrusteeMultiSignAndSubmitRequestAsync(request.Result);
+        }
+    }
+
+    public abstract class TestSingleWalletV2 : TestSingleWallet
+    {
+        public override async Task InitializeAsync()
+        {
+            Host = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<ConsoleLifetimeOptions>(options =>
+                        options.SuppressStatusMessages = true);
+                    services.AddAriesFrameworkV2(builder => builder
+                        .RegisterAgent(options =>
+                        {
+                            options.WalletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
+                            options.WalletCredentials = new WalletCredentials { Key = "test" };
+                            options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
+                            options.PoolName = GetPoolName();
+                            options.EndpointUri = "http://test";
+                            options.IssuerKeySeed = GetIssuerSeed();
+                        }));
+                })
+                .Build();
+
+            await Host.StartAsync();
+            await Pool.SetProtocolVersionAsync(2);
+
+            provisioningService = Host.Services.GetService<IProvisioningService>();
+            recordService = Host.Services.GetService<IWalletRecordService>();
+            paymentService = Host.Services.GetService<IPaymentService>();
+            ledgerService = Host.Services.GetService<ILedgerService>();
+            
+            Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
+
+            Trustee = await Did.CreateAndStoreMyDidAsync(Context.Wallet,
+                new { seed = "000000000000000000000000Trustee1" }.ToJson());
+            Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
+            Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
         }
     }
 }

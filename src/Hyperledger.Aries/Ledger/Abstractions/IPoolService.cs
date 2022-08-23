@@ -48,12 +48,20 @@ namespace Hyperledger.Aries.Contracts
         Task<IndyAml> GetAmlAsync(string poolName, DateTimeOffset timestamp = default(DateTimeOffset), string version = null);
 
         /// <summary>
-        /// Creates a pool configuration.
+        /// Creates a pool for a given genesis file.
         /// </summary>
         /// <param name="poolName">The name of the pool configuration.</param>
         /// <param name="genesisFile">Genesis transaction file.</param>
         /// <returns>
         /// </returns>
         Task CreatePoolAsync(string poolName, string genesisFile);
+        
+        /// <summary>
+        /// Submit a ledger request for a given pool.
+        /// </summary>
+        /// <param name="poolHandle">The awaitable pool handle.</param>
+        /// <param name="requestHandle">The request handle.</param>
+        /// <returns></returns>
+        public Task<string> SubmitRequestAsync(PoolAwaitable poolHandle, object requestHandle);
     }
 }

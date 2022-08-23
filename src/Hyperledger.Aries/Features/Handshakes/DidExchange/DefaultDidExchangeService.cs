@@ -15,6 +15,7 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.PoolApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 {
@@ -63,7 +64,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                     throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
                 }
 
-                var recipientKey = await Did.KeyForDidAsync((await agentContext.Pool).Pool, agentContext.AriesStorage.Wallet, resolvableDid);
+                var recipientKey = await Did.KeyForDidAsync((await agentContext.Pool).Pool as Pool, agentContext.AriesStorage.Wallet, resolvableDid);
                 var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, resolvableDid);
 
                 connectionRecord = new ConnectionRecord
@@ -95,7 +96,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
             }
 
-            var theirVerkey = await Did.KeyForDidAsync((await agentContext.Pool).Pool, agentContext.AriesStorage.Wallet, did);
+            var theirVerkey = await Did.KeyForDidAsync((await agentContext.Pool).Pool as Pool, agentContext.AriesStorage.Wallet, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
             
             var myDid = await Did.CreateAndStoreMyDidAsync(agentContext.AriesStorage.Wallet, "{}");

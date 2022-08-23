@@ -19,7 +19,9 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
@@ -28,7 +30,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Hyperledger.Aries.TestHarness;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {

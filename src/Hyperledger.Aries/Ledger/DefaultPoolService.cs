@@ -3,10 +3,10 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
-using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 using Hyperledger.Indy.PoolApi;
 using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Ledger.Models;
+using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -59,6 +59,12 @@ namespace Hyperledger.Aries.Ledger
             var poolConfig = new { genesis_txn = genesisFile }.ToJson();
 
             await Pool.CreatePoolLedgerConfigAsync(poolName, poolConfig);
+        }
+
+        /// <inheritdoc />
+        public Task<string> SubmitRequestAsync(PoolAwaitable poolHandle, object requestHandle)
+        {
+            throw new NotImplementedException($"{nameof(SubmitRequestAsync)} is not implemented within DefaultLedgerService; use DefaultLedgerServiceV2 instead");
         }
 
         /// <inheritdoc />

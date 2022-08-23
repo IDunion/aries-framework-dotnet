@@ -76,6 +76,11 @@
         /// </summary>
         UnsupportedDidMethod,
         /// <summary>
+        /// The pool does not exist
+        /// </summary>
+        PoolNotFound,
+        UnsupportedDidMethod,
+        /// <summary>
         /// Wrong storage used
         /// </summary>
         InvalidStorage

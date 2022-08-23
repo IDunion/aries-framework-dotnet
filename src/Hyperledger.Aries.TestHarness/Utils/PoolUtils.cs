@@ -11,7 +11,7 @@ namespace Hyperledger.TestHarness.Utils
         private static IPoolService poolService = new DefaultPoolService();
         private static Pool pool;
 
-        public static async Task<Pool> GetPoolAsync()
+        public static async Task<object> GetPoolAsync()
         {
             if (pool != null)
             {

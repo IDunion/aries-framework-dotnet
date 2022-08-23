@@ -10,7 +10,7 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy;
 using Hyperledger.Indy.DidApi;
-using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
 using Newtonsoft.Json.Linq;
 using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
@@ -40,9 +40,9 @@ namespace Hyperledger.Aries.Ledger
             {
                 var req = await IndyLedger.BuildGetCredDefRequestAsync(null, definitionId);
                 var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
-                var parseResult = await IndyLedger.ParseGetCredDefResponseAsync(res);
 
-                return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
+                var result = await IndyLedger.ParseGetCredDefResponseAsync(res);
+                return ConvertResult(result);
             }
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -56,9 +56,9 @@ namespace Hyperledger.Aries.Ledger
         {
             var req = await IndyLedger.BuildGetRevocRegDefRequestAsync(null, registryId);
             var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
-            var parseResult = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
 
-            return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
+            var result = await IndyLedger.ParseGetRevocRegDefResponseAsync(res);
+            return ConvertResult(result);
         }
 
         /// <inheritdoc />
@@ -71,8 +71,8 @@ namespace Hyperledger.Aries.Ledger
 
                 EnsureSuccessResponse(res);
 
-                var parseResult = await IndyLedger.ParseGetSchemaResponseAsync(res);
-                return new AriesResponse(parseResult?.Id, parseResult?.ObjectJson);
+                var result = await IndyLedger.ParseGetSchemaResponseAsync(res);
+                return ConvertResult(result);
             };
 
             return await ResilienceUtils.RetryPolicyAsync(
@@ -89,8 +89,8 @@ namespace Hyperledger.Aries.Ledger
 
             EnsureSuccessResponse(res);
 
-            var parseResult = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
-            return new AriesRegistryResponse(parseResult?.Id, parseResult?.ObjectJson, (ulong)parseResult?.Timestamp);
+            var result = await IndyLedger.ParseGetRevocRegDeltaResponseAsync(res);
+            return ConvertResult(result);
         }
 
         /// <inheritdoc />
@@ -102,8 +102,8 @@ namespace Hyperledger.Aries.Ledger
 
             EnsureSuccessResponse(res);
 
-            var parseResult = await IndyLedger.ParseGetRevocRegResponseAsync(res);
-            return new AriesRegistryResponse(parseResult?.Id, parseResult?.ObjectJson, (ulong)parseResult?.Timestamp);
+            var result = await IndyLedger.ParseGetRevocRegResponseAsync(res);
+            return ConvertResult(result);
         }
 
         /// <inheritdoc />
@@ -117,11 +117,9 @@ namespace Hyperledger.Aries.Ledger
         public async Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did)
         {
             var res = await LookupAttributeAsync(context, did, "endpoint");
-
             var jobj = JObject.Parse(res);
-            var endpoint = jobj["result"]?["data"]?.ToString();
-            
-            return !string.IsNullOrEmpty(endpoint) ? JObject.Parse(endpoint).ToObject<ServiceEndpointResult>() : null;
+
+            return new ServiceEndpointResult {Result = jobj.ToObject<ServiceEndpointResult.ServiceEndpoint>()};
         }
 
         /// <inheritdoc />
@@ -174,7 +172,11 @@ namespace Hyperledger.Aries.Ledger
             var req = await IndyLedger.BuildGetAttribRequestAsync(null, targetDid, attributeName, null, null);
             var res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
 
-            return res;
+            var dataJson = JObject.Parse(res)["result"]!["data"]!.ToString();
+
+            var attribute = JObject.Parse(dataJson)[attributeName]!.ToString();
+            
+            return attribute;
         }
 
         /// <inheritdoc />
@@ -273,5 +275,16 @@ namespace Hyperledger.Aries.Ledger
             if (!response["op"].ToObject<string>().Equals("reply", StringComparison.OrdinalIgnoreCase))
                 throw new AriesFrameworkException(ErrorCode.LedgerOperationRejected, "Ledger operation rejected");
         }
+
+        private ParseResponseResult ConvertResult(Hyperledger.Indy.LedgerApi.ParseResponseResult result)
+        {
+            return new ParseResponseResult(result.Id, result.ObjectJson);
+        }
+        
+        private ParseRegistryResponseResult ConvertResult(Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult result)
+        {
+            return new ParseRegistryResponseResult(result.Id, result.ObjectJson, result.Timestamp);
+        }
+        
     }
 }
