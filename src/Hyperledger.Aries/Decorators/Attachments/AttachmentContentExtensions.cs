@@ -1,18 +1,15 @@
-using System;
-using System.Text;
-using System.Threading.Tasks;
 using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
-using Hyperledger.Indy.CryptoApi;
-using Hyperledger.Indy.WalletApi;
 using Multiformats.Base;
+using System;
+using System.Text;
+using System.Threading.Tasks;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
-using Hyperledger.Aries.Decorators.Signature;
-using Hyperledger.Aries.Agents;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
 namespace Hyperledger.Aries.Decorators.Attachments
 {
@@ -34,12 +31,15 @@ namespace Hyperledger.Aries.Decorators.Attachments
                 throw new ArgumentException("Not a valid verkey: " + verkey);
             }
 
-            var payload = content.Base64;
-            if (payload == null) throw new NullReferenceException("No data to sign");
-            
-            var did = DidUtils.ConvertVerkeyToDidKey(verkey);
+            string payload = content.Base64;
+            if (payload == null)
+            {
+                throw new NullReferenceException("No data to sign");
+            }
 
-            var protectedHeader = new
+            string did = DidUtils.ConvertVerkeyToDidKey(verkey);
+
+            string protectedHeader = new
             {
                 alg = "EdDSA",
                 kid = did,
@@ -52,13 +52,13 @@ namespace Hyperledger.Aries.Decorators.Attachments
                 }
             }.ToJson().ToBase64Url();
 
-            var message = $"{protectedHeader}.{payload}";
+            string message = $"{protectedHeader}.{payload}";
 
-            var signature = (await SignatureUtils.CreateSignature(storage, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
+            string signature = (await CryptoUtils.CreateSignatureAsync(storage, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
 
             content.JsonWebSignature = new JsonWebSignature
             {
-                Header = new JsonWebSignatureHeader {Kid = did},
+                Header = new JsonWebSignatureHeader { Kid = did },
                 Protected = protectedHeader,
                 Signature = signature
             };
@@ -78,12 +78,15 @@ namespace Hyperledger.Aries.Decorators.Attachments
                 throw new ArgumentException("Not a valid verkey: " + verkey);
             }
 
-            var payload = content.Base64;
-            if (payload == null) throw new NullReferenceException("No data to sign");
+            string payload = content.Base64;
+            if (payload == null)
+            {
+                throw new NullReferenceException("No data to sign");
+            }
 
-            var did = DidUtils.ConvertVerkeyToDidKey(verkey);
+            string did = DidUtils.ConvertVerkeyToDidKey(verkey);
 
-            var protectedHeader = new
+            string protectedHeader = new
             {
                 alg = "EdDSA",
                 kid = did,
@@ -96,14 +99,16 @@ namespace Hyperledger.Aries.Decorators.Attachments
                 }
             }.ToJson().ToBase64Url();
 
-            var message = $"{protectedHeader}.{payload}";
+            string message = $"{protectedHeader}.{payload}";
 
             if (store.session is null)
+            {
                 _ = await AriesAskarStore.StartSessionAsync(store);
+            }
 
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, verkey),0);
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, verkey), 0);
             /*** TODO : ??? - which SignatureType ? Could not find default from indy-sdk methods "indy_crypto_sign". probably EdDSA ***/
-            var signature = (await AriesAskarKey.SignMessageFromKeyAsync(keyHandle , Encoding.ASCII.GetBytes(message), SignatureType.EdDSA)).ToBase64UrlString();
+            string signature = (await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, Encoding.ASCII.GetBytes(message), SignatureType.EdDSA)).ToBase64UrlString();
             content.JsonWebSignature = new JsonWebSignature
             {
                 Header = new JsonWebSignatureHeader { Kid = did },
@@ -121,13 +126,13 @@ namespace Hyperledger.Aries.Decorators.Attachments
         {
             try
             {
-                var did = content.JsonWebSignature.Header.Kid;
-                
-                var verkey = DidUtils.ConvertDidKeyToVerkey(did);
-                
-                var message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
-            
-                return await Crypto.VerifyAsync(verkey, Encoding.ASCII.GetBytes(message),
+                string did = content.JsonWebSignature.Header.Kid;
+
+                string verkey = DidUtils.ConvertDidKeyToVerkey(did);
+
+                string message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
+
+                return await CryptoUtils.VerifyAsync(verkey, Encoding.ASCII.GetBytes(message),
                     content.JsonWebSignature.Signature.GetBytesFromBase64());
             }
             catch (Exception)
@@ -145,12 +150,12 @@ namespace Hyperledger.Aries.Decorators.Attachments
         {
             try
             {
-                var did = content.JsonWebSignature.Header.Kid;
+                string did = content.JsonWebSignature.Header.Kid;
 
-                var verkey = DidUtils.ConvertDidKeyToVerkey(did);
+                string verkey = DidUtils.ConvertDidKeyToVerkey(did);
 
-                var message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
-                
+                string message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
+
                 /*** TODO : ??? - which SignatureType / KeyAlg ?***/
                 IntPtr publicVerKey = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(verkey));
                 return await AriesAskarKey.VerifySignatureFromKeyAsync(publicVerKey, Encoding.ASCII.GetBytes(message),

@@ -1,5 +1,6 @@
 ﻿using System;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Routing.Mediator.Handlers;
 
 namespace Hyperledger.Aries.Routing
 {

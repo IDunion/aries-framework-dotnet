@@ -1,19 +1,17 @@
+using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Decorators.Attachments;
+using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Routing.Mediator.Storage;
+using Hyperledger.Aries.Utils;
+using Multiformats.Base;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Contracts;
-using Hyperledger.Aries.Decorators.Attachments;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Features.IssueCredential;
-using Hyperledger.Aries.Routing.Mediator.Storage;
-using Hyperledger.Indy.CryptoApi;
-using Multiformats.Base;
-using Newtonsoft.Json;
 
-namespace Hyperledger.Aries.Routing
+namespace Hyperledger.Aries.Routing.Mediator.Handlers
 {
     public class RetrieveBackupHandler : IMessageHandler
     {
@@ -35,18 +33,18 @@ namespace Hyperledger.Aries.Routing
 
         public async Task<AgentMessage> ProcessAsync(IAgentContext agentContext, UnpackedMessageContext messageContext)
         {
-            var msgJson = messageContext.GetMessageJson();
+            string msgJson = messageContext.GetMessageJson();
 
             switch (messageContext.GetMessageType())
             {
                 case BackupTypeNames.RetrieveBackupAgentMessage:
                     {
-                        var message = messageContext.GetMessage<RetrieveBackupAgentMessage>();
+                        RetrieveBackupAgentMessage message = messageContext.GetMessage<RetrieveBackupAgentMessage>();
 
-                        var signature = message.Signature.GetBytesFromBase64();
-                        var backupId = Multibase.Base58.Decode(message.BackupId);
+                        byte[] signature = message.Signature.GetBytesFromBase64();
+                        byte[] backupId = Multibase.Base58.Decode(message.BackupId);
 
-                        var result = await Crypto.VerifyAsync(
+                        bool result = await CryptoUtils.VerifyAsync(
                             message.BackupId,
                             backupId,
                             signature);
@@ -57,7 +55,7 @@ namespace Hyperledger.Aries.Routing
                             throw new ArgumentException($"{nameof(result)} signature does not match the signer");
                         }
 
-                        var backupAttachments = await _storageService.RetrieveBackupAsync(message.BackupId);
+                        List<Attachment> backupAttachments = await _storageService.RetrieveBackupAsync(message.BackupId);
                         return new RetrieveBackupResponseAgentMessage
                         {
                             Payload = backupAttachments
@@ -65,9 +63,9 @@ namespace Hyperledger.Aries.Routing
                     }
                 case BackupTypeNames.ListBackupsAgentMessage:
                     {
-                        var message = messageContext.GetMessage<ListBackupsAgentMessage>();
-                        var backupList = await _storageService.ListBackupsAsync(message.BackupId);
-                        var timestampList = backupList.Select(p => new DirectoryInfo(p).Name);
+                        ListBackupsAgentMessage message = messageContext.GetMessage<ListBackupsAgentMessage>();
+                        IEnumerable<string> backupList = await _storageService.ListBackupsAsync(message.BackupId);
+                        IEnumerable<string> timestampList = backupList.Select(p => new DirectoryInfo(p).Name);
 
                         return new ListBackupsResponseAgentMessage
                         {

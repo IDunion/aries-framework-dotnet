@@ -10,6 +10,7 @@ using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Routing;
+using Hyperledger.Aries.Routing.Mediator.Handlers;
 using Hyperledger.Aries.Routing.Mediator.Storage;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.DependencyInjection;

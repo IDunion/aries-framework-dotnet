@@ -3,14 +3,20 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Routing;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
+using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using IndySharedRsObject = indy_shared_rs_dotnet.IndyCredx.ObjectApi;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -162,6 +168,144 @@ namespace Hyperledger.Aries.Utils
 
             var routingKeys = connection.Endpoint?.Verkey != null ? connection.Endpoint.Verkey : new string[0];
             return PrepareAsync(agentContext, message, recipientKey, routingKeys, connection.MyVk);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <param name="keyJson"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
+        public static async Task<string> CreateKeyAsync(AriesStorage storage, string keyJson)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                return await CreateKeyStore(keyJson);
+            }
+            else
+            {
+                return await CreateKeyWallet(storage.Wallet, keyJson);
+            }
+        }
+
+        private static async Task<string> CreateKeyStore(string keyJson)
+        {
+            
+            JObject keyObj = JsonConvert.DeserializeObject<JObject>(keyJson);
+            JToken seedToken;
+            JToken algoToken;
+
+            string seed;
+            KeyAlg algo;
+
+            if(keyObj.TryGetValue("seed", out seedToken))
+            {
+                seed = seedToken.ToString();
+            }
+            else
+            {
+                using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+                {
+                    byte[] seedBytes = new byte[32];
+                    rng.GetBytes(seedBytes);
+                    seed = Convert.ToBase64String(seedBytes);
+                }
+            }
+            
+            if(keyObj.TryGetValue("crypto_type", out algoToken))
+            {
+                algo = (KeyAlg)Enum.Parse(typeof(KeyAlg), algoToken.ToString());
+            }
+            else
+            {
+                algo = KeyAlg.ED25519;
+            }
+
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(algo, seed, SeedMethod.BlsKeyGen);
+            return await IndySharedRsObject.ToJsonAsync(keyHandle);
+        }
+
+        private static async Task<string> CreateKeyWallet(Wallet wallet, string keyJson)
+        {
+            return await Crypto.CreateKeyAsync(wallet, keyJson);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <param name="key"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
+        public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, string key, byte[] message)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                return await CreateSignatureStore(storage.Store, key, message);
+            }
+            else
+            {
+                return await CreateSignatureWallet(storage.Wallet, key, message);
+            }
+        }
+
+        private static async Task<byte[]> CreateSignatureStore(Store store, string key, byte[] message)
+        {
+            byte[] signature;
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, key), 0);
+            signature = await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, message, SignatureType.EdDSA);
+            return signature;
+        }
+
+        private static async Task<byte[]> CreateSignatureWallet(Wallet wallet, string key, byte[] message)
+        {
+            return await Crypto.SignAsync(wallet, key, message);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="message"></param>
+        /// <param name="signature"></param>
+        /// <param name="storage"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
+        public static async Task<bool> VerifyAsync(string key, byte[] message, byte[] signature, AriesStorage storage=null)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                return await VerifyAsyncStore(storage.Store, key, message, signature);
+            }
+            else
+            {
+                return await VerifyAsyncWallet(key, message, signature);
+            }
+        }
+
+        private static async Task<bool> VerifyAsyncStore(Store store, string key, byte[] message, byte[] signature)
+        {
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, key), 0);
+            return await AriesAskarKey.VerifySignatureFromKeyAsync(keyHandle, message, signature, SignatureType.EdDSA);
+        }
+
+        private static async Task<bool> VerifyAsyncWallet(string key, byte[] message, byte[] signature)
+        {
+            return await Crypto.VerifyAsync(key, message, signature);
         }
     }
 
