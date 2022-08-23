@@ -40,8 +40,10 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task AddAsync<T>(AriesStorage storage, T record)
             where T : RecordBase, new()
         {
-            if (storage.Store == null)
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, "The provided storage is null.");
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
 
             Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
 
@@ -65,6 +67,11 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
             where T : RecordBase, new()
         {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             if (storage.Store.session == null)
             {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
@@ -116,6 +123,11 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task UpdateAsync(AriesStorage storage, RecordBase record)
         {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             record.UpdatedAtUtc = DateTime.UtcNow;
             if (storage.Store.session == null)
             {
@@ -133,6 +145,11 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task<T> GetAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             if (storage.Store.session == null)
             {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
@@ -176,6 +193,11 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task<bool> DeleteAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             if (storage.Store.session == null)
             {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
@@ -204,6 +226,11 @@ namespace Hyperledger.Aries.Storage
 
         public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did)
         {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
             Debug.WriteLine($"Adding key for did: {did}");
 
             if (storage.Store.session == null)
