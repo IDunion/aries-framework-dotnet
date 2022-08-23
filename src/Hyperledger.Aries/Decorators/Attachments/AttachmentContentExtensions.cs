@@ -122,7 +122,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
         /// </summary>
         /// <param name="content">The attachment content to be verified.</param>
         /// <returns>True - signature is valid; False - signature is missing or invalid.</returns>
-        public static async Task<bool> VerifyJsonWebSignature(this AttachmentContent content)
+        public static async Task<bool> VerifyJsonWebSignature(this AttachmentContent content, IAgentContext agentContext)
         {
             try
             {
@@ -132,7 +132,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
 
                 string message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
 
-                return await CryptoUtils.VerifyAsync(verkey, Encoding.ASCII.GetBytes(message),
+                return await CryptoUtils.VerifyAsync(agentContext.AriesStorage, verkey, Encoding.ASCII.GetBytes(message),
                     content.JsonWebSignature.Signature.GetBytesFromBase64());
             }
             catch (Exception)

@@ -74,7 +74,7 @@ namespace Hyperledger.Aries.Tests.Decorators
 
             var sigData = await SignatureUtils.SignDataAsync(_agent, data, key);
             
-            var result = await SignatureUtils.UnpackAndVerifyAsync<Connection>(sigData);
+            var result = await SignatureUtils.UnpackAndVerifyAsync<Connection>(sigData, _agent);
 
             Assert.True(data.Did == result.Did);
         }

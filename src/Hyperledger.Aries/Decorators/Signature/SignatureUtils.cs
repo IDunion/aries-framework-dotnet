@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using System;
 using System.Linq;
@@ -52,12 +53,9 @@ namespace Hyperledger.Aries.Decorators.Signature
         /// <typeparam name="T">Type in which to cast the result to.</typeparam>
         /// <param name="decorator">Signature decorator to unpack and verify</param>
         /// <returns>Resulting data cast to type T.</returns>
-        public static async Task<T> UnpackAndVerifyAsync<T>(SignatureDecorator decorator)
+        public static async Task<T> UnpackAndVerifyAsync<T>(SignatureDecorator decorator, IAgentContext agentContext)
         {
-            if (await CryptoUtils.VerifyAsync(
-                key: decorator.Signer,
-                message: decorator.SignatureData.GetBytesFromBase64(),
-                signature: decorator.Signature.GetBytesFromBase64()))
+            if (await CryptoUtils.VerifyAsync(agentContext.AriesStorage, decorator.Signer, decorator.SignatureData.GetBytesFromBase64(), decorator.Signature.GetBytesFromBase64()))
             {
                 byte[] sigDataBytes = decorator.SignatureData.GetBytesFromBase64();
                 string sigDataString = sigDataBytes.Skip(8).ToArray().GetUTF8String();

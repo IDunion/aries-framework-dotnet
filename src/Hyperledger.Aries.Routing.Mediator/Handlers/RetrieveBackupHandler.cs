@@ -45,6 +45,7 @@ namespace Hyperledger.Aries.Routing.Mediator.Handlers
                         byte[] backupId = Multibase.Base58.Decode(message.BackupId);
 
                         bool result = await CryptoUtils.VerifyAsync(
+                            agentContext.AriesStorage,
                             message.BackupId,
                             backupId,
                             signature);

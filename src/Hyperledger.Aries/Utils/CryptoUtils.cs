@@ -281,7 +281,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="storage"></param>
         /// <returns></returns>
         /// <exception cref="AriesFrameworkException"></exception>
-        public static async Task<bool> VerifyAsync(string key, byte[] message, byte[] signature, AriesStorage storage=null)
+        public static async Task<bool> VerifyAsync(AriesStorage storage, string key, byte[] message, byte[] signature)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {

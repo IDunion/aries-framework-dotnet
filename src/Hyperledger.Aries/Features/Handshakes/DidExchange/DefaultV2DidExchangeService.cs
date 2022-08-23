@@ -284,7 +284,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             DidDoc didDoc = null;
             if (requestMessage.DidDoc.Data.Base64 is { } data)
             {
-                var isValidSignature = await requestMessage.DidDoc.Data.VerifyJsonWebSignature();
+                var isValidSignature = await requestMessage.DidDoc.Data.VerifyJsonWebSignature(agentContext);
                 if (isValidSignature == false)
                     throw new AriesFrameworkException(ErrorCode.InvalidSignatureEncoding,
                         "The given JSON web signature is invalid");
@@ -353,7 +353,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             DidDoc didDoc = null;
             if (responseMessage.DidDoc?.Data?.Base64 is { } data)
             {
-                var isValidSignature = await responseMessage.DidDoc.Data.VerifyJsonWebSignature();
+                var isValidSignature = await responseMessage.DidDoc.Data.VerifyJsonWebSignature(agentContext);
                 if (isValidSignature == false)
                     throw new AriesFrameworkException(ErrorCode.InvalidSignatureEncoding,
                         "The given JSON web signature is invalid");

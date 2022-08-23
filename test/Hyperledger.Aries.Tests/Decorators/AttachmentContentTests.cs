@@ -76,7 +76,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
             await content.SignWithJsonWebSignature(_agent.AriesStorage, key);
 
-            var result = await content.VerifyJsonWebSignature();
+            var result = await content.VerifyJsonWebSignature(_agent);
             
             Assert.True(result);
         }
@@ -91,7 +91,7 @@ namespace Hyperledger.Aries.Tests.Decorators
 
             content.Base64 = "Changed content".ToBase64Url();
 
-            var result = await content.VerifyJsonWebSignature();
+            var result = await content.VerifyJsonWebSignature(_agent);
             
             Assert.False(result);
         }
@@ -102,7 +102,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var base64Content = "Hello World!".ToBase64Url();
             var content = new AttachmentContent {Base64 = base64Content};
 
-            var result = await content.VerifyJsonWebSignature();
+            var result = await content.VerifyJsonWebSignature(_agent);
             
             Assert.False(result);
         }
