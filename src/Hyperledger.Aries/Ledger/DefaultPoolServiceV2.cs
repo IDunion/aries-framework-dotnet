@@ -12,7 +12,7 @@ using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class DefaultV2PoolService : IPoolService
+    public class DefaultPoolServiceV2 : IPoolService
     {
         /// <summary>Collection of active pool handles.</summary>
         protected static readonly ConcurrentDictionary<string, AriesPool> Pools =

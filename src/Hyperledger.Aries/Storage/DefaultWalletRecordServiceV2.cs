@@ -18,12 +18,12 @@ using Hyperledger.Aries.Storage.Models;
 namespace Hyperledger.Aries.Storage
 {
     /// <inheritdoc />
-    public class DefaultV2WalletRecordService : IWalletRecordService
+    public class DefaultWalletRecordServiceV2 : IWalletRecordService
     {
         private readonly JsonSerializerSettings _jsonSettings;
 
         /// <summary>Initializes a new instance of the <see cref="DefaultWalletRecordService"/> class.</summary>
-        public DefaultV2WalletRecordService()
+        public DefaultWalletRecordServiceV2()
         {
             _jsonSettings = new JsonSerializerSettings
             {

@@ -17,14 +17,14 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 {
-    internal class DefaultV2DidExchangeService : IDidExchangeService
+    internal class DefaultDidExchangeServiceV2 : IDidExchangeService
     {
         private readonly IEventAggregator _eventAggregator;
         private readonly ILedgerService _ledgerService;
         private readonly IProvisioningService _provisioningService;
         private readonly IWalletRecordService _recordService;
 
-        public DefaultV2DidExchangeService(ILedgerService ledgerService, IWalletRecordService recordService, IProvisioningService provisioningService, IEventAggregator eventAggregator)
+        public DefaultDidExchangeServiceV2(ILedgerService ledgerService, IWalletRecordService recordService, IProvisioningService provisioningService, IEventAggregator eventAggregator)
         {
             _ledgerService = ledgerService;
             _recordService = recordService;

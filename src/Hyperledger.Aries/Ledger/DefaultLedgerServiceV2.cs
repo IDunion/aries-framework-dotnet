@@ -21,7 +21,7 @@ using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class DefaultV2LedgerService : ILedgerService
+    public class DefaultLedgerServiceV2 : ILedgerService
     {
         private readonly ILedgerSigningService _signingService;
 
@@ -29,7 +29,7 @@ namespace Hyperledger.Aries.Ledger
         /// Initializes a new instance of the <see cref="DefaultLedgerService" /> class
         /// </summary>
         /// <param name="signingService"></param>
-        public DefaultV2LedgerService(ILedgerSigningService signingService)
+        public DefaultLedgerServiceV2(ILedgerSigningService signingService)
         {
             _signingService = signingService;
         }

@@ -24,7 +24,7 @@ using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
-    internal class DefaultV2ConnectionService : IConnectionService
+    internal class DefaultConnectionServiceV2 : IConnectionService
     {
         /// <summary>
         /// The event aggregator.
@@ -44,13 +44,13 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         protected readonly ILogger<DefaultConnectionService> Logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultV2ConnectionService"/> class.
+        /// Initializes a new instance of the <see cref="DefaultConnectionServiceV2"/> class.
         /// </summary>
         /// <param name="eventAggregator">The event aggregator.</param>
         /// <param name="recordService">The record service.</param>
         /// <param name="provisioningService">The provisioning service.</param>
         /// <param name="logger">The logger.</param>
-        public DefaultV2ConnectionService(
+        public DefaultConnectionServiceV2(
             IEventAggregator eventAggregator,
             IWalletRecordService recordService,
             IProvisioningService provisioningService,

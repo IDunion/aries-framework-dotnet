@@ -31,7 +31,7 @@ using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
-    public class DefaultV2ProofService : IProofService
+    public class DefaultProofServiceV2 : IProofService
     {
         /// <summary>
         /// The event aggregator
@@ -61,7 +61,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <summary>
         /// The logger
         /// </summary>
-        protected readonly ILogger<DefaultV2ProofService> Logger;
+        protected readonly ILogger<DefaultProofServiceV2> Logger;
 
         /// <summary>
         /// The tails service
@@ -74,7 +74,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         protected readonly IMessageService MessageService;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultV2ProofService"/> class.
+        /// Initializes a new instance of the <see cref="DefaultProofServiceV2"/> class.
         /// </summary>
         /// <param name="eventAggregator">The event aggregator.</param>
         /// <param name="connectionService">The connection service.</param>
@@ -84,7 +84,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <param name="tailsService">The tails service.</param>
         /// <param name="messageService">The message service.</param>
         /// <param name="logger">The logger.</param>
-        public DefaultV2ProofService(
+        public DefaultProofServiceV2(
             IEventAggregator eventAggregator,
             IConnectionService connectionService,
             IWalletRecordService recordService,
@@ -92,7 +92,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             ILedgerService ledgerService,
             ITailsService tailsService,
             IMessageService messageService,
-            ILogger<DefaultV2ProofService> logger)
+            ILogger<DefaultProofServiceV2> logger)
         {
             EventAggregator = eventAggregator;
             TailsService = tailsService;

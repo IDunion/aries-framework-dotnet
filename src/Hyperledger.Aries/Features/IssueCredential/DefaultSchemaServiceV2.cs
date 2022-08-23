@@ -27,7 +27,7 @@ using Hyperledger.Aries.Features.IssueCredential.Records;
 namespace Hyperledger.Aries.Features.IssueCredential
 {
     /// <inheritdoc />
-    public class DefaultV2SchemaService : ISchemaService
+    public class DefaultSchemaServiceV2 : ISchemaService
     {
         /// <summary>The provisioning service</summary>
         // ReSharper disable InconsistentNaming
@@ -56,7 +56,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="paymentService">The payment service.</param>
         /// <param name="tailsService">Tails service.</param>
         /// <param name="agentOptions">The agent options.</param>
-        public DefaultV2SchemaService(
+        public DefaultSchemaServiceV2(
             IProvisioningService provisioningService,
             IWalletRecordService recordService,
             ILedgerService ledgerService,

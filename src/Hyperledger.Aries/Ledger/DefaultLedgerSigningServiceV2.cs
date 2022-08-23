@@ -11,11 +11,11 @@ using System.Text;
 namespace Hyperledger.Aries.Ledger
 {
     /// <inheritdoc />
-    public class DefaultV2LedgerSigningService : ILedgerSigningService
+    public class DefaultLedgerSigningServiceV2 : ILedgerSigningService
     {
         private readonly IProvisioningService provisioningService;
 
-        public DefaultV2LedgerSigningService(IProvisioningService provisioningService)
+        public DefaultLedgerSigningServiceV2(IProvisioningService provisioningService)
         {
             this.provisioningService = provisioningService;
         }
