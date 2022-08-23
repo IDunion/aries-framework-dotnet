@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using Flurl;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {

@@ -29,6 +29,7 @@ using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Features.IssueCredential.Models.Messages;
 using Polly;
 using Hyperledger.Aries.Features.RevocationNotification;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {

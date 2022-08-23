@@ -1,7 +1,7 @@
 namespace Hyperledger.Aries.AspNetCore.Features.CredentialDefinitions
 {
   using Hyperledger.Aries.AspNetCore.Features.Bases;
-  using Hyperledger.Aries.Models.Records;
+  using Hyperledger.Aries.Features.IssueCredential.Records;
   using System;
 
   public class GetCredentialDefinitionResponse : BaseResponse

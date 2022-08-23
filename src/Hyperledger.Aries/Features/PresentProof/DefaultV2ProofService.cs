@@ -117,15 +117,15 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 //TODO: ??? Test
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credId);
-                indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.GetTag(TagConstants.CredJson));
+                indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
                 string recordJson = JsonConvert.SerializeObject(credentialRecord);
                 var credentialInfo = JsonConvert.DeserializeObject<CredentialInfo>(recordJson);
 
                 credentialObjects.Add(credentialInfo);
 
                 RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credentialInfo.RevocationRegistryId);
-                string revRegDefJson = revRegRecord.GetTag(TagConstants.RevRegDefJson);
-                string revRegDeltaJson = revRegRecord.GetTag(TagConstants.RevRegDeltaJson);
+                string revRegDefJson = revRegRecord.RevRegDefJson;
+                string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
 
                 string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                     revRegDefJson,

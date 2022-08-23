@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Features.IssueCredential.Models;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.AnonCredsApi;

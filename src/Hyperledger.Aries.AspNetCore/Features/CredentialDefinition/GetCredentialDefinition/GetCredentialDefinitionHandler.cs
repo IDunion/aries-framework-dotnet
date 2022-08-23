@@ -2,14 +2,14 @@ namespace Hyperledger.Aries.AspNetCore.Features.CredentialDefinitions
 {
   using Hyperledger.Aries.Agents;
   using Hyperledger.Aries.Features.IssueCredential;
-  using Hyperledger.Aries.Models.Records;
+  using Hyperledger.Aries.Features.IssueCredential.Records;
   using MediatR;
   using System;
   using System.Collections.Generic;
   using System.Linq;
   using System.Threading;
   using System.Threading.Tasks;
-  
+
   public class GetCredentialDefinitionHandler : IRequestHandler<GetCredentialDefinitionRequest, GetCredentialDefinitionResponse>
   {
 

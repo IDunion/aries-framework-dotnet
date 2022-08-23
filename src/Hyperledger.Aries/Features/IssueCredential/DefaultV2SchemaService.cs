@@ -22,6 +22,7 @@ using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -216,9 +217,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             definitionRecord.IssuerDid = configuration.IssuerDid;
 
             /** TODO: ??? - right way to add credDefJson, credDefPrivateJson and credKeyCorProofJson info? Needed for other IndySharedRs methods which also use credDefJson ***/
-            definitionRecord.SetTag(TagConstants.CredDefJson, credentialDefinitionJson);
-            definitionRecord.SetTag(TagConstants.CredDefPrivateJson, credentialDefinitionPrivateJson);
-            definitionRecord.SetTag(TagConstants.KeyCorrectnesProofJson, credentialKeyCorrectnessProofJson);
+            definitionRecord.CredDefJson = credentialDefinitionJson;
+            definitionRecord.PrivateJson = credentialDefinitionPrivateJson;
+            definitionRecord.KeyCorrectnesProofJson = credentialKeyCorrectnessProofJson;
 
             //var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.CRED_DEF);
 
@@ -285,10 +286,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 CredentialDefinitionId = definitionRecord.Id
             };
             /** TODO: ??? - right way to add revocationRegistry.. info? Needed for other IndySharedRs methods which also use revReg/DefJson ***/
-            revocationRecord.SetTag(TagConstants.RevRegDefJson, revocationRegistryDefinitionJson);
-            revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryJson);
-            revocationRecord.SetTag(TagConstants.RevRegDefPrivateJson, revocationRegistryDefinitionPrivateJson);
-            revocationRecord.SetTag(TagConstants.RevRegDeltaJson, revocationRegistryDeltaJson);
+            revocationRecord.RevRegDefJson = revocationRegistryDefinitionJson;
+            revocationRecord.RevRegJson = revocationRegistryJson;
+            revocationRecord.RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson;
+            revocationRecord.RevRegDeltaJson = revocationRegistryDeltaJson;
 
             // Update tails location URI
             var revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);

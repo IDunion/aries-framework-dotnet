@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Aries.Storage;
-using Newtonsoft.Json;
 
-namespace Hyperledger.Aries.Models.Records
+namespace Hyperledger.Aries.Features.IssueCredential.Records
 {
     /// <summary>
     /// Schema definition record.
@@ -12,11 +11,7 @@ namespace Hyperledger.Aries.Models.Records
         /// Gets or sets the identifier of the schema the definition is derived from.
         /// </summary>
         /// <value>The schema identifier.</value>
-        public string SchemaId
-        {
-            get => Get();
-            set => Set(value);
-        }
+        public string SchemaId { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this definition supports credential revocation.
@@ -24,11 +19,7 @@ namespace Hyperledger.Aries.Models.Records
         /// <value>
         ///   <c>true</c> if this definition supports credential revocation; otherwise, <c>false</c>.
         /// </value>
-        public bool SupportsRevocation
-        {
-            get;
-            set;
-        }
+        public bool SupportsRevocation { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether requests are automatically issued a credential.
@@ -36,11 +27,7 @@ namespace Hyperledger.Aries.Models.Records
         /// <value>
         ///   <c>true</c> if [require approval]; otherwise, <c>false</c>.
         /// </value>
-        public bool RequireApproval
-        {
-            get;
-            set;
-        }
+        public bool RequireApproval { get; set; }
 
         /// <summary>
         /// Gets the name of the type.
@@ -75,5 +62,23 @@ namespace Hyperledger.Aries.Models.Records
         /// The issuer did.
         /// </value>
         public string IssuerDid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the json of the credential definition.
+        /// </summary>
+        /// <value>Json of credential definition.</value>
+        public string CredDefJson { get; set; }
+
+        /// <summary>
+        /// Gets or sets the private definition json.
+        /// </summary>
+        /// <value>Json of the private definition.</value>
+        public string PrivateJson { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key correctness proof json.
+        /// </summary>
+        /// <value>Json of the key correctness proof.</value>
+        public string KeyCorrectnesProofJson { get; set; }
     }
 }

@@ -35,21 +35,6 @@
 
         public const string UsePublicDid = "usePublicDid";
 
-        public const string RevRegDefJson = "revocationRegistryDefinitionJson";
-
-        public const string RevRegDefPrivateJson = "revocationRegistryDefinitionPrivateJson";
-
-        public const string RevRegJson = "revocationRegistryJson";
-
-        public const string RevRegDeltaJson = "revocationRegistryDeltaJson";
-
-        public const string CredDefJson = "credentialDefinitionJson";
-
-        public const string CredDefPrivateJson = "credentialDefinitionPrivateJson";
-
-        public const string KeyCorrectnesProofJson = "keyCorrectnesProofJson";
-
-        public const string CredJson = "credentialJson";
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
     }

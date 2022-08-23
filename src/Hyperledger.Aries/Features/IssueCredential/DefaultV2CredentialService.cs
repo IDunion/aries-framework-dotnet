@@ -43,6 +43,7 @@ using indy_shared_rs_dotnet.Models;
 using Hyperledger.Aries.Ledger.Models;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -215,13 +216,13 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Invalid credentialRevocationId, has to be of type long : {credentialRecord.CredentialRevocationId}.");
             
             (string revRegUpdatedJson, string revocRegistryDeltaJson) = await IndySharedRsRev.RevokeCredentialAsync(
-                revRegDefJson : revocationRecord.GetTag(TagConstants.RevRegDefJson),
-                revRegJson : revocationRecord.GetTag(TagConstants.RevRegJson),
+                revRegDefJson : revocationRecord.RevRegDefJson,
+                revRegJson : revocationRecord.RevRegJson,
                 credRevIdx : credRevIdx,
                 tailsPath : revocationRecord.TailsFile);
 
             //TODO : ??? - check with team -> Need to update revocation Registry in wallet (see indy-sdk code indy_issuer_revoke_credential)
-            revocationRecord.SetTag(TagConstants.RevRegJson, revRegUpdatedJson);
+            revocationRecord.RevRegJson = revRegUpdatedJson;
 
             var paymentInfo =
                 await PaymentService.GetTransactionCostAsync(agentContext, TransactionTypes.REVOC_REG_ENTRY);
@@ -503,7 +504,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             /** TODO : ??? - need to update credentialJson information
              * we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential **/
-            credentialRecord.SetTag(TagConstants.CredJson, credentialProcessedJson);
+            credentialRecord.CredentialJson = credentialProcessedJson;
 
             credentialRecord.CredentialId = credentialProcessedId;
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
@@ -542,11 +543,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.AriesStorage, config.CredentialDefinitionId);
-            string credDefJson = definition.GetTag(TagConstants.CredDefJson);
+            string credDefJson = definition.CredDefJson;
             string offerJson = await IndySharedRsOffer.CreateCredentialOfferJsonAsync(
                 await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credDefJson, "schema_id"),
                 credDefJson,
-                definition.GetTag(TagConstants.KeyCorrectnesProofJson));
+                definition.KeyCorrectnesProofJson);
 
             var offerJobj = JObject.Parse(offerJson);
             var schemaId = offerJobj["schema_id"].ToObject<string>();
@@ -769,21 +770,21 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long revRegistryIndex);
 
                 (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
-                    credentialRecord.GetTag(TagConstants.CredDefJson),
-                    credentialRecord.GetTag(TagConstants.CredDefPrivateJson),
+                    credentialRecord.CredDefJson,
+                    credentialRecord.CredDefPrivateJson,
                     credentialRecord.OfferJson,
                     credentialRecord.RequestJson,
                     attrNames,
                     attrNamesRaw,
                     attrNamesEnc,
-                    revocationRecord.GetTag(TagConstants.RevRegDefJson),
-                    revocationRecord.GetTag(TagConstants.RevRegDefPrivateJson),
-                    revocationRecord.GetTag(TagConstants.RevRegJson),
+                    revocationRecord.RevRegDefJson,
+                    revocationRecord.RevRegDefPrivateJson,
+                    revocationRecord.RevRegJson,
                     revRegistryIndex,
                     regUsed);
 
                 /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
-                revocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
+                revocationRecord.RevRegJson = revocationRegistryUpdatedJson;
                 await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
 
                 return (
@@ -820,8 +821,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
             long.TryParse(revocationRegistryResult.RevRegId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out var revRegistryNewIndex);
 
             (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
-                definitionRecord.GetTag(TagConstants.CredDefJson),
-                definitionRecord.GetTag(TagConstants.CredDefPrivateJson),
+                definitionRecord.CredDefJson,
+                definitionRecord.PrivateJson,
                 credentialRecord.OfferJson,
                 credentialRecord.RequestJson,
                 attrNames,
@@ -835,7 +836,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 );
 
             /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
-            nextRevocationRecord.SetTag(TagConstants.RevRegJson, revocationRegistryUpdatedJson);
+            nextRevocationRecord.RevRegJson = revocationRegistryUpdatedJson;
             await RecordService.UpdateAsync(agentContext.AriesStorage, nextRevocationRecord);
 
             return (
