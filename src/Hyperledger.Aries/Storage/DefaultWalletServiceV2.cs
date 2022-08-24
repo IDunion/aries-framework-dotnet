@@ -65,6 +65,10 @@ namespace Hyperledger.Aries.Storage
         {
             if (Storages.TryGetValue(configuration.Id, out var ariesStorage))
             {
+                if (ariesStorage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
                 if (ariesStorage.Store.storeHandle != (IntPtr)0)
                     return ariesStorage;
 
