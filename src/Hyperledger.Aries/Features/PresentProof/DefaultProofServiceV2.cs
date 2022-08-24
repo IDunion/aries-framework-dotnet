@@ -326,9 +326,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
-            /* TODO: ??? Replace ANonCreds */
-            using (var search = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(null, proofRequest.ToJson()))
-            //using (var search = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage.Store, proofRequest.ToJson()))
+            using (var search = await CredentialUtils.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage, proofRequest.ToJson()))
             {
                 var searchResult = await search.NextAsync(attributeReferent, 100);
                 return JsonConvert.DeserializeObject<List<IssueCredential.Credential>>(searchResult);

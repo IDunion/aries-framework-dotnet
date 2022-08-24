@@ -1,19 +1,17 @@
-﻿using System;
+﻿using aries_askar_dotnet;
+using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.PresentProof;
+using Hyperledger.Aries.Storage.Models;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Features.PresentProof;
-using Hyperledger.Indy.NonSecretsApi;
-using Hyperledger.Indy.WalletApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
-using Newtonsoft.Json;
-using aries_askar_dotnet.Models;
-using Stateless.Graph;
-using Hyperledger.Aries.Storage.Models;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -54,12 +52,12 @@ namespace Hyperledger.Aries.Storage
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
-            await AriesAskarStore.InsertAsync(
-                session : storage.Store.session,
-                category : record.TypeName,
-                name : record.Id,
-                value : record.ToJson(_jsonSettings),
-                tags : record.Tags.ToJson());
+            _ = await AriesAskarStore.InsertAsync(
+                session: storage.Store.session,
+                category: record.TypeName,
+                name: record.Id,
+                value: record.ToJson(_jsonSettings),
+                tags: record.Tags.ToJson());
         }
 
         /// <inheritdoc />
@@ -79,17 +77,19 @@ namespace Hyperledger.Aries.Storage
 
             options ??= new SearchOptions();
 
-            var search = await AriesAskarStore.StartScanAsync(
-                store : storage.Store,
-                category : new T().TypeName,
-                tagFilter : (query ?? SearchQuery.Empty).ToJson(),
-                offset : skip,
-                limit : count);
-            var entryListHandle = await AriesAskarStore.NextAsync(search);
+            Scan search = await AriesAskarStore.StartScanAsync(
+                store: storage.Store,
+                category: new T().TypeName,
+                tagFilter: (query ?? SearchQuery.Empty).ToJson(),
+                offset: skip,
+                limit: count);
+            IntPtr entryListHandle = await AriesAskarStore.NextAsync(search);
 
             //empty result for given filter 
             if (entryListHandle == new IntPtr())
+            {
                 return new List<T>();
+            }
 
             List<SearchItem> records = new();
             int numRecords = await AriesAskarResults.EntryListCountAsync(entryListHandle);
@@ -106,14 +106,17 @@ namespace Hyperledger.Aries.Storage
                 };
                 records.Add(item);
             }
-            SearchResult result = new () { Records = records };
-            
+            SearchResult result = new() { Records = records };
+
             return result.Records?
                            .Select(x =>
                            {
-                               var record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
-                               foreach (var tag in x.Tags)
+                               T record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
+                               foreach (KeyValuePair<string, string> tag in x.Tags)
+                               {
                                    record.Tags[tag.Key] = tag.Value;
+                               }
+
                                return record;
                            })
                            .ToList()
@@ -134,12 +137,12 @@ namespace Hyperledger.Aries.Storage
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
             }
 
-            await AriesAskarStore.ReplaceAsync(
-                session : storage.Store.session,
-                category : record.TypeName,
-                name : record.Id,
-                value : record.ToJson(_jsonSettings),
-                tags : record.Tags.ToJson(_jsonSettings));
+            _ = await AriesAskarStore.ReplaceAsync(
+                session: storage.Store.session,
+                category: record.TypeName,
+                name: record.Id,
+                value: record.ToJson(_jsonSettings),
+                tags: record.Tags.ToJson(_jsonSettings));
         }
 
         /// <inheritdoc />
@@ -163,28 +166,32 @@ namespace Hyperledger.Aries.Storage
                     id);
 
                 //empty result for given filter 
-                if (recordHandle == new IntPtr()) 
+                if (recordHandle == new IntPtr())
+                {
                     return null;
+                }
 
                 SearchOptions options = new();
-                
+
                 string tagsJson = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(recordHandle, 0) : null;
                 SearchItem item = new()
                 {
                     Id = await AriesAskarResults.EntryListGetNameAsync(recordHandle, 0),
                     Type = options.RetrieveType ? await AriesAskarResults.EntryListGetCategoryAsync(recordHandle, 0) : null,
                     Value = options.RetrieveValue ? await AriesAskarResults.EntryListGetValueAsync(recordHandle, 0) : null,
-                    Tags  = !string.IsNullOrEmpty(tagsJson) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(tagsJson) : null,
+                    Tags = !string.IsNullOrEmpty(tagsJson) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(tagsJson) : null,
                 };
 
                 T record = JsonConvert.DeserializeObject<T>(item.Value, _jsonSettings);
 
-                foreach (var tag in item.Tags)
+                foreach (KeyValuePair<string, string> tag in item.Tags)
+                {
                     record.Tags[tag.Key] = tag.Value;
+                }
 
                 return record;
             }
-            catch (WalletItemNotFoundException)
+            catch (AriesAskarException)
             {
                 return null;
             }
@@ -205,13 +212,13 @@ namespace Hyperledger.Aries.Storage
 
             try
             {
-                var record = await GetAsync<T>(storage, id);
-                var typeName = new T().TypeName;
+                T record = await GetAsync<T>(storage, id);
+                string typeName = new T().TypeName;
 
-               bool result = await AriesAskarStore.RemoveAsync(
-                    session : storage.Store.session, 
-                    category : typeName, 
-                    name : id);
+                bool result = await AriesAskarStore.RemoveAsync(
+                     session: storage.Store.session,
+                     category: typeName,
+                     name: id);
 
                 //await AriesAskarStore.CloseAndCommitAsync(wallet.session);
 
@@ -234,7 +241,9 @@ namespace Hyperledger.Aries.Storage
             Debug.WriteLine($"Adding key for did: {did}");
 
             if (storage.Store.session == null)
+            {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+            }
 
             _ = await AriesAskarStore.InsertKeyAsync(
                 storage.Store.session,
