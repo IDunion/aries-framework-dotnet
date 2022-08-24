@@ -91,10 +91,13 @@ namespace Hyperledger.Aries.Storage
                 {
                     throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
                 }
-                await AriesAskarStore.CloseAsync(ariesStorage.Store);
+                await AriesAskarStore.CloseAsync(ariesStorage.Store, remove: true);
             }
             /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-            await AriesAskarStore.RemoveAsync(ariesStorage.Store, specUri: configuration.StorageConfiguration.Url);
+            string specUri = configuration.StorageConfiguration.Url;
+            await AriesAskarStore.RemoveAsync(
+                new Store(new IntPtr(), specUri),
+                specUri: specUri);
         }
     }
 }
