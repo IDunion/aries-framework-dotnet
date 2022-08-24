@@ -4,7 +4,7 @@ using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Ledger.Models;
 using Newtonsoft.Json.Linq;
 
-namespace Hyperledger.Aries.Ledger.V2
+namespace Hyperledger.Aries.Ledger
 {
     internal static class ResponseParser
     {
@@ -21,7 +21,7 @@ namespace Hyperledger.Aries.Ledger.V2
         ///     ver: Version of the Schema json
         /// }</returns>
         /// <param name="getSchemaResponse">response of GET_SCHEMA request.</param>
-        internal static ParseResponseResult ParseGetSchemaResponse(string getSchemaResponse)
+        internal static AriesResponse ParseGetSchemaResponse(string getSchemaResponse)
         {
             var schema = JObject.Parse(getSchemaResponse)["result"]!;
             var schemaId = $"{schema["dest"]}:2:{schema["data"]!["name"]}:{schema["data"]!["version"]}";
@@ -34,9 +34,9 @@ namespace Hyperledger.Aries.Ledger.V2
                 version = schema["data"]!["version"]!,
                 seqNo = schema["seqNo"]!
             };
-            return new ParseResponseResult(schemaId, objectJson.ToJson());
+            return new AriesResponse(schemaId, objectJson.ToJson());
         }
-        
+
         /// <summary>
         /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
         /// Credential Definition Id and Credential Definition json.
@@ -55,9 +55,9 @@ namespace Hyperledger.Aries.Ledger.V2
         ///     ver: Version of the Credential Definition json
         /// }
         /// </returns>
-        internal static ParseResponseResult ParseGetCredDefResponse(string credDefId, string schemaTxnId, string getCredDefResponse)
+        internal static AriesResponse ParseGetCredDefResponse(string credDefId, string schemaTxnId, string getCredDefResponse)
         {
-            CredDefId id = new CredDefId(credDefId);  
+            CredDefId id = new CredDefId(credDefId);
             var credDef = JObject.Parse(getCredDefResponse)["result"]!;
             var objectJson = new
             {
@@ -69,9 +69,9 @@ namespace Hyperledger.Aries.Ledger.V2
                 value = credDef["data"]!,
                 seqNo = credDef["seqNo"]!
             };
-            return new ParseResponseResult(credDefId, objectJson.ToJson());
+            return new AriesResponse(credDefId, objectJson.ToJson());
         }
-        
+
         /// <summary>
         /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format compatible with
         /// Anoncreds API.
@@ -95,26 +95,26 @@ namespace Hyperledger.Aries.Ledger.V2
         ///     "ver": string - version of revocation registry definition json.
         /// }
         /// </returns>
-        internal static ParseResponseResult ParseRegistryDefinitionResponse(string registryDefinitionId, string getRegistryDefinitionResponse)
+        internal static AriesResponse ParseRegistryDefinitionResponse(string registryDefinitionId, string getRegistryDefinitionResponse)
         {
             var objectJson = JObject.Parse(getRegistryDefinitionResponse)["result"]!["data"];
-            
-            return new ParseResponseResult(registryDefinitionId, objectJson.ToJson());
+
+            return new AriesResponse(registryDefinitionId, objectJson.ToJson());
         }
-        
+
         /// <summary>
         /// Parse revocation registry response result in the format compatible with Anoncreds API.
         /// </summary>
         /// <param name="revocRegResponse">Ledger response from revocation registry lookup</param>
         /// <returns><see cref="ParseRegistryResponseResult"/></returns>
-        internal static ParseRegistryResponseResult ParseRevocRegResponse(string revocRegResponse)
+        internal static AriesRegistryResponse ParseRevocRegResponse(string revocRegResponse)
         {
             var jobj = JObject.Parse(revocRegResponse)["result"]!;
             var revocRegDefId = jobj["revocRegDefId"]!.ToString();
             var data = jobj["data"]!.ToString();
             var timestamp = jobj["txnTime"]!.ToString();
-            
-            return new ParseRegistryResponseResult(revocRegDefId, data, Convert.ToUInt64(timestamp));
+
+            return new AriesRegistryResponse(revocRegDefId, data, Convert.ToUInt64(timestamp));
         }
     }
 }

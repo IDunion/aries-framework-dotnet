@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Features.IssueCredential;
@@ -98,7 +99,8 @@ namespace Hyperledger.Aries.Tests
 
             Assert.Equal(schemaId, recordResult.SchemaId);
         }
-        
+
+        [Trait("Category", "DefaultV1")]
         public class SchemaServiceTestsV1 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV1.SingleTestWalletFixture>
         {
             public class SingleTestWalletFixture : TestSingleWallet
@@ -111,6 +113,7 @@ namespace Hyperledger.Aries.Tests
             }
         }
 
+        [Trait("Category", "DefaultV2")]
         public class SchemaServiceTestsV2 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV2.SingleTestWalletV2Fixture>
         {
             public class SingleTestWalletV2Fixture : TestSingleWalletV2

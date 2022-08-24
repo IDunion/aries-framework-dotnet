@@ -43,7 +43,7 @@ namespace Hyperledger.Aries.Tests
         {
             var context = await _fixture.Host.Services.GetService<IAgentProvider>().GetContextAsync();
 
-            var did = await Did.CreateAndStoreMyDidAsync(context.Wallet, "{}");
+            var did = await Did.CreateAndStoreMyDidAsync(context.AriesStorage.Wallet, "{}");
 
             await _fixture.Host.Services.GetService<ILedgerService>()
                 .RegisterNymAsync(context, TestConstants.StewardDid, did.Did, did.VerKey, null);
@@ -157,7 +157,8 @@ namespace Hyperledger.Aries.Tests
             
             Assert.Equal(endpoint, result.Result.Endpoint);
         }
-        
+
+        [Trait("Category", "DefaultV1")]
         public class LedgerServiceTestsV1 : LedgerServiceTests, IClassFixture<LedgerServiceTestsV1.SingleTestWalletFixture>
         {
             public class SingleTestWalletFixture : TestSingleWallet
@@ -171,6 +172,7 @@ namespace Hyperledger.Aries.Tests
             }
         }
 
+        [Trait("Category", "DefaultV2")]
         public class LedgerServiceTestsV2 : LedgerServiceTests, IClassFixture<LedgerServiceTestsV2.SingleTestWalletV2Fixture>
         {
             public class SingleTestWalletV2Fixture : TestSingleWalletV2

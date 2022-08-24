@@ -30,7 +30,8 @@ namespace Hyperledger.Aries.Tests
 
             Assert.True(true);
         }
-        
+
+        [Trait("Category", "DefaultV1")]
         public class PoolServiceV1Tests : PoolServiceTests, IClassFixture<PoolServiceV1Tests.SingleTestWalletFixture>
         {
             public class SingleTestWalletFixture : TestSingleWallet
@@ -43,6 +44,7 @@ namespace Hyperledger.Aries.Tests
             }
         }
 
+        [Trait("Category", "DefaultV2")]
         public class PoolServiceV2Tests : PoolServiceTests, IClassFixture<PoolServiceV2Tests.SingleTestWalletV2Fixture>
         {
             public class SingleTestWalletV2Fixture : TestSingleWalletV2

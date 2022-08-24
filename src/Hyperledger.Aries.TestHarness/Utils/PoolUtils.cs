@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Indy.PoolApi;
 
 namespace Hyperledger.TestHarness.Utils
@@ -11,7 +12,7 @@ namespace Hyperledger.TestHarness.Utils
         private static IPoolService poolService = new DefaultPoolService();
         private static Pool pool;
 
-        public static async Task<object> GetPoolAsync()
+        public static async Task<Pool> GetPoolAsync()
         {
             if (pool != null)
             {

@@ -276,14 +276,14 @@ namespace Hyperledger.Aries.Ledger
                 throw new AriesFrameworkException(ErrorCode.LedgerOperationRejected, "Ledger operation rejected");
         }
 
-        private ParseResponseResult ConvertResult(Hyperledger.Indy.LedgerApi.ParseResponseResult result)
+        private AriesResponse ConvertResult(Hyperledger.Indy.LedgerApi.ParseResponseResult result)
         {
-            return new ParseResponseResult(result.Id, result.ObjectJson);
+            return new AriesResponse(result.Id, result.ObjectJson);
         }
         
-        private ParseRegistryResponseResult ConvertResult(Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult result)
+        private AriesRegistryResponse ConvertResult(Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult result)
         {
-            return new ParseRegistryResponseResult(result.Id, result.ObjectJson, result.Timestamp);
+            return new AriesRegistryResponse(result.Id, result.ObjectJson, result.Timestamp);
         }
         
     }

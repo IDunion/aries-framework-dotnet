@@ -27,11 +27,6 @@ namespace Hyperledger.Aries.Tests.Decorators
                 // OK
             }
             
-            //_agent = new DefaultAgentContext
-            //{
-            //    Wallet = await Wallet.OpenWalletAsync(_walletConfig, Credentials),
-            //};
-            // TODO ??? correct refactor?
             _agent = new DefaultAgentContext
             {
                 AriesStorage = new AriesStorage(wallet: await Wallet.OpenWalletAsync(_walletConfig, Credentials)),

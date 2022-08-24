@@ -10,7 +10,6 @@ using Hyperledger.Aries.Features.OutOfBand;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Ledger;
-using Hyperledger.Aries.Ledger.V2;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Signatures;

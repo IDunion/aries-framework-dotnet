@@ -179,7 +179,7 @@ namespace Hyperledger.TestHarness
             
             Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
 
-            Trustee = await Did.CreateAndStoreMyDidAsync(Context.Wallet,
+            Trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet,
                 new { seed = "000000000000000000000000Trustee1" }.ToJson());
             Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
