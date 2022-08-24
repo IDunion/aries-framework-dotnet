@@ -28,10 +28,6 @@ namespace Hyperledger.Aries.Storage
         {
 
             AriesStorage ariesStorage = GetWalletFromCache(configuration);
-            if (ariesStorage.Store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
 
             if (ariesStorage.Store == null)
             {
@@ -49,10 +45,6 @@ namespace Hyperledger.Aries.Storage
             try
             {
                 ariesStorage = GetWalletFromCache(configuration);
-                if (ariesStorage.Store is null)
-                {
-                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-                }
 
                 if (ariesStorage.Store == null)
                 {
@@ -73,10 +65,6 @@ namespace Hyperledger.Aries.Storage
         {
             if (Storages.TryGetValue(configuration.Id, out var ariesStorage))
             {
-                if (ariesStorage.Store is null)
-                {
-                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-                }
                 if (ariesStorage.Store.storeHandle != (IntPtr)0)
                     return ariesStorage;
 
@@ -89,7 +77,9 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
             /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-            await AriesAskarStore.ProvisionAsync(specUri: configuration.StorageConfiguration.Url);
+            
+            //await AriesAskarStore.ProvisionAsync(specUri: configuration.StorageConfiguration.Url);
+            await AriesAskarStore.ProvisionAsync(specUri: "sqlite://:memory:");
         }
 
         /// <inheritdoc />
