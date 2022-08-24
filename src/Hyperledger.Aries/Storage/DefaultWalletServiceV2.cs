@@ -81,9 +81,7 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
             /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-            
-            //await AriesAskarStore.ProvisionAsync(specUri: configuration.StorageConfiguration.Url);
-            await AriesAskarStore.ProvisionAsync(specUri: "sqlite://:memory:");
+            await AriesAskarStore.ProvisionAsync(specUri: configuration.StorageConfiguration.Url);
         }
 
         /// <inheritdoc />
@@ -97,11 +95,12 @@ namespace Hyperledger.Aries.Storage
                 }
                 await AriesAskarStore.CloseAsync(ariesStorage.Store, remove: true);
             }
-            /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-            string specUri = configuration.StorageConfiguration.Url;
-            await AriesAskarStore.RemoveAsync(
-                new Store(new IntPtr(), specUri),
-                specUri: specUri);
+            else
+            {
+                /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
+                string specUri = configuration.StorageConfiguration.Url;
+                await AriesAskarStore.RemoveAsync(new Store(new IntPtr(), specUri), specUri: specUri);
+            }
         }
     }
 }
