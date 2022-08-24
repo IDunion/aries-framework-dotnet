@@ -93,6 +93,15 @@ namespace Microsoft.Extensions.DependencyInjection
         
         internal static IServiceCollection AddDefaultServicesV2(this IServiceCollection builder)
         {
+            builder.TryAddSingleton<IConnectionService, DefaultConnectionServiceV2>();
+            builder.TryAddSingleton<ICredentialService, DefaultCredentialServiceV2>();
+            builder.TryAddSingleton<IDidExchangeService, DefaultDidExchangeServiceV2>();
+            builder.TryAddSingleton<ILedgerSigningService, DefaultLedgerSigningServiceV2>();
+            builder.TryAddSingleton<IProofService, DefaultProofServiceV2>();
+            builder.TryAddSingleton<IProvisioningService, DefaultProvisioningServiceV2>();
+            builder.TryAddSingleton<ISchemaService, DefaultSchemaServiceV2>();
+            builder.TryAddSingleton<IWalletRecordService, DefaultWalletRecordServiceV2>();
+            builder.TryAddSingleton<IWalletService, DefaultWalletServiceV2>();
             builder.AddSingleton<ILedgerService, DefaultLedgerServiceV2>();
             builder.AddSingleton<IPoolService, DefaultPoolServiceV2>();
             builder.AddSingleton<ISigningService, DefaultSigningService>();

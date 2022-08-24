@@ -248,5 +248,172 @@ namespace Hyperledger.Aries.Tests
             await act.Should().NotThrowAsync();
             nextInvoked.Should().BeTrue();
         }
+
+        [Fact]
+        public void AddAgentframeworkV2InjectsRequiredServices()
+        {
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddLogging();
+            services.AddAriesFramework();
+            services.AddDefaultServicesV2();
+
+            // Initialize Autofac
+            var builder = new ContainerBuilder();
+
+            builder.Populate(services);
+
+            // Build the final container
+            var container = builder.Build();
+
+            Assert.NotNull(container.Resolve<IEventAggregator>());
+            Assert.NotNull(container.Resolve<IConnectionService>());
+            Assert.NotNull(container.Resolve<ICredentialService>());
+            Assert.NotNull(container.Resolve<IProofService>());
+            Assert.NotNull(container.Resolve<ILedgerService>());
+            Assert.NotNull(container.Resolve<ISchemaService>());
+            Assert.NotNull(container.Resolve<IWalletRecordService>());
+            Assert.NotNull(container.Resolve<IProvisioningService>());
+            Assert.NotNull(container.Resolve<IMessageService>());
+            Assert.NotNull(container.Resolve<ITailsService>());
+            Assert.NotNull(container.Resolve<IWalletService>());
+        }
+
+        [Fact]
+        public void AddAgentframeworkV2WithExtendedServiceResolves()
+        {
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddLogging();
+            services.AddAriesFramework();
+            services.AddDefaultServicesV2();
+            services.AddExtendedConnectionService<MockExtendedConnectionService>();
+
+            // Initialize Autofac
+            var builder = new ContainerBuilder();
+
+            builder.Populate(services);
+
+            // Build the final container
+            var container = builder.Build();
+
+            var result = container.Resolve<IConnectionService>();
+
+            Assert.True(result.GetType() == typeof(MockExtendedConnectionService));
+        }
+
+        [Fact]
+        public void AddAgentframeworkV2WithCustomHandler()
+        {
+            IServiceCollection services = new ServiceCollection();
+
+            services.AddLogging();
+            services.AddAriesFramework();
+            services.AddDefaultServicesV2();
+            services.AddMessageHandler<MockMessageHandler>();
+
+            // Initialize Autofac
+            var builder = new ContainerBuilder();
+
+            builder.Populate(services);
+
+            // Build the final container
+            var container = builder.Build();
+
+            var result = container.Resolve<IMessageHandler>();
+
+            Assert.True(result.GetType() == typeof(MockMessageHandler));
+        }
+
+        [Fact(DisplayName = "Verify the hosting service executed and provisioning completed with defaultV2 services")]
+        public async Task RunHostingServiceV2EnsureProvisioningInvoked()
+        {
+            var slim = new SemaphoreSlim(0, 1);
+            var provisioned = false;
+
+            var provisioningMock = new Mock<IProvisioningService>();
+            provisioningMock
+                .Setup(x => x.ProvisionAgentAsync())
+                .Callback(() =>
+                {
+                    provisioned = true;
+                    slim.Release();
+                })
+                .Returns(Task.CompletedTask);
+
+            var poolName = $"{Guid.NewGuid()}";
+            var hostBuilder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<ConsoleLifetimeOptions>(options =>
+                        options.SuppressStatusMessages = true);
+                    services.AddAriesFrameworkV2(b => b.RegisterAgent(c =>
+                    {
+                        c.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
+                        c.ProtocolVersion = 2;
+                        c.PoolName = poolName;
+                    }));
+                    services.AddSingleton(provisioningMock.Object);
+                })
+                .Build();
+
+            // Start the host
+            await hostBuilder.StartAsync();
+            await slim.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Assert
+            var pool = await hostBuilder.Services.GetService<IPoolService>().GetPoolAsync(poolName);
+
+            pool.Should().NotBeNull();
+            provisioned.Should().BeTrue();
+
+            // Cleanup
+            await pool.Pool.CloseAsync();
+            await Pool.DeletePoolLedgerConfigAsync(poolName);
+            await hostBuilder.StopAsync();
+        }
+
+        [Fact(DisplayName = "Provisioning completed with issuer configuration with defaultV2 services")]
+        public async Task RunHostingServiceV2WithIssuerProvisioning()
+        {
+            var walletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
+            var walletCredentials = new WalletCredentials { Key = "key" };
+
+            var hostBuilder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<ConsoleLifetimeOptions>(options =>
+                        options.SuppressStatusMessages = true);
+                    services.AddAriesFrameworkV2(b => b
+                        .RegisterAgent(options =>
+                        {
+                            options.WalletCredentials = walletCredentials;
+                            options.WalletConfiguration = walletConfiguration;
+                            options.EndpointUri = "http://example.com";
+                            options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
+                        }));
+                })
+                .Build();
+
+            // Start the host
+            await hostBuilder.StartAsync();
+            await hostBuilder.StopAsync();
+
+            var walletService = hostBuilder.Services.GetService<IWalletService>();
+            var wallet = await walletService.GetWalletAsync(walletConfiguration, walletCredentials);
+
+            Assert.NotNull(wallet);
+
+            var provisioningService = hostBuilder.Services.GetService<IProvisioningService>();
+            var record = await provisioningService.GetProvisioningAsync(wallet);
+
+            record.Should().NotBeNull();
+            record.IssuerVerkey.Should().NotBeNull();
+            record.Endpoint.Should().NotBeNull();
+            record.Endpoint.Verkey.Should().NotBeNull();
+
+            await wallet.Wallet.CloseAsync();
+            await walletService.DeleteWalletAsync(walletConfiguration, walletCredentials);
+        }
     }
 }
