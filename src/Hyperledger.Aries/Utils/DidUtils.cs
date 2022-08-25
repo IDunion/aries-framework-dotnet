@@ -443,5 +443,11 @@ namespace Hyperledger.Aries.Utils
 
             return verkey;
         }
+
+        /* TODO: ??? Implement method */
+        public static async Task<string> KeyForLocalDidAsync(IAgentContext agentContext, string did)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
