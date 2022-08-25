@@ -48,8 +48,8 @@ namespace Hyperledger.Aries.Storage
 
                 if (ariesStorage.Store == null)
                 {
-                    /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-                    ariesStorage.Store = await AriesAskarStore.OpenAsync(specUri : configuration.StorageConfiguration.Url);
+                    /** TODO : ??? - Other Input parameter needed like KeyDerivationMethod, profile? **/
+                    ariesStorage.Store = await AriesAskarStore.OpenAsync(await BuildSpecUriAsync(configuration), passKey: credentials.Key);
                     Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
@@ -78,18 +78,19 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task<AriesStorage> CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
+        public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-            //return new AriesStorage(store: await AriesAskarStore.ProvisionAsync(specUri: configuration.StorageConfiguration.Url));
-            var ariesStorage = new AriesStorage(store: await AriesAskarStore.ProvisionAsync("sqlite://:memory:"));//specUri: configuration.StorageConfiguration.Url));
-            Storages.TryAdd(configuration.Id, ariesStorage);
-            return ariesStorage;
+            /** TODO : ??? - Other Input parameter needed like KeyDerivationMethod, profile? **/
+            Store store = await AriesAskarStore.ProvisionAsync(await BuildSpecUriAsync(configuration), passKey: credentials.Key);
+            /** Need to close it again, cause here we just create the store backend. Analog to the <see cref="DefaultWalletService" />.**/
+            await AriesAskarStore.CloseAsync(store);
+
         }
 
         /// <inheritdoc />
         public virtual async Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
+            //TODO : ??? - Check if there are remaining stores with same specUris left in Storages? Deletion of database is only possible if no active prozess onto the store is left. 
             if (Storages.TryRemove(configuration.Id, out var ariesStorage))
             {
                 if (ariesStorage.Store is null)
@@ -100,10 +101,22 @@ namespace Hyperledger.Aries.Storage
             }
             else
             {
-                /** TODO : ??? - check for right parameters, maybe we need to build the specUri string from the configuration/credential inputs **/
-                string specUri = configuration.StorageConfiguration.Url;
-                await AriesAskarStore.RemoveAsync(new Store(new IntPtr(), specUri), specUri: specUri);
+                string specUri = await BuildSpecUriAsync(configuration);
+                await AriesAskarStore.RemoveAsync(new Store(new IntPtr(), specUri), specUri);
             }
+        }
+
+        private Task<string> BuildSpecUriAsync(WalletConfiguration configuration)
+        {
+            if (configuration != null)
+            {
+                if (configuration.StorageConfiguration != null)
+                {
+                    return Task.FromResult(configuration.StorageType + "://" + configuration.StorageConfiguration.Path);
+                }
+                else throw new ArgumentNullException(nameof(configuration.StorageConfiguration));
+            }
+            else throw new ArgumentNullException(nameof(configuration));
         }
     }
 }

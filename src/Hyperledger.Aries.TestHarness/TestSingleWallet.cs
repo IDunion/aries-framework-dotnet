@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.IO;
 using System.Threading.Tasks;
 using Hyperledger.Aries;
@@ -16,7 +17,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Xunit;
+using static Hyperledger.Aries.Storage.WalletConfiguration;
 using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
+using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
 
 namespace Hyperledger.TestHarness
 {
@@ -149,6 +153,15 @@ namespace Hyperledger.TestHarness
 
     public abstract class TestSingleWalletV2 : TestSingleWallet
     {
+        public override async Task DisposeAsync()
+        {
+            var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
+            var walletService = Host.Services.GetService<IWalletService>();
+            await Host.StopAsync();
+            await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
+            Host.Dispose();
+        }
+
         public override async Task InitializeAsync()
         {
             Host = new HostBuilder()
@@ -159,7 +172,15 @@ namespace Hyperledger.TestHarness
                     services.AddAriesFrameworkV2(builder => builder
                         .RegisterAgent(options =>
                         {
-                            options.WalletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
+                            options.WalletConfiguration = new WalletConfiguration { 
+                                Id = Guid.NewGuid().ToString(), 
+                                StorageType = "sqlite", 
+                                StorageConfiguration = new WalletStorageConfiguration { 
+                                    Path = 
+                                    Path.GetFullPath(
+                                        Path.Combine( AppDomain.CurrentDomain.BaseDirectory , @"..\..\..\test-db"))
+                                } 
+                            };
                             options.WalletCredentials = new WalletCredentials { Key = "test" };
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = GetPoolName();
@@ -170,7 +191,7 @@ namespace Hyperledger.TestHarness
                 .Build();
 
             await Host.StartAsync();
-            await Pool.SetProtocolVersionAsync(2);
+            await IndyVdrMod.SetProtocolVersionAsync(2);
 
             provisioningService = Host.Services.GetService<IProvisioningService>();
             recordService = Host.Services.GetService<IWalletRecordService>();

@@ -40,26 +40,34 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task AddAsync<T>(AriesStorage storage, T record)
             where T : RecordBase, new()
         {
-            if (storage.Store is null)
+            /*** TODO : ??? - rework, try catch needed when duplicate entry is made -> wrapper throws ***/
+            try
             {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                if (storage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
+
+                Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
+
+                record.CreatedAtUtc = DateTime.UtcNow;
+
+                if (storage.Store.session == null)
+                {
+                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+                }
+
+                await AriesAskarStore.InsertAsync(
+                    session: storage.Store.session,
+                    category: record.TypeName,
+                    name: record.Id,
+                    value: record.ToJson(_jsonSettings),
+                    tags: record.Tags.ToJson());
             }
-
-            Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
-
-            record.CreatedAtUtc = DateTime.UtcNow;
-
-            if (storage.Store.session == null)
+            catch
             {
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+                //Do nothing
             }
-
-            await AriesAskarStore.InsertAsync(
-                session : storage.Store.session,
-                category : record.TypeName,
-                name : record.Id,
-                value : record.ToJson(_jsonSettings),
-                tags : record.Tags.ToJson());
         }
 
         /// <inheritdoc />

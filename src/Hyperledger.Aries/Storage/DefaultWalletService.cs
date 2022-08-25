@@ -70,10 +70,9 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task<AriesStorage> CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
+        public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
             await Wallet.CreateWalletAsync(configuration.ToJson(), credentials.ToJson());
-            return new AriesStorage();
         }
 
         /// <inheritdoc />

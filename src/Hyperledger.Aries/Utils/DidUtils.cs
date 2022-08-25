@@ -288,10 +288,17 @@ namespace Hyperledger.Aries.Utils
             if (storage.Store.session == null)
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
+            /*** TODO : ??? - rework, use central location for this try catch. move insertKey in recordService? ***/
+            try { 
             _ = await AriesAskarStore.InsertKeyAsync(
                 storage.Store.session,
                 keyHandle,
                 did);
+            }
+            catch
+            {
+                //Do nothing 
+            }
 
             return (did, verKeyBase58);
         }

@@ -24,7 +24,7 @@ namespace Hyperledger.Aries.Storage
         /// <param name="configuration">Configuration.</param>
         /// <param name="credentials">Credentials.</param>
         /// /*** TODO : ??? - change to Task with no return when Provisiong/OpenAsync is fixed***/
-        Task<AriesStorage> CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials);
+        Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials);
 
         /// <summary>
         /// Deletes the wallet async.
