@@ -41,6 +41,7 @@ namespace Hyperledger.TestHarness
             var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
             await Host.StopAsync();
 
+            /* TODO : ??? Why is the context sometimes null? */
             await Context.AriesStorage.Wallet.CloseAsync();
             await Wallet.DeleteWalletAsync(walletOptions.WalletConfiguration.ToJson(), walletOptions.WalletCredentials.ToJson());
             Host.Dispose();
