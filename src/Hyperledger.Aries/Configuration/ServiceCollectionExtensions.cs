@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.AddSingleton<IWalletService, DefaultWalletServiceV2>();
             builder.AddSingleton<ILedgerService, DefaultLedgerServiceV2>();
             builder.AddSingleton<IPoolService, DefaultPoolServiceV2>();
-            builder.AddSingleton<ISigningService, DefaultSigningService>();
+            builder.AddSingleton<ISigningService, DefaultSigningServiceV2>();
 
             return builder;
         }

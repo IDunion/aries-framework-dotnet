@@ -390,6 +390,9 @@ namespace Hyperledger.Aries.Utils
             }
 
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+
+            /* TODO : ??? Check if ledger lookup is missing/necessary. */
+
             return didRecord.Verkey;
         }
 

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Decorators.Transport;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
-using Hyperledger.Indy.WalletApi;
 using Microsoft.Extensions.Logging;
 
 namespace Hyperledger.Aries.Agents
@@ -34,13 +34,13 @@ namespace Hyperledger.Aries.Agents
             MessageDispatchers = messageDispatchers;
         }
 
-        private async Task<UnpackedMessageContext> UnpackAsync(Wallet wallet, PackedMessageContext message, string senderKey)
+        private async Task<UnpackedMessageContext> UnpackAsync(AriesStorage storage, PackedMessageContext message, string senderKey)
         {
             UnpackResult unpacked;
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync(wallet, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(storage, message.Payload);
             }
             catch (Exception e)
             {
@@ -96,7 +96,7 @@ namespace Hyperledger.Aries.Agents
 
             if (agentContext.AriesStorage.Wallet is null)
             {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Wallet)} which must not be null.");
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type Wallet which must not be null.");
             }
 
             var uri = new Uri(endpointUri);
@@ -112,7 +112,7 @@ namespace Hyperledger.Aries.Agents
             var response = await dispatcher.DispatchAsync(uri, new PackedMessageContext(wireMsg));
             if (response is PackedMessageContext responseContext)
             {
-                return await UnpackAsync(agentContext.AriesStorage.Wallet, responseContext, senderKey);
+                return await UnpackAsync(agentContext.AriesStorage, responseContext, senderKey);
             }
             throw new InvalidOperationException("Invalid or empty response");
         }
