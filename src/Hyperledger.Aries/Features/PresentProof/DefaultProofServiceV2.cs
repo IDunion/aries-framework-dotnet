@@ -114,7 +114,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             var credentialProofJsons = new List<string>();
             foreach (var credId in requestedCredentials.GetCredentialIdentifiers())
             {
-                //TODO: ??? Test
+                //TODO : ??? Test
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credId);
                 indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
                 string recordJson = JsonConvert.SerializeObject(credentialRecord);

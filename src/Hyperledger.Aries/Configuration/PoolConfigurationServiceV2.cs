@@ -35,7 +35,7 @@ namespace Hyperledger.Aries.Configuration
                 }
                 await _poolService.CreatePoolAsync(_agentOptions.PoolName, _agentOptions.GenesisFilename);
             }
-            /* TODO: ??? Which Wrapper is thrown when ledger config already exists? */
+            /* TODO : ??? Which Wrapper Exception is thrown when ledger config already exists? */
             //catch (PoolLedgerConfigExistsException)
             //{
             //    // Pool already exists, swallow exception
