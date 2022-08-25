@@ -100,12 +100,16 @@ namespace Hyperledger.Aries.Configuration
             }
 
             // Create agent wallet
-            await WalletService.CreateWalletAsync(
+            /*** TODO : ??? - use line 107 - 112 when Open/ProvisioningAsync in WalletService is fixed ***/
+            var storage = await WalletService.CreateWalletAsync(
                 configuration: agentOptions.WalletConfiguration,
                 credentials: agentOptions.WalletCredentials);
-            var storage = await WalletService.GetWalletAsync(
-                configuration: agentOptions.WalletConfiguration,
-                credentials: agentOptions.WalletCredentials);
+            //await WalletService.CreateWalletAsync(
+            //    configuration: agentOptions.WalletConfiguration,
+            //    credentials: agentOptions.WalletCredentials);
+            //var storage = await WalletService.GetWalletAsync(
+            //    configuration: agentOptions.WalletConfiguration,
+            //    credentials: agentOptions.WalletCredentials);
 
             // Configure agent endpoint
             AgentEndpoint endpoint = null;
