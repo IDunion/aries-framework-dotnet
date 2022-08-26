@@ -1,4 +1,9 @@
-﻿namespace Hyperledger.TestHarness
+﻿using Hyperledger.Aries.Storage;
+using static Hyperledger.Aries.Storage.WalletConfiguration;
+using System.IO;
+using System;
+
+namespace Hyperledger.TestHarness
 {
     public static class TestConstants
     {
@@ -11,5 +16,17 @@
         public const string StewardSeed = "000000000000000000000000Steward1";
 
         public const string StewardDid = "Th7MpTaRZVRYnPiabds81Y";
-    }
+
+        public static WalletConfiguration TestWalletConfig = new WalletConfiguration
+        {
+            Id = Guid.NewGuid().ToString(),
+            StorageType = "sqlite",
+            StorageConfiguration = new WalletStorageConfiguration
+            {
+                Path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\test-db"))
+            }
+        };
+
+        public static WalletCredentials TestWalletCreds = new WalletCredentials { Key = "key" };
+}
 }

@@ -17,17 +17,21 @@ using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Indy.PoolApi;
+using Hyperledger.TestHarness;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
 using Xunit;
+using static Hyperledger.Aries.Storage.WalletConfiguration;
+using IndyVdrPool = indy_vdr_dotnet.libindy_vdr.PoolApi;
 
 namespace Hyperledger.Aries.Tests
 {
     public class ConfigurationTests
     {
         [Fact]
+        [Trait("Category", "DefaultV1")]
         public void AddAgentframeworkInjectsRequiredServices()
         {
             IServiceCollection services = new ServiceCollection();
@@ -57,6 +61,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact]
+        [Trait("Category", "DefaultV1")]
         public void AddAgentframeworkWithExtendedServiceResolves()
         {
             IServiceCollection services = new ServiceCollection();
@@ -79,6 +84,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact]
+        [Trait("Category", "DefaultV1")]
         public void AddAgentframeworkWithCustomHandler()
         {
             IServiceCollection services = new ServiceCollection();
@@ -101,6 +107,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact(DisplayName = "Verify the hosting service executed and provisioning completed")]
+        [Trait("Category", "DefaultV1")]
         public async Task RunHostingServiceEnsureProvisioningInvoked()
         {
             var slim = new SemaphoreSlim(0, 1);
@@ -149,6 +156,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact(DisplayName = "Provisioning completed with issuer configuration")]
+        [Trait("Category", "DefaultV1")]
         public async Task RunHostingServiceWithIssuerProvisioning()
         {
             var walletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
@@ -187,7 +195,7 @@ namespace Hyperledger.Aries.Tests
             record.Endpoint.Should().NotBeNull();
             record.Endpoint.Verkey.Should().NotBeNull();
 
-            await wallet.Wallet.CloseAsync();
+            //await wallet.Wallet.CloseAsync();
             await walletService.DeleteWalletAsync(walletConfiguration, walletCredentials);
         }
 
@@ -250,6 +258,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact]
+        [Trait("Category", "DefaultV2")]
         public void AddAgentframeworkV2InjectsRequiredServices()
         {
             IServiceCollection services = new ServiceCollection();
@@ -280,6 +289,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact]
+        [Trait("Category", "DefaultV2")]
         public void AddAgentframeworkV2WithExtendedServiceResolves()
         {
             IServiceCollection services = new ServiceCollection();
@@ -303,6 +313,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact]
+        [Trait("Category", "DefaultV2")]
         public void AddAgentframeworkV2WithCustomHandler()
         {
             IServiceCollection services = new ServiceCollection();
@@ -326,6 +337,7 @@ namespace Hyperledger.Aries.Tests
         }
 
         [Fact(DisplayName = "Verify the hosting service executed and provisioning completed with defaultV2 services")]
+        [Trait("Category", "DefaultV2")]
         public async Task RunHostingServiceV2EnsureProvisioningInvoked()
         {
             var slim = new SemaphoreSlim(0, 1);
@@ -368,16 +380,16 @@ namespace Hyperledger.Aries.Tests
             provisioned.Should().BeTrue();
 
             // Cleanup
-            await pool.Pool.CloseAsync();
-            await Pool.DeletePoolLedgerConfigAsync(poolName);
+            await IndyVdrPool.ClosePoolAsync(pool.PoolHandle);
             await hostBuilder.StopAsync();
         }
 
         [Fact(DisplayName = "Provisioning completed with issuer configuration with defaultV2 services")]
+        [Trait("Category", "DefaultV2")]
         public async Task RunHostingServiceV2WithIssuerProvisioning()
         {
-            var walletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
-            var walletCredentials = new WalletCredentials { Key = "key" };
+            var walletConfiguration = TestConstants.TestWalletConfig;
+            var walletCredentials = TestConstants.TestWalletCreds; 
 
             var hostBuilder = new HostBuilder()
                 .ConfigureServices(services =>
@@ -412,7 +424,6 @@ namespace Hyperledger.Aries.Tests
             record.Endpoint.Should().NotBeNull();
             record.Endpoint.Verkey.Should().NotBeNull();
 
-            await wallet.Wallet.CloseAsync();
             await walletService.DeleteWalletAsync(walletConfiguration, walletCredentials);
         }
     }
