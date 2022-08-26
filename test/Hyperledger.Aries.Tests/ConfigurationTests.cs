@@ -388,8 +388,8 @@ namespace Hyperledger.Aries.Tests
         [Trait("Category", "DefaultV2")]
         public async Task RunHostingServiceV2WithIssuerProvisioning()
         {
-            var walletConfiguration = TestConstants.TestWalletConfig;
-            var walletCredentials = TestConstants.TestWalletCreds; 
+            var walletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
+            var walletCredentials = TestConstants.TestSingelWalletV2WalletCreds; 
 
             var hostBuilder = new HostBuilder()
                 .ConfigureServices(services =>

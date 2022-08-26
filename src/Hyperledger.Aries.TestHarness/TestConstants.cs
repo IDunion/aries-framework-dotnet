@@ -17,7 +17,7 @@ namespace Hyperledger.TestHarness
 
         public const string StewardDid = "Th7MpTaRZVRYnPiabds81Y";
 
-        public static WalletConfiguration TestWalletConfig = new WalletConfiguration
+        public static WalletConfiguration TestSingleWalletV2WalletConfig = new WalletConfiguration
         {
             Id = Guid.NewGuid().ToString(),
             StorageType = "sqlite",
@@ -27,6 +27,6 @@ namespace Hyperledger.TestHarness
             }
         };
 
-        public static WalletCredentials TestWalletCreds = new WalletCredentials { Key = "key" };
+        public static WalletCredentials TestSingelWalletV2WalletCreds = new WalletCredentials { Key = "key" };
 }
 }

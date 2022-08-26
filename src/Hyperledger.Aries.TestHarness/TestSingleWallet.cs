@@ -172,16 +172,8 @@ namespace Hyperledger.TestHarness
                     services.AddAriesFrameworkV2(builder => builder
                         .RegisterAgent(options =>
                         {
-                            options.WalletConfiguration = new WalletConfiguration { 
-                                Id = Guid.NewGuid().ToString(), 
-                                StorageType = "sqlite", 
-                                StorageConfiguration = new WalletStorageConfiguration { 
-                                    Path = 
-                                    Path.GetFullPath(
-                                        Path.Combine( AppDomain.CurrentDomain.BaseDirectory , @"..\..\..\test-db"))
-                                } 
-                            };
-                            options.WalletCredentials = new WalletCredentials { Key = "test" };
+                            options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
+                            options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = GetPoolName();
                             options.EndpointUri = "http://test";
