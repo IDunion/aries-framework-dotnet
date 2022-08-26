@@ -16,7 +16,6 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
-using Hyperledger.Indy.AnonCredsApi;
 using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -115,7 +114,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             var credentialProofJsons = new List<string>();
             foreach (var credId in requestedCredentials.GetCredentialIdentifiers())
             {
-                //TODO: ??? Test
+                //TODO : ??? Test
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credId);
                 indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
                 string recordJson = JsonConvert.SerializeObject(credentialRecord);
@@ -326,9 +325,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
-            /* TODO: ??? Replace ANonCreds */
-            using (var search = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(null, proofRequest.ToJson()))
-            //using (var search = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage.Store, proofRequest.ToJson()))
+            using (var search = await CredentialUtils.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage, proofRequest.ToJson()))
             {
                 var searchResult = await search.NextAsync(attributeReferent, 100);
                 return JsonConvert.DeserializeObject<List<IssueCredential.Credential>>(searchResult);

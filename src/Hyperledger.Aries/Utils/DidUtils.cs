@@ -397,6 +397,9 @@ namespace Hyperledger.Aries.Utils
             }
 
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+
+            /* TODO : ??? Check if ledger lookup is missing/necessary. */
+
             return didRecord.Verkey;
         }
 
@@ -449,6 +452,19 @@ namespace Hyperledger.Aries.Utils
             }
 
             return verkey;
+        }
+
+        /* TODO : ??? What is the difference to KeyForDidAsync?*/
+        public static async Task<string> KeyForLocalDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
+        {
+            AriesStorage storage = agentContext.AriesStorage;
+            if (storage.Wallet is null)
+            {
+                throw new ArgumentNullException(nameof(storage.Wallet));
+            }
+
+            DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+            return didRecord.Verkey;
         }
     }
 }

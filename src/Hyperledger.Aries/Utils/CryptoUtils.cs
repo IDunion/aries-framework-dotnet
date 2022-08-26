@@ -74,6 +74,24 @@ namespace Hyperledger.Aries.Utils
             return result.ToObject<UnpackResult>();
         }
 
+        public static async Task<UnpackResult> UnpackAsync(AriesStorage storage, byte[] message)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                /* TODO: ??? Implement Unpacking for Store object. */
+                throw new NotImplementedException();
+            }
+            else
+            {
+                var result = await Crypto.UnpackMessageAsync(storage.Wallet, message);
+                return result.ToObject<UnpackResult>();
+            }
+        }
+
         /// <summary>Unpacks the asynchronous.</summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="wallet">The wallet.</param>

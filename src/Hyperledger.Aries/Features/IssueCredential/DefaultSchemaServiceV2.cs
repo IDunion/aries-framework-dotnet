@@ -216,7 +216,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var definitionRecord = new DefinitionRecord();
             definitionRecord.IssuerDid = configuration.IssuerDid;
 
-            /** TODO: ??? - right way to add credDefJson, credDefPrivateJson and credKeyCorProofJson info? Needed for other IndySharedRs methods which also use credDefJson ***/
             definitionRecord.CredDefJson = credentialDefinitionJson;
             definitionRecord.PrivateJson = credentialDefinitionPrivateJson;
             definitionRecord.KeyCorrectnesProofJson = credentialKeyCorrectnessProofJson;
@@ -285,7 +284,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id
             };
-            /** TODO: ??? - right way to add revocationRegistry.. info? Needed for other IndySharedRs methods which also use revReg/DefJson ***/
             revocationRecord.RevRegDefJson = revocationRegistryDefinitionJson;
             revocationRecord.RevRegJson = revocationRegistryJson;
             revocationRecord.RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson;
