@@ -80,10 +80,9 @@ namespace Hyperledger.Aries.Tests
             //string verkeyLocal = await Did.KeyForLocalDidAsync(context.AriesStorage.Wallet, "Th7MpTaRZVRYnPiabds81Y");
             //string verkeyLocalLedger = await Did.KeyForDidAsync((await context.Pool).Pool, context.AriesStorage.Wallet, "Th7MpTaRZVRYnPiabds81Y");
             //Test DefaultV2 
-            var recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
-            var ledgerService = _fixture.Host.Services.GetService<ILedgerService>();
-            string verkeyLocal = await DidUtils.KeyForLocalDidAsync(context, recordService, "Th7MpTaRZVRYnPiabds81Y");
-            string verkeyLocalLedger = await DidUtils.KeyForDidAsync(context, recordService, ledgerService, "Th7MpTaRZVRYnPiabds81Y");
+            //var recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
+            //var ledgerService = _fixture.Host.Services.GetService<ILedgerService>();
+            //string verkeyLocal = await DidUtils.KeyForLocalDidAsync(context, recordService, "Th7MpTaRZVRYnPiabds81Y");
 
             string schema = string.Format("{{\"id\": \"Th7MpTaRZVRYnPiabds81Y:2:{0}:1.0\",\"name\": \"{0}\",\"version\": \"1.0\",\"ver\": \"1.0\",\"attrNames\": [\"name\"]}}", name) ;
 
