@@ -38,23 +38,9 @@ namespace Hyperledger.Aries.Tests
         public DidUtilsTests(SingleTestWalletFixture fixture)
         {
             _fixture = fixture;
+            _agentContext = _fixture.Host.Services.GetService<IAgentProvider>().GetContextAsync().GetAwaiter().GetResult();
             _recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
             _ledgerService = _fixture.Host.Services.GetService<ILedgerService>();
-
-            try
-            {
-                Wallet.CreateWalletAsync(_walletConfig, Credentials).GetAwaiter();
-            }
-            catch (WalletExistsException)
-            {
-                // OK
-            }
-
-            _agentContext = new DefaultAgentContext
-            {
-                AriesStorage = new AriesStorage(wallet: Wallet.OpenWalletAsync(_walletConfig, Credentials).GetAwaiter().GetResult()),
-            };
-
         }
 
         [Fact]
@@ -115,13 +101,13 @@ namespace Hyperledger.Aries.Tests
 
         /* TODO : ??? Refactor Unittests to implement an actuall working dependency injection!  */
 
-        //[Fact]
-        //public async Task KeyForDidAsyncGetsKey()
-        //{
-        //    string tmpDid = "Th7MpTaRZVRYnPiabds81Y";
-        //    string key = await DidUtils.KeyForDidAsync(_agentContext, _recordService, _ledgerService, tmpDid);
+        [Fact]
+        public async Task KeyForDidAsyncGetsKey()
+        {
+            string tmpDid = "Th7MpTaRZVRYnPiabds81Y";
+            string key = await DidUtils.KeyForDidAsync(_agentContext, _recordService, _ledgerService, tmpDid);
 
-        //    Assert.True(DidUtils.IsVerkey(key));
-        //}
+            Assert.True(DidUtils.IsVerkey(key));
+        }
     }
 }
