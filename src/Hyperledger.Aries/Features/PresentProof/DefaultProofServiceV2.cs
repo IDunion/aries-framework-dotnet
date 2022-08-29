@@ -325,11 +325,11 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
-            using (var search = await CredentialUtils.ProverSearchCredentialsForProofRequestAsync(agentContext.AriesStorage, proofRequest.ToJson()))
-            {
-                var searchResult = await search.NextAsync(attributeReferent, 100);
-                return JsonConvert.DeserializeObject<List<IssueCredential.Credential>>(searchResult);
-            }
+            var credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, proofRequest);
+            var result = from cred in credentials
+                         where cred.CredentialInfo.Referent == attributeReferent
+                         select cred;
+            return result.ToList();
         }
 
         /// <inheritdoc />
@@ -992,6 +992,102 @@ namespace Hyperledger.Aries.Features.PresentProof
                     }
                 }
             }
+        }
+
+        private async Task<List<IssueCredential.Credential>> ProverSearchCredentialsForProofRequestAsync(IAgentContext agentContext,
+            ProofRequest proofRequest)
+        {
+            List<IssueCredential.Credential> result = new List<IssueCredential.Credential>();
+
+            List<ISearchQuery> queryList = new List<ISearchQuery>();
+
+            foreach (ProofAttributeInfo attributeInfo in proofRequest.RequestedAttributes.Select(x => x.Value))
+            {
+                foreach(AttributeFilter attributeFilter in attributeInfo.Restrictions)
+                {
+                    List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
+
+                    currentQueryList.Add(SearchQuery.Equal("State", "Issued"));
+
+                    if(attributeFilter.SchemaId != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Equal("SchemaId", attributeFilter.SchemaId));
+                    }
+                    if (attributeFilter.SchemaIssuerDid != null)
+                    {
+                        currentQueryList.Add(SearchQuery.StartsWith("SchemaId", attributeFilter.SchemaIssuerDid));
+                    }
+                    if (attributeFilter.SchemaVersion != null)
+                    {
+                        currentQueryList.Add(SearchQuery.EndsWith("SchemaId", attributeFilter.SchemaVersion));
+                    }
+                    if (attributeFilter.SchemaName != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Contains("SchemaId", attributeFilter.SchemaName));
+                    }
+                    if (attributeFilter.CredentialDefinitionId != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Equal("CredentialDefinitionId", attributeFilter.CredentialDefinitionId));
+                    }
+                    if (attributeFilter.IssuerDid != null)
+                    {
+                        currentQueryList.Add(SearchQuery.StartsWith("CredentialDefinitionId", attributeFilter.IssuerDid));
+                    }
+
+                    queryList.Add(SearchQuery.And(currentQueryList.ToArray()));
+                }
+            }
+
+            foreach (ProofPredicateInfo predicateInfo in proofRequest.RequestedPredicates.Select(x => x.Value))
+            {
+                foreach (AttributeFilter attributeFilter in predicateInfo.Restrictions)
+                {
+                    List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
+
+                    currentQueryList.Add(SearchQuery.Equal("State", "Issued"));
+
+                    if (attributeFilter.SchemaId != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Equal("SchemaId", attributeFilter.SchemaId));
+                    }
+                    if (attributeFilter.SchemaIssuerDid != null)
+                    {
+                        currentQueryList.Add(SearchQuery.StartsWith("SchemaId", attributeFilter.SchemaIssuerDid));
+                    }
+                    if (attributeFilter.SchemaVersion != null)
+                    {
+                        currentQueryList.Add(SearchQuery.EndsWith("SchemaId", attributeFilter.SchemaVersion));
+                    }
+                    if (attributeFilter.SchemaName != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Contains("SchemaId", attributeFilter.SchemaName));
+                    }
+                    if (attributeFilter.CredentialDefinitionId != null)
+                    {
+                        currentQueryList.Add(SearchQuery.Equal("CredentialDefinitionId", attributeFilter.CredentialDefinitionId));
+                    }
+                    if (attributeFilter.IssuerDid != null)
+                    {
+                        currentQueryList.Add(SearchQuery.StartsWith("CredentialDefinitionId", attributeFilter.IssuerDid));
+                    }
+
+                    queryList.Add(SearchQuery.And(currentQueryList.ToArray()));
+                }
+            }
+
+            ISearchQuery finalQuery = SearchQuery.Or(queryList.ToArray());
+
+            var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
+            foreach(var cred in credRecs)
+            {
+                var credJson = cred.GetTag(TagConstants.CredJson);
+                if (!string.IsNullOrEmpty(credJson))
+                {
+                    result.Add(JsonConvert.DeserializeObject<IssueCredential.Credential>(credJson));
+                }
+            }
+
+            return result;
         }
 
         /*private async Task<string> GetRecordJson(IAgentContext agentContext, string recordId)
