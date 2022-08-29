@@ -1080,10 +1080,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
             foreach(var cred in credRecs)
             {
-                var credJson = cred.GetTag(TagConstants.CredJson);
-                if (!string.IsNullOrEmpty(credJson))
+                if (!string.IsNullOrEmpty(cred.CredentialJson))
                 {
-                    result.Add(JsonConvert.DeserializeObject<IssueCredential.Credential>(credJson));
+                    result.Add(JsonConvert.DeserializeObject<IssueCredential.Credential>(cred.CredentialJson));
                 }
             }
 
