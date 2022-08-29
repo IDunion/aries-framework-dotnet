@@ -44,16 +44,17 @@ namespace Hyperledger.Aries.Tests
         public async Task SetNymOnLedger()
         {
             var context = await _fixture.Host.Services.GetService<IAgentProvider>().GetContextAsync();
+            var recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
 
-            var did = await Did.CreateAndStoreMyDidAsync(context.AriesStorage.Wallet, "{}");
+            (string did, string verkey) = await DidUtils.CreateAndStoreMyDidAsync(context.AriesStorage, recordService, did: "{}");
 
             await _fixture.Host.Services.GetService<ILedgerService>()
-                .RegisterNymAsync(context, TestConstants.StewardDid, did.Did, did.VerKey, null);
+                .RegisterNymAsync(context, TestConstants.StewardDid, did, verkey, null);
 
-            var result = await _fixture.Host.Services.GetService<ILedgerService>().LookupNymAsync(context, did.Did);
+            var result = await _fixture.Host.Services.GetService<ILedgerService>().LookupNymAsync(context, did);
             var data = JObject.Parse(result)["result"]?["data"]?.ToString();
             
-            Assert.Equal(did.Did, JObject.Parse(data!)["dest"]?.ToString());
+            Assert.Equal(did, JObject.Parse(data!)["dest"]?.ToString());
         }
         
         [Fact(DisplayName = "Set Attribute on ledger")]

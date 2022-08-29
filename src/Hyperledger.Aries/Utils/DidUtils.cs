@@ -21,6 +21,8 @@ using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
 using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
 using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Contracts;
+using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -229,11 +231,27 @@ namespace Hyperledger.Aries.Utils
             string cryptoType = "ed25519",
             bool cid = false)
         {
-            if (storage.Store is null)
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
-                throw new ArgumentNullException(nameof(storage.Store));
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
             }
+            else if (storage?.Store != null)
+            {
+                return await CreateAndStoreMyDidStore(storage, recordService, did, seed, cryptoType, cid);
+            }
+            else
+            {
+                return await CreateAndStoreMyDidWallet(storage.Wallet, did);
+            }            
+        }
 
+        private static async Task<(string, string)> CreateAndStoreMyDidStore(AriesStorage storage,
+            IWalletRecordService recordService,
+            string did = null,
+            string seed = null,
+            string cryptoType = "ed25519",
+            bool cid = false)
+        {
             KeyAlg keyAlg = cryptoType switch
             {   // only member currently supported is "ed25519"
                 "ed25519" => KeyAlg.ED25519,
@@ -272,7 +290,8 @@ namespace Hyperledger.Aries.Utils
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 
-            DidRecord didRecord = new DidRecord { 
+            DidRecord didRecord = new DidRecord
+            {
                 Id = did,
                 Did = did,
                 Verkey = verKeyBase58
@@ -297,11 +316,12 @@ namespace Hyperledger.Aries.Utils
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
             /*** TODO : ??? - rework, use central location for this try catch. move insertKey in recordService? ***/
-            try { 
-            _ = await AriesAskarStore.InsertKeyAsync(
-                storage.Store.session,
-                keyHandle,
-                verKeyBase58);
+            try
+            {
+                _ = await AriesAskarStore.InsertKeyAsync(
+                    storage.Store.session,
+                    keyHandle,
+                    verKeyBase58);
             }
             catch
             {
@@ -309,6 +329,12 @@ namespace Hyperledger.Aries.Utils
             }
 
             return (did, verKeyBase58);
+        }
+
+        private static async Task<(string, string)> CreateAndStoreMyDidWallet(Wallet wallet, string didJson)
+        {
+            CreateAndStoreMyDidResult did = await Did.CreateAndStoreMyDidAsync(wallet, didJson);
+            return (did.Did, did.VerKey);
         }
 
         //TODO : ??? - add missing functions?
