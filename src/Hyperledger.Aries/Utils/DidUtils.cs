@@ -341,11 +341,6 @@ namespace Hyperledger.Aries.Utils
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
         {
-            if (storage.Store is null)
-            {
-                throw new ArgumentNullException(nameof(storage.Store));
-            }
-
             if (string.IsNullOrEmpty(identityJson))
             {
                 throw new ArgumentNullException(nameof(identityJson));
@@ -400,11 +395,6 @@ namespace Hyperledger.Aries.Utils
         {
             string result;
             AriesStorage storage = agentContext.AriesStorage;
-            if (storage.Wallet is null)
-            {
-                throw new ArgumentNullException(nameof(storage.Wallet));
-            }
-
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
             result = didRecord?.Verkey;
 
@@ -474,11 +464,6 @@ namespace Hyperledger.Aries.Utils
         public static async Task<string> KeyForLocalDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
         {
             AriesStorage storage = agentContext.AriesStorage;
-            if (storage.Store is null)
-            {
-                throw new ArgumentNullException(nameof(storage.Wallet));
-            }
-
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
             return didRecord?.Verkey;
         }

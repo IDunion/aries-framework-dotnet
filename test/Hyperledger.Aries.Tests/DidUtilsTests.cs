@@ -99,8 +99,6 @@ namespace Hyperledger.Aries.Tests
             Assert.Throws<ArgumentException>(() => DidUtils.ConvertDidKeyToVerkey(VALID_SECP256K1_0));
         }
 
-        /* TODO : ??? Refactor Unittests to implement an actuall working dependency injection!  */
-
         [Fact]
         public async Task KeyForDidAsyncGetsKey()
         {
