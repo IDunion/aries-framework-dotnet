@@ -1,6 +1,7 @@
 ﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Multiformats.Base;
@@ -13,6 +14,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
+using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
+using Newtonsoft.Json.Linq;
+using Hyperledger.Aries.Contracts;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -388,8 +393,9 @@ namespace Hyperledger.Aries.Utils
         /// <param name="did">The DID to get the verification key for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
         /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
-        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
+        public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, ILedgerService ledgerService, string did)
         {
+            string result;
             AriesStorage storage = agentContext.AriesStorage;
             if (storage.Wallet is null)
             {
@@ -397,10 +403,17 @@ namespace Hyperledger.Aries.Utils
             }
 
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+            result = didRecord?.Verkey;
 
-            /* TODO : ??? Check if ledger lookup is missing/necessary. */
+            if(string.IsNullOrEmpty(result))
+            {
+                string nymJson = await ledgerService.LookupNymAsync(agentContext, did);
+                string data = JObject.Parse(nymJson)["result"]?["data"]?.ToString();
+                string verkey = JObject.Parse(data)["verkey"]?.ToString();
+                result = await BuildFullVerkey(did, verkey);
+            }
 
-            return didRecord.Verkey;
+            return result;
         }
 
         /// <summary>
@@ -446,7 +459,7 @@ namespace Hyperledger.Aries.Utils
                 Multibase.Base58.Decode(dest).ToList<byte>().AddRange(Multibase.Base58.Decode(verkey.Substring(1, verkey.Length - 1)).ToList<byte>());
             }
 
-            if (String.IsNullOrEmpty(cryptoType))
+            if (!String.IsNullOrEmpty(cryptoType))
             {
                 verkey = $"{verkey}:{cryptoType}";
             }

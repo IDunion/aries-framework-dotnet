@@ -66,7 +66,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
         /// <inheritdoc/>
         public async Task<(DidExchangeRequestMessage, ConnectionRecord)> CreateRequestAsync(IAgentContext agentContext, string did)
         {
-            var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, _recordService, did);
+            var theirVerkey = await DidUtils.KeyForDidAsync(agentContext, _recordService, _ledgerService, did);
             var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, did);
 
             (string myDid, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(agentContext.AriesStorage, _recordService, "{}");
@@ -231,7 +231,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
             }
             else if (invitation.Services.FirstOrDefault() is string resolvableDid)
             {
-                var recipientKey = await DidUtils.KeyForDidAsync(agentContext, _recordService, resolvableDid);
+                var recipientKey = await DidUtils.KeyForDidAsync(agentContext, _recordService, _ledgerService, resolvableDid);
                 var endpointResult = await _ledgerService.LookupServiceEndpointAsync(agentContext, resolvableDid);
 
                 connectionRecord = new ConnectionRecord

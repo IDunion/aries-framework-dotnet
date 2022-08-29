@@ -1,10 +1,19 @@
 using System;
+using System.Threading.Tasks;
+using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
+using Hyperledger.Indy.WalletApi;
+using Hyperledger.TestHarness;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Hyperledger.Aries.Tests
 {
-    public class DidUtilsTests
+    public class DidUtilsTests : IClassFixture<DidUtilsTests.SingleTestWalletFixture>
     {
         private const string VALID_FULL_VERKEY = "MeHaPyPGsbBCgMKo13oWK7MeHaPyPGsbBCgMKo13oWK7";
         private const string ANOTHER_VALID_FULL_VERKEY = "XHhCzrFBTvrh2GsmHWRW4bpGYHdiPJbagSTFEMvFayc";
@@ -13,6 +22,40 @@ namespace Hyperledger.Aries.Tests
         private const string ORIG_VERKEY = "8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K";
         private const string DERIVED_DID_KEY = "did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th";
         private const string VALID_SECP256K1_0 = "did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme";
+
+        protected TestSingleWallet _fixture;
+        private IAgentContext _agentContext;
+        private readonly string _walletConfig = $"{{\"id\":\"{Guid.NewGuid()}\"}}";
+        private const string Credentials = "{\"key\":\"test_wallet_key\"}";
+        private static IWalletRecordService _recordService;
+        private static ILedgerService _ledgerService;
+
+        public class SingleTestWalletFixture : TestSingleWallet
+        {
+            protected override string GetIssuerSeed() => TestConstants.StewardSeed;
+        }
+
+        public DidUtilsTests(SingleTestWalletFixture fixture)
+        {
+            _fixture = fixture;
+            _recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
+            _ledgerService = _fixture.Host.Services.GetService<ILedgerService>();
+
+            try
+            {
+                Wallet.CreateWalletAsync(_walletConfig, Credentials).GetAwaiter();
+            }
+            catch (WalletExistsException)
+            {
+                // OK
+            }
+
+            _agentContext = new DefaultAgentContext
+            {
+                AriesStorage = new AriesStorage(wallet: Wallet.OpenWalletAsync(_walletConfig, Credentials).GetAwaiter().GetResult()),
+            };
+
+        }
 
         [Fact]
         public void CanDetectFullVerkey()
@@ -69,5 +112,16 @@ namespace Hyperledger.Aries.Tests
         {
             Assert.Throws<ArgumentException>(() => DidUtils.ConvertDidKeyToVerkey(VALID_SECP256K1_0));
         }
+
+        /* TODO : ??? Refactor Unittests to implement an actuall working dependency injection!  */
+
+        //[Fact]
+        //public async Task KeyForDidAsyncGetsKey()
+        //{
+        //    string tmpDid = "Th7MpTaRZVRYnPiabds81Y";
+        //    string key = await DidUtils.KeyForDidAsync(_agentContext, _recordService, _ledgerService, tmpDid);
+
+        //    Assert.True(DidUtils.IsVerkey(key));
+        //}
     }
 }
