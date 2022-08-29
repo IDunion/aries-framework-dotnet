@@ -21,6 +21,9 @@ using static Hyperledger.Aries.Storage.WalletConfiguration;
 using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
+using Hyperledger.Aries.Utils;
+using Hyperledger.Aries.Features.Handshakes.DidExchange;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Hyperledger.TestHarness
 {
@@ -90,7 +93,7 @@ namespace Hyperledger.TestHarness
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
         }
 
-        protected async Task<CreateAndStoreMyDidResult> PromoteTrustee(string seed)
+        protected virtual async Task<CreateAndStoreMyDidResult> PromoteTrustee(string seed)
         {
             var trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet, new { seed = seed }.ToJson());
 
@@ -153,6 +156,10 @@ namespace Hyperledger.TestHarness
 
     public abstract class TestSingleWalletV2 : TestSingleWallet
     {
+        public new DidRecord Trustee { get; protected set; }
+        public new DidRecord Trustee2 { get; protected set; }
+        public new DidRecord Trustee3 { get; protected set; }
+
         public override async Task DisposeAsync()
         {
             var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
@@ -192,10 +199,27 @@ namespace Hyperledger.TestHarness
             
             Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
 
-            Trustee = await Did.CreateAndStoreMyDidAsync(Context.AriesStorage.Wallet,
-                new { seed = "000000000000000000000000Trustee1" }.ToJson());
+            (string did , string verkey) = await DidUtils.CreateAndStoreMyDidAsync(Context.AriesStorage, recordService, seed: "000000000000000000000000Trustee1");
+            Trustee = new() { Did = did, Verkey = verkey };
             Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
+            //(string TEMPSTEWARD_DID, string TEMPSTEWARD_Verkey) = await DidUtils.CreateAndStoreMyDidAsync(Context.AriesStorage, recordService, seed: "000000000000000000000000Steward1");
+        }
+
+        protected new async Task<DidRecord> PromoteTrustee(string seed)
+        {
+            (string trusteeDid, string trusteeVerkey) = await DidUtils.CreateAndStoreMyDidAsync(Context.AriesStorage, recordService, seed : seed);
+
+            try
+            {
+                await ledgerService.RegisterNymAsync(Context, Trustee.Did, trusteeDid, trusteeVerkey, "TRUSTEE");
+            }
+            catch (Exception)
+            {
+                // Do nothing - this is expected if the trustee is already registered
+            }
+
+            return new DidRecord { Did = trusteeDid, Verkey = trusteeVerkey };
         }
     }
 }

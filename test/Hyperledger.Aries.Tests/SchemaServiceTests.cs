@@ -13,7 +13,9 @@ namespace Hyperledger.Aries.Tests
     public abstract class SchemaServiceTests : TestSingleWallet
     {
         protected TestSingleWallet _fixture;
-        
+        //TODO : ??? - Check if right services for V1 bzw. V2 are used. 
+        // see: var schemaService = Host.Services.GetService<ISchemaService>();  _fixture is missing, solution
+        // var schemaService = _fixture.Host.Services.GetService<ISchemaService>(); or add schemaService in TestSingleWallet as global like WalletRecordService and so on
         [Fact]
         public async Task CanCreateAndResolveSchema()
         {
