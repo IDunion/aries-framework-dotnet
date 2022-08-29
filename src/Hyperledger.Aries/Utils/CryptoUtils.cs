@@ -11,6 +11,7 @@ using Hyperledger.Aries.Features.Routing;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
+using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
@@ -257,11 +258,11 @@ namespace Hyperledger.Aries.Utils
         /// 
         /// </summary>
         /// <param name="storage"></param>
-        /// <param name="key"></param>
+        /// <param name="myVerkey"></param>
         /// <param name="message"></param>
         /// <returns></returns>
         /// <exception cref="AriesFrameworkException"></exception>
-        public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, string key, byte[] message)
+        public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, string myVerkey, byte[] message)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -269,25 +270,26 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await CreateSignatureStore(storage.Store, key, message);
+                return await CreateSignatureStore(storage.Store, myVerkey, message);
             }
             else
             {
-                return await CreateSignatureWallet(storage.Wallet, key, message);
+                return await CreateSignatureWallet(storage.Wallet, myVerkey, message);
             }
         }
 
-        private static async Task<byte[]> CreateSignatureStore(Store store, string key, byte[] message)
+        private static async Task<byte[]> CreateSignatureStore(Store store, string myVerkey, byte[] message)
         {
             byte[] signature;
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, key), 0);
+            IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, myVerkey);
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             signature = await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, message, SignatureType.EdDSA);
             return signature;
         }
 
-        private static async Task<byte[]> CreateSignatureWallet(Wallet wallet, string key, byte[] message)
+        private static async Task<byte[]> CreateSignatureWallet(Wallet wallet, string myVerkey, byte[] message)
         {
-            return await Crypto.SignAsync(wallet, key, message);
+            return await Crypto.SignAsync(wallet, myVerkey, message);
         }
 
         /// <summary>
@@ -315,15 +317,21 @@ namespace Hyperledger.Aries.Utils
             }
         }
 
-        private static async Task<bool> VerifyAsyncStore(Store store, string key, byte[] message, byte[] signature)
+        private static async Task<bool> VerifyAsyncStore(Store store, string theirVerkey, byte[] message, byte[] signature)
         {
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, key), 0);
+            /***TODO : ??? - 
+             * inspect method, probably need to do:  
+             *    AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(theirVerkey)) -> IntPtr pubKeyHandle
+             *    AriesAskarKey.VerifySignatureFromKeyAsync(pubKeyHandle, message, signature, SignatureType.EdDSA) -> return bool
+             * or make sure we save a pubKeyHandle corresponding to TheirDid / TheirVerkey in DidUtils.StoreTheirDidAsync via AriesAskarStore.InsertKeyAsync(store.session, ...)
+             ***/
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey), 0);
             return await AriesAskarKey.VerifySignatureFromKeyAsync(keyHandle, message, signature, SignatureType.EdDSA);
         }
 
-        private static async Task<bool> VerifyAsyncWallet(string key, byte[] message, byte[] signature)
+        private static async Task<bool> VerifyAsyncWallet(string theirVerkey, byte[] message, byte[] signature)
         {
-            return await Crypto.VerifyAsync(key, message, signature);
+            return await Crypto.VerifyAsync(theirVerkey, message, signature);
         }
     }
 

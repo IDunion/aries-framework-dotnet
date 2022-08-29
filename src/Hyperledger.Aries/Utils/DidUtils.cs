@@ -1,13 +1,16 @@
 ﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Multiformats.Base;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Stateless.Graph;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -258,7 +261,7 @@ namespace Hyperledger.Aries.Utils
                     verKeyInDid = Multibase.Base58.Encode(verKey.Take(16).ToArray());
                 }
 
-                did = ToDid(DidKeyMethodSpec, verKeyInDid);
+                did = verKeyInDid;// ToDid(DidKeyMethodSpec, verKeyInDid);
             }
             else
             {
@@ -298,7 +301,7 @@ namespace Hyperledger.Aries.Utils
             _ = await AriesAskarStore.InsertKeyAsync(
                 storage.Store.session,
                 keyHandle,
-                did);
+                verKeyBase58);
             }
             catch
             {
@@ -471,13 +474,13 @@ namespace Hyperledger.Aries.Utils
         public static async Task<string> KeyForLocalDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
         {
             AriesStorage storage = agentContext.AriesStorage;
-            if (storage.Wallet is null)
+            if (storage.Store is null)
             {
                 throw new ArgumentNullException(nameof(storage.Wallet));
             }
 
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
-            return didRecord.Verkey;
+            return didRecord?.Verkey;
         }
     }
 }

@@ -221,14 +221,14 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
-        public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did)
+        public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string myVerkey)
         {
             if (storage.Store is null)
             {
                 throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
             }
 
-            Debug.WriteLine($"Adding key for did: {did}");
+            Debug.WriteLine($"Adding key for verkey: {myVerkey}");
 
             if (storage.Store.session == null)
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
@@ -236,7 +236,7 @@ namespace Hyperledger.Aries.Storage
             _ = await AriesAskarStore.InsertKeyAsync(
                 storage.Store.session,
                 keyHandle,
-                did);
+                myVerkey);
         }
     }
 }

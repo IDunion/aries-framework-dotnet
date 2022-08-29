@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.IssueCredential;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.TestHarness;
+using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.TestHarness;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,7 +75,15 @@ namespace Hyperledger.Aries.Tests
             var context = await _fixture.Host.Services.GetService<IAgentProvider>().GetContextAsync();
             
             string name = "test-schema-" + Guid.NewGuid();
-            
+
+            //Test DefaultV1 
+            //string verkeyLocal = await Did.KeyForLocalDidAsync(context.AriesStorage.Wallet, "Th7MpTaRZVRYnPiabds81Y");
+            //string verkeyLocalLedger = await Did.KeyForDidAsync((await context.Pool).Pool, context.AriesStorage.Wallet, "Th7MpTaRZVRYnPiabds81Y");
+            //Test DefaultV2 
+            //var recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
+            //var ledgerService = _fixture.Host.Services.GetService<ILedgerService>();
+            //string verkeyLocal = await DidUtils.KeyForLocalDidAsync(context, recordService, "Th7MpTaRZVRYnPiabds81Y");
+
             string schema = string.Format("{{\"id\": \"Th7MpTaRZVRYnPiabds81Y:2:{0}:1.0\",\"name\": \"{0}\",\"version\": \"1.0\",\"ver\": \"1.0\",\"attrNames\": [\"name\"]}}", name) ;
 
             await _fixture.Host.Services.GetService<ILedgerService>().RegisterSchemaAsync(context, TestConstants.StewardDid, schema);
