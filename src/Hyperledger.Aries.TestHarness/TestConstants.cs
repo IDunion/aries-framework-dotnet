@@ -27,6 +27,28 @@ namespace Hyperledger.TestHarness
             }
         };
 
+        public static WalletConfiguration TestSingleWalletV2HolderConfig = new WalletConfiguration
+        {
+            Id = Guid.NewGuid().ToString(),
+            StorageType = "sqlite",
+            StorageConfiguration = new WalletStorageConfiguration
+            {
+                Path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\test-holder-db"))
+            }
+        };
+
+        public static WalletConfiguration TestSingleWalletV2IssuerConfig = new WalletConfiguration
+        {
+            Id = Guid.NewGuid().ToString(),
+            StorageType = "sqlite",
+            StorageConfiguration = new WalletStorageConfiguration
+            {
+                Path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\test-issuer-db"))
+            }
+        };
+
         public static WalletCredentials TestSingelWalletV2WalletCreds = new WalletCredentials { Key = "key" };
-}
+        public static WalletCredentials TestSingelWalletV2HolderCreds = new WalletCredentials { Key = "holder-key" };
+        public static WalletCredentials TestSingelWalletV2IssuerCreds = new WalletCredentials { Key = "issuer-key" };
+    }
 }

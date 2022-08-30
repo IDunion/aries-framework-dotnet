@@ -1,4 +1,5 @@
-﻿using aries_askar_dotnet.Models;
+﻿using aries_askar_dotnet.AriesAskar;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
@@ -16,6 +17,7 @@ using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Logging;
 using Multiformats.Base;
+using Stateless.Graph;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +26,7 @@ using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
-    internal class DefaultConnectionServiceV2 : IConnectionService
+    public class DefaultConnectionServiceV2 : IConnectionService
     {
         /// <summary>
         /// The event aggregator.
@@ -41,7 +43,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <summary>
         /// The logger
         /// </summary>
-        protected readonly ILogger<DefaultConnectionService> Logger;
+        protected readonly ILogger<DefaultConnectionServiceV2> Logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultConnectionServiceV2"/> class.
@@ -54,7 +56,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             IEventAggregator eventAggregator,
             IWalletRecordService recordService,
             IProvisioningService provisioningService,
-            ILogger<DefaultConnectionService> logger)
+            ILogger<DefaultConnectionServiceV2> logger)
         {
             EventAggregator = eventAggregator;
             ProvisioningService = provisioningService;
@@ -514,12 +516,16 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             IntPtr keyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral);
             byte[] keyBytes = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string keyInDid;
+            
             if (string.IsNullOrEmpty(did))
             {
                 byte[] subArray = new byte[16];
                 Array.Copy(keyBytes, subArray, 16);
                 keyInDid = cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
-                did = DidUtils.ToDid("key", keyInDid);
+                did = keyInDid;
+                Session session = await wallet.StartSessionAsync();
+                await session.InsertKeyAsync(keyHandle, keyInDid);
+                await session.CloseAndCommitAsync();
             }
 
             return did;

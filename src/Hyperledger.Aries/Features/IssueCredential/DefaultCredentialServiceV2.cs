@@ -66,11 +66,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         protected readonly ISchemaService SchemaService;
 
         /// <summary>
-        /// The tails service
-        /// </summary>
-        protected readonly ITailsService TailsService;
-
-        /// <summary>
         /// The provisioning service
         /// </summary>
         protected readonly IProvisioningService ProvisioningService;
@@ -88,17 +83,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// The logger
         /// </summary>
-        protected readonly ILogger<DefaultCredentialService> Logger;
+        protected readonly ILogger<DefaultCredentialServiceV2> Logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultCredentialService"/> class.
+        /// Initializes a new instance of the <see cref="DefaultCredentialServiceV2"/> class.
         /// </summary>
         /// <param name="eventAggregator">The event aggregator.</param>
         /// <param name="ledgerService">The ledger service.</param>
         /// <param name="connectionService">The connection service.</param>
         /// <param name="recordService">The record service.</param>
         /// <param name="schemaService">The schema service.</param>
-        /// <param name="tailsService">The tails service.</param>
         /// <param name="provisioningService">The provisioning service.</param>
         /// <param name="paymentService">The payment service.</param>
         /// <param name="messageService">The message service</param>
@@ -109,18 +103,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
             IConnectionService connectionService,
             IWalletRecordService recordService,
             ISchemaService schemaService,
-            ITailsService tailsService,
             IProvisioningService provisioningService,
             IPaymentService paymentService,
             IMessageService messageService,
-            ILogger<DefaultCredentialService> logger)
+            ILogger<DefaultCredentialServiceV2> logger)
         {
             EventAggregator = eventAggregator;
             LedgerService = ledgerService;
             ConnectionService = connectionService;
             RecordService = recordService;
             SchemaService = schemaService;
-            TailsService = tailsService;
             ProvisioningService = provisioningService;
             PaymentService = paymentService;
             MessageService = messageService;

@@ -38,8 +38,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         protected readonly ILedgerService LedgerService;
         private readonly IPaymentService paymentService;
 
-        /// <summary>The tails service</summary>
-        protected readonly ITailsService TailsService;
         /// <summary>
         /// The agent options
         /// </summary>
@@ -54,21 +52,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="recordService">Record service.</param>
         /// <param name="ledgerService">Ledger service.</param>
         /// <param name="paymentService">The payment service.</param>
-        /// <param name="tailsService">Tails service.</param>
         /// <param name="agentOptions">The agent options.</param>
         public DefaultSchemaServiceV2(
             IProvisioningService provisioningService,
             IWalletRecordService recordService,
             ILedgerService ledgerService,
             IPaymentService paymentService,
-            ITailsService tailsService,
             IOptions<AgentOptions> agentOptions)
         {
             ProvisioningService = provisioningService;
             RecordService = recordService;
             LedgerService = ledgerService;
             this.paymentService = paymentService;
-            TailsService = tailsService;
             AgentOptions = agentOptions.Value;
         }
 

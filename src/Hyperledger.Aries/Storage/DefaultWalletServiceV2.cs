@@ -84,7 +84,6 @@ namespace Hyperledger.Aries.Storage
             Store store = await AriesAskarStore.ProvisionAsync(await BuildSpecUriAsync(configuration), passKey: credentials.Key);
             /** Need to close it again, cause here we just create the store backend. Analog to the <see cref="DefaultWalletService" />.**/
             await AriesAskarStore.CloseAsync(store);
-
         }
 
         /// <inheritdoc />

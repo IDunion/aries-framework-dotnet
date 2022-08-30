@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
@@ -16,6 +17,7 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Runtime;
+using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.TestHarness;
 using Hyperledger.Indy.AnonCredsApi;
@@ -507,6 +509,126 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             await Wallet.DeleteWalletAsync(_issuerConfig, Credentials);
             await Wallet.DeleteWalletAsync(_holderConfig, Credentials);
+        }
+    }
+
+    public class CredentialTestsV2 : IAsyncLifetime
+    {
+        static CredentialTestsV2()
+        {
+            global::Hyperledger.Aries.Utils.Runtime.SetFlags(Hyperledger.Aries.Utils.Runtime.LedgerLookupRetryFlag);
+        }
+
+        private readonly WalletConfiguration _issuerConfig = TestConstants.TestSingleWalletV2IssuerConfig;
+        private readonly WalletConfiguration _holderConfig = TestConstants.TestSingleWalletV2HolderConfig;
+        private readonly WalletCredentials _issuerCredentials = TestConstants.TestSingelWalletV2IssuerCreds;
+        private readonly WalletCredentials _holderCredentials = TestConstants.TestSingelWalletV2HolderCreds;
+
+        private IAgentContext _issuerWallet;
+        private IAgentContext _holderWallet;
+
+        private readonly IEventAggregator _eventAggregator;
+        private readonly IConnectionService _connectionService;
+        private readonly ICredentialService _credentialService;
+        private readonly ISchemaService _schemaService;
+        private IWalletService _walletService;
+        private readonly Mock<IPoolService> _poolService = new Mock<IPoolService>();
+
+        private readonly ConcurrentBag<AgentMessage> _messages = new ConcurrentBag<AgentMessage>();
+
+        public CredentialTestsV2()
+        {
+            var recordService = new DefaultWalletRecordServiceV2();
+            var provisioning = ServiceUtils.GetDefaultMockProvisioningService();
+            _poolService.Setup(x => x.SubmitRequestAsync(It.IsAny<PoolAwaitable>(), It.IsAny<object>())).Returns(async () => "True");
+
+            var ledgerService = new DefaultLedgerServiceV2(
+                new DefaultSigningServiceV2(recordService),
+                _poolService.Object,
+                provisioning);
+
+            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
+
+            _eventAggregator = new EventAggregator();
+
+            var paymentService = new DefaultPaymentService();
+
+            var clientFactory = new Mock<IHttpClientFactory>();
+            clientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(new HttpClient());
+
+            _schemaService = new DefaultSchemaServiceV2(provisioning, recordService, ledgerService, paymentService, Options.Create(new Configuration.AgentOptions()));
+
+            _connectionService = new DefaultConnectionServiceV2(
+                _eventAggregator,
+                recordService,
+                provisioning,
+                new Mock<ILogger<DefaultConnectionServiceV2>>().Object);
+
+            _credentialService = new DefaultCredentialServiceV2(
+                _eventAggregator,
+                ledgerService,
+                _connectionService,
+                recordService,
+                _schemaService,
+                provisioning,
+                paymentService,
+                messageService,
+                new Mock<ILogger<DefaultCredentialServiceV2>>().Object);
+        }
+
+        public async Task InitializeAsync()
+        {
+            _walletService = new DefaultWalletServiceV2();
+            _issuerWallet = await AgentUtils.CreateV2(_walletService, _issuerConfig, _issuerCredentials, true);
+            _holderWallet = await AgentUtils.CreateV2(_walletService, _holderConfig, _holderCredentials, true);
+        }
+
+        /// <summary>
+        /// This test requires a local running node accessible at 127.0.0.1
+        /// </summary>
+        /// <returns>The issuance demo.</returns>
+        [Fact]
+        public async Task CanIssueCredential()
+        {
+            var events = 0;
+            _eventAggregator.GetEventByType<ServiceMessageProcessingEvent>()
+                .Where(_ => (_.MessageType == MessageTypes.IssueCredentialNames.OfferCredential ||
+                             _.MessageType == MessageTypes.IssueCredentialNames.RequestCredential ||
+                             _.MessageType == MessageTypes.IssueCredentialNames.IssueCredential))
+                .Subscribe(_ =>
+                {
+                    events++;
+                });
+
+            // Setup secure connection between issuer and holder
+            var (issuerConnection, holderConnection) = await Scenarios.EstablishConnectionAsync(
+                _connectionService, _messages, _issuerWallet, _holderWallet);
+
+            var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
+                _schemaService, _credentialService, _messages, issuerConnection,
+                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                {
+                    new CredentialPreviewAttribute("first_name", "Test"),
+                    new CredentialPreviewAttribute("last_name", "Holder")
+                });
+
+            Assert.True(events == 3);
+
+            Assert.Equal(issuerCredential.State, holderCredential.State);
+            Assert.Equal(CredentialState.Issued, issuerCredential.State);
+        }
+
+        public async Task DisposeAsync()
+        {
+            if (_issuerWallet != null)
+            {
+                await _walletService.DeleteWalletAsync(_issuerConfig, _issuerCredentials);
+            }
+            if (_holderWallet != null)
+            {
+                await _walletService.DeleteWalletAsync(_holderConfig, _holderCredentials);
+            }
         }
     }
 }

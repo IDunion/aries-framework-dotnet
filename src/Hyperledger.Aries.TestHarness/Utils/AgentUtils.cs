@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 
@@ -28,6 +29,27 @@ namespace Hyperledger.TestHarness.Utils
             return new DefaultAgentContext
             {
                 AriesStorage = new AriesStorage( wallet: await Wallet.OpenWalletAsync(config, credentials)),
+                Pool = withPool ? PoolAwaitable.FromPool(new AriesPool(await PoolUtils.GetPoolAsync())) : PoolAwaitable.FromPool(null),
+                SupportedMessages = supportedMessageTypes,
+                UseMessageTypesHttps = useMessageTypesHttps
+            };
+        }
+
+        public static async Task<DefaultAgentContext> CreateV2(IWalletService walletService, WalletConfiguration config, WalletCredentials credentials, bool withPool = false, IList<MessageType> supportedMessageTypes = null, bool useMessageTypesHttps = false)
+        {
+            try
+            {
+                await walletService.CreateWalletAsync(config, credentials);
+            }
+            catch (WalletExistsException)
+            {
+                // OK
+            }
+            if (supportedMessageTypes == null)
+                supportedMessageTypes = GetDefaultMessageTypes();
+            return new DefaultAgentContext
+            {
+                AriesStorage = await walletService.GetWalletAsync(config, credentials),
                 Pool = withPool ? PoolAwaitable.FromPool(new AriesPool(await PoolUtils.GetPoolAsync())) : PoolAwaitable.FromPool(null),
                 SupportedMessages = supportedMessageTypes,
                 UseMessageTypesHttps = useMessageTypesHttps
