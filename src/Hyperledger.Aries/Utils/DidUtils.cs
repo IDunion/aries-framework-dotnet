@@ -241,8 +241,12 @@ namespace Hyperledger.Aries.Utils
             }
             else
             {
-                return await CreateAndStoreMyDidWallet(storage.Wallet, did);
-            }            
+                JsonSerializerSettings settings = new JsonSerializerSettings();
+                settings.NullValueHandling = NullValueHandling.Ignore;
+                string cidString = cid ? "true" : null;
+                cryptoType = cryptoType != null ? cryptoType == "ed25519" ? cryptoType : null : null;
+                return await CreateAndStoreMyDidWallet(storage.Wallet, JsonConvert.SerializeObject(new { did = did, seed = seed, crypto_type = cryptoType, cid = cidString }, settings));
+            }
         }
 
         private static async Task<(string, string)> CreateAndStoreMyDidStore(AriesStorage storage,

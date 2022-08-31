@@ -50,7 +50,7 @@ namespace Hyperledger.TestHarness.Utils
             return new DefaultAgentContext
             {
                 AriesStorage = await walletService.GetWalletAsync(config, credentials),
-                Pool = withPool ? PoolAwaitable.FromPool(new AriesPool(await PoolUtils.GetPoolAsync())) : PoolAwaitable.FromPool(null),
+                Pool = withPool ? PoolAwaitable.FromPool(new AriesPool(null, await PoolUtils.GetPoolHandleAsync())) : PoolAwaitable.FromPool(null),
                 SupportedMessages = supportedMessageTypes,
                 UseMessageTypesHttps = useMessageTypesHttps
             };

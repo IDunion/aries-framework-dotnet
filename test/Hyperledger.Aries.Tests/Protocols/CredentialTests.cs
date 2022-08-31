@@ -534,7 +534,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         private readonly ISchemaService _schemaService;
         private readonly IWalletRecordService _recordService;
         private IWalletService _walletService;
-        private readonly Mock<IPoolService> _poolService = new Mock<IPoolService>();
+        private readonly IPoolService _poolService = new DefaultPoolServiceV2();
 
         private readonly ConcurrentBag<AgentMessage> _messages = new ConcurrentBag<AgentMessage>();
 
@@ -542,11 +542,10 @@ namespace Hyperledger.Aries.Tests.Protocols
         {
             _recordService = new DefaultWalletRecordServiceV2();
             var provisioning = ServiceUtils.GetDefaultMockProvisioningService();
-            _poolService.Setup(x => x.SubmitRequestAsync(It.IsAny<PoolAwaitable>(), It.IsAny<object>())).Returns(async () => "True");
 
             var ledgerService = new DefaultLedgerServiceV2(
                 new DefaultSigningServiceV2(_recordService),
-                _poolService.Object,
+                _poolService,
                 provisioning);
 
             var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
