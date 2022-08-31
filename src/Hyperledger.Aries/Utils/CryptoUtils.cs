@@ -319,14 +319,11 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task<bool> VerifyAsyncStore(Store store, string theirVerkey, byte[] message, byte[] signature)
         {
-            /***TODO : ??? - 
-             * inspect method, probably need to do:  
-             *    AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(theirVerkey)) -> IntPtr pubKeyHandle
-             *    AriesAskarKey.VerifySignatureFromKeyAsync(pubKeyHandle, message, signature, SignatureType.EdDSA) -> return bool
-             * or make sure we save a pubKeyHandle corresponding to TheirDid / TheirVerkey in DidUtils.StoreTheirDidAsync via AriesAskarStore.InsertKeyAsync(store.session, ...)
-             ***/
-            IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey);
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
+            byte[] theirVKByte = Multibase.Base58.Decode(theirVerkey);
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, theirVKByte);
+
+            //IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey);
+            //IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             return await AriesAskarKey.VerifySignatureFromKeyAsync(keyHandle, message, signature, SignatureType.EdDSA);
         }
 

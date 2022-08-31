@@ -521,7 +521,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             {
                 byte[] subArray = new byte[16];
                 Array.Copy(keyBytes, subArray, 16);
-                keyInDid = cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
+                keyInDid = Multibase.Base58.Encode(keyBytes); //cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
                 did = keyInDid;
                 Session session = await wallet.StartSessionAsync();
                 await session.InsertKeyAsync(keyHandle, keyInDid);

@@ -10,6 +10,8 @@ using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.PresentProof;
+using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.PoolApi;
@@ -95,7 +97,7 @@ namespace Hyperledger.Aries.TestHarness
         }
 
         public static async Task<(CredentialRecord issuerCredential, CredentialRecord holderCredential)> IssueCredentialAsync(
-            ISchemaService schemaService, ICredentialService credentialService,
+            IWalletRecordService recordService, ISchemaService schemaService, ICredentialService credentialService,
             IProducerConsumerCollection<AgentMessage> messages,
             ConnectionRecord issuerConnection, ConnectionRecord holderConnection,
             IAgentContext issuerContext,
@@ -103,16 +105,15 @@ namespace Hyperledger.Aries.TestHarness
             Pool pool, string proverMasterSecretId, bool revocable, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
         {
             // Create an issuer DID/VK. Can also be created during provisioning
-            var issuer = await Did.CreateAndStoreMyDidAsync(issuerContext.AriesStorage.Wallet,
-                new { seed = TestConstants.StewardSeed }.ToJson());
+            var (issuerDid, issuerVerkey) = await DidUtils.CreateAndStoreMyDidAsync(issuerContext.AriesStorage, recordService, seed: TestConstants.StewardSeed);
 
             // Create a schema and credential definition for this issuer
-            var (definitionId, _) = await CreateDummySchemaAndNonRevokableCredDef(issuerContext, schemaService,
-                issuer.Did, credentialAttributes.Select(_ => _.Name).ToArray());
+            var (definitionId,  _) = await CreateDummySchemaAndNonRevokableCredDef(issuerContext, schemaService,
+                issuerDid, credentialAttributes.Select(_ => _.Name).ToArray());
 
             var offerConfig = offerConfiguration ?? new OfferConfiguration
             {
-                IssuerDid = issuer.Did,
+                IssuerDid = issuerDid,
                 CredentialDefinitionId = definitionId,
                 CredentialAttributeValues = credentialAttributes
             };

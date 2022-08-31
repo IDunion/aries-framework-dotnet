@@ -287,6 +287,7 @@ namespace Hyperledger.Aries.Utils
             }
 
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
+
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 

@@ -51,13 +51,14 @@ namespace Hyperledger.Aries.Tests.Protocols
         private readonly IConnectionService _connectionService;
         private readonly ICredentialService _credentialService;
         private readonly ISchemaService _schemaService;
+        private readonly IWalletRecordService _recordService;
 
         private readonly ConcurrentBag<AgentMessage> _messages = new ConcurrentBag<AgentMessage>();
 
         public CredentialTests()
         {
-            var recordService = new DefaultWalletRecordService();
-            var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
+            _recordService = new DefaultWalletRecordService();
+            var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(_recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
 
             var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
 
@@ -71,11 +72,11 @@ namespace Hyperledger.Aries.Tests.Protocols
                 .Returns(new HttpClient());
 
             var tailsService = new DefaultTailsService(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object);
-            _schemaService = new DefaultSchemaService(provisioning, recordService, ledgerService, paymentService, tailsService, Options.Create(new Configuration.AgentOptions()));
+            _schemaService = new DefaultSchemaService(provisioning, _recordService, ledgerService, paymentService, tailsService, Options.Create(new Configuration.AgentOptions()));
 
             _connectionService = new DefaultConnectionService(
                 _eventAggregator,
-                recordService,
+                _recordService,
                 provisioning,
                 new Mock<ILogger<DefaultConnectionService>>().Object);
 
@@ -83,7 +84,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _eventAggregator,
                 ledgerService,
                 _connectionService,
-                recordService,
+                _recordService,
                 _schemaService,
                 tailsService,
                 provisioning,
@@ -120,7 +121,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
@@ -142,7 +143,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute
@@ -531,6 +532,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         private readonly IConnectionService _connectionService;
         private readonly ICredentialService _credentialService;
         private readonly ISchemaService _schemaService;
+        private readonly IWalletRecordService _recordService;
         private IWalletService _walletService;
         private readonly Mock<IPoolService> _poolService = new Mock<IPoolService>();
 
@@ -538,12 +540,12 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public CredentialTestsV2()
         {
-            var recordService = new DefaultWalletRecordServiceV2();
+            _recordService = new DefaultWalletRecordServiceV2();
             var provisioning = ServiceUtils.GetDefaultMockProvisioningService();
             _poolService.Setup(x => x.SubmitRequestAsync(It.IsAny<PoolAwaitable>(), It.IsAny<object>())).Returns(async () => "True");
 
             var ledgerService = new DefaultLedgerServiceV2(
-                new DefaultSigningServiceV2(recordService),
+                new DefaultSigningServiceV2(_recordService),
                 _poolService.Object,
                 provisioning);
 
@@ -557,11 +559,11 @@ namespace Hyperledger.Aries.Tests.Protocols
             clientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(new HttpClient());
 
-            _schemaService = new DefaultSchemaServiceV2(provisioning, recordService, ledgerService, paymentService, Options.Create(new Configuration.AgentOptions()));
+            _schemaService = new DefaultSchemaServiceV2(provisioning, _recordService, ledgerService, paymentService, Options.Create(new Configuration.AgentOptions()));
 
             _connectionService = new DefaultConnectionServiceV2(
                 _eventAggregator,
-                recordService,
+                _recordService,
                 provisioning,
                 new Mock<ILogger<DefaultConnectionServiceV2>>().Object);
 
@@ -569,7 +571,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _eventAggregator,
                 ledgerService,
                 _connectionService,
-                recordService,
+                _recordService,
                 _schemaService,
                 provisioning,
                 paymentService,
@@ -606,7 +608,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService,_schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),

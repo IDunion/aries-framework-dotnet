@@ -53,6 +53,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         private readonly IConnectionService _connectionService;
         private readonly ICredentialService _credentialService;
         private readonly IProofService _proofService;
+        private readonly IWalletRecordService _recordService;
 
         private readonly ISchemaService _schemaService;
 
@@ -60,8 +61,8 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public ProofTests()
         {
-            var recordService = new DefaultWalletRecordService();
-            var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
+            _recordService = new DefaultWalletRecordService();
+            var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(_recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
 
             _eventAggregator = new EventAggregator();
 
@@ -75,11 +76,11 @@ namespace Hyperledger.Aries.Tests.Protocols
                 .Returns(new HttpClient());
 
             var tailsService = new DefaultTailsService(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object);
-            _schemaService = new DefaultSchemaService(provisioning, recordService, ledgerService, paymentService, tailsService, Options.Create(new Configuration.AgentOptions()));
+            _schemaService = new DefaultSchemaService(provisioning, _recordService, ledgerService, paymentService, tailsService, Options.Create(new Configuration.AgentOptions()));
 
             _connectionService = new DefaultConnectionService(
                 _eventAggregator,
-                recordService,
+                _recordService,
                 provisioning,
                 new Mock<ILogger<DefaultConnectionService>>().Object);
 
@@ -87,7 +88,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _eventAggregator,
                 ledgerService,
                 _connectionService,
-                recordService,
+                _recordService,
                 _schemaService,
                 tailsService,
                 provisioning,
@@ -98,7 +99,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             _proofService = new DefaultProofService(
                 _eventAggregator,
                 _connectionService,
-                recordService,
+                _recordService,
                 provisioning,
                 ledgerService,
                 tailsService,
@@ -130,7 +131,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, true, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
@@ -178,7 +179,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, true, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
@@ -232,7 +233,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
                 {
                      new CredentialPreviewAttribute("first_name", "Test"),
@@ -600,7 +601,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, true, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
@@ -705,7 +706,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, true, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
@@ -799,7 +800,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
             await Scenarios.IssueCredentialAsync(
-                _schemaService, _credentialService, _messages, issuerConnection,
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, true, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
