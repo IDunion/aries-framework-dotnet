@@ -325,7 +325,8 @@ namespace Hyperledger.Aries.Utils
              *    AriesAskarKey.VerifySignatureFromKeyAsync(pubKeyHandle, message, signature, SignatureType.EdDSA) -> return bool
              * or make sure we save a pubKeyHandle corresponding to TheirDid / TheirVerkey in DidUtils.StoreTheirDidAsync via AriesAskarStore.InsertKeyAsync(store.session, ...)
              ***/
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey), 0);
+            IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey);
+            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             return await AriesAskarKey.VerifySignatureFromKeyAsync(keyHandle, message, signature, SignatureType.EdDSA);
         }
 

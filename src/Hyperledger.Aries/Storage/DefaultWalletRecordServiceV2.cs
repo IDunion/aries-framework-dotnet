@@ -50,7 +50,7 @@ namespace Hyperledger.Aries.Storage
 
                 record.CreatedAtUtc = DateTime.UtcNow;
 
-                if (storage.Store.session == null)
+                if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
                 {
                     _ = await AriesAskarStore.StartSessionAsync(storage.Store);
                 }
@@ -152,7 +152,7 @@ namespace Hyperledger.Aries.Storage
                 throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
             }
 
-            if (storage.Store.session == null)
+            if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
             try

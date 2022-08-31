@@ -14,6 +14,7 @@ using Hyperledger.Aries.Features.OutOfBand;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
+using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.DidApi;
 using Microsoft.Extensions.Logging;
 using System;
@@ -77,7 +78,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
 
-            string connectionKey = await CryptoUtils.CreateKeyAsync(agentContext.AriesStorage, "{}");
+            string connectionKey = await Crypto.CreateKeyAsync(agentContext.AriesStorage.Wallet, "{}");
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
             if (config.AutoAcceptConnection)
