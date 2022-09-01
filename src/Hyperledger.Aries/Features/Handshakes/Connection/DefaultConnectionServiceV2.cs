@@ -17,6 +17,7 @@ using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Logging;
 using Multiformats.Base;
+using Newtonsoft.Json;
 using Stateless.Graph;
 using System;
 using System.Collections.Generic;
@@ -94,9 +95,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
 
-            /** TODO : ??? - How does key/DID generation work? **/
-            string connectionKey = await CreateKeyAsync(agentContext.AriesStorage.Store);
-
+            string connectionKey = await CryptoUtils.CreateKeyAsync(agentContext.AriesStorage, RecordService);
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
             if (config.AutoAcceptConnection)
@@ -216,7 +215,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 DidDoc = connection.MyDidDoc(provisioning)
             };
 
-            SignatureDecorator sigData = await SignatureUtils.SignDataAsync(agentContext, connectionData, connection.GetTag(TagConstants.ConnectionKey));
+            SignatureDecorator sigData = await SignatureUtils.SignDataAsync(agentContext, RecordService, connectionData, connection.GetTag(TagConstants.ConnectionKey));
             string threadId = connection.GetTag(TagConstants.LastThreadId);
 
             ConnectionResponseMessage response = new(agentContext.UseMessageTypesHttps) { ConnectionSig = sigData };
@@ -503,32 +502,6 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
             }
 
             _ = await RecordService.DeleteAsync<ConnectionRecord>(agentContext.AriesStorage, invitationId);
-        }
-
-        /*** TODO : ??? - change location to CryptoUtils ? ***/
-        private static async Task<string> CreateKeyAsync(Store wallet, KeyAlg keyAlg = KeyAlg.ED25519, bool ephemeral = true, bool cid = false)
-        {
-            if (wallet is null)
-            {
-                throw new ArgumentNullException(nameof(wallet));
-            }
-            string did = "";
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral);
-            byte[] keyBytes = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
-            string keyInDid;
-            
-            if (string.IsNullOrEmpty(did))
-            {
-                byte[] subArray = new byte[16];
-                Array.Copy(keyBytes, subArray, 16);
-                keyInDid = Multibase.Base58.Encode(keyBytes); //cid ? Multibase.Base58.Encode(keyBytes) : Multibase.Base58.Encode(subArray);
-                did = keyInDid;
-                Session session = await wallet.StartSessionAsync();
-                await session.InsertKeyAsync(keyHandle, keyInDid);
-                await session.CloseAndCommitAsync();
-            }
-
-            return did;
         }
     }
 }

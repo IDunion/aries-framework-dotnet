@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using System;
@@ -27,14 +28,14 @@ namespace Hyperledger.Aries.Decorators.Signature
         /// <param name="data">Data to sign.</param>
         /// <param name="signerKey">Signers verkey.</param>
         /// <returns>Async signature decorator.</returns>
-        public static async Task<SignatureDecorator> SignDataAsync<T>(IAgentContext agentContext, T data, string signerKey)
+        public static async Task<SignatureDecorator> SignDataAsync<T>(IAgentContext agentContext, IWalletRecordService recordService, T data, string signerKey)
         {
             string dataJson = data.ToJson();
             byte[] epochData = BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
             byte[] sigData = epochData.Concat(dataJson.GetUTF8Bytes()).ToArray();
 
-            byte[] sig = await CryptoUtils.CreateSignatureAsync(agentContext.AriesStorage, signerKey, sigData);
+            byte[] sig = await CryptoUtils.CreateSignatureAsync(agentContext.AriesStorage, recordService, signerKey, sigData);
 
             SignatureDecorator sigDecorator = new()
             {

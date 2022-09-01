@@ -5,8 +5,10 @@ using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage.Models;
 using Newtonsoft.Json;
+using Stateless.Graph;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -223,20 +225,47 @@ namespace Hyperledger.Aries.Storage
 
         public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string myVerkey)
         {
-            if (storage.Store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            try 
+            { 
+                if (storage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
+
+                Debug.WriteLine($"Adding key for verkey: {myVerkey}");
+
+                if (storage.Store.session == null)
+                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+
+                _ = await AriesAskarStore.InsertKeyAsync(
+                    storage.Store.session,
+                    keyHandle,
+                    myVerkey);
             }
+            catch { }
+        }
 
-            Debug.WriteLine($"Adding key for verkey: {myVerkey}");
+        public virtual async Task<IntPtr> GetKeyAsync(AriesStorage storage, string myVerkey)
+        {
+            try
+            {
+                if (storage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
 
-            if (storage.Store.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+                Debug.WriteLine($"Getting keyHandle for verkey: {myVerkey}");
 
-            _ = await AriesAskarStore.InsertKeyAsync(
-                storage.Store.session,
-                keyHandle,
-                myVerkey);
+                if (storage.Store.session == null)
+                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+
+                IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(storage.Store.session, myVerkey);
+                return await AriesAskarResults.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
+            }
+            catch 
+            { 
+                return new IntPtr(); 
+            }
         }
     }
 }

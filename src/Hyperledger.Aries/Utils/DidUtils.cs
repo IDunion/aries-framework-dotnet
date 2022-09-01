@@ -23,6 +23,7 @@ using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
+using System.Buffers.Text;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -243,9 +244,14 @@ namespace Hyperledger.Aries.Utils
             {
                 JsonSerializerSettings settings = new JsonSerializerSettings();
                 settings.NullValueHandling = NullValueHandling.Ignore;
-                string cidString = cid ? "true" : null;
                 cryptoType = cryptoType != null ? cryptoType == "ed25519" ? cryptoType : null : null;
-                return await CreateAndStoreMyDidWallet(storage.Wallet, JsonConvert.SerializeObject(new { did = did, seed = seed, crypto_type = cryptoType, cid = cidString }, settings));
+                return await CreateAndStoreMyDidWallet(
+                    storage.Wallet, 
+                    JsonConvert.SerializeObject(
+                        new {did, seed, crypto_type = cryptoType, cid},
+                        settings
+                        )
+                    );
             }
         }
 
@@ -271,19 +277,10 @@ namespace Hyperledger.Aries.Utils
                 SeedMethod.BlsKeyGen);
 
             var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
-            string verKeyInDid;
+
             if (string.IsNullOrEmpty(did))
             {
-                if (cid == true)
-                {
-                    verKeyInDid = Multibase.Base58.Encode(verKey);
-                }
-                else
-                {
-                    verKeyInDid = Multibase.Base58.Encode(verKey.Take(16).ToArray());
-                }
-
-                did = verKeyInDid;// ToDid(DidKeyMethodSpec, verKeyInDid);
+                did = cid? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey.Take(16).ToArray());
             }
             else
             {
@@ -291,7 +288,6 @@ namespace Hyperledger.Aries.Utils
             }
 
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
-
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
 
@@ -313,25 +309,7 @@ namespace Hyperledger.Aries.Utils
 
             await recordService.AddAsync(storage, didRecord);
             await recordService.AddAsync(storage, keyRecord);
-
-            /***TODO : ??? - inserKey still needed, when adding DidRecord and KeyRecord like indy-sdk?? ***/
-            Debug.WriteLine($"Adding key for did: {did}");
-
-            if (storage.Store.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
-
-            /*** TODO : ??? - rework, use central location for this try catch. move insertKey in recordService? ***/
-            try
-            {
-                _ = await AriesAskarStore.InsertKeyAsync(
-                    storage.Store.session,
-                    keyHandle,
-                    verKeyBase58);
-            }
-            catch
-            {
-                //Do nothing 
-            }
+            await recordService.AddKeyAsync(storage, keyHandle, verKeyBase58);
 
             return (did, verKeyBase58);
         }

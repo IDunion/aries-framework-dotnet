@@ -44,7 +44,7 @@ namespace Hyperledger.Aries.Routing.Edge
             var bytesArray = await Task.Run(() => File.ReadAllBytes(path));
 
             var backupVerkey = await EnsureBackupKeyAsync(agentContext, seed);
-            var signedBytesArray = await CryptoUtils.CreateSignatureAsync(agentContext.AriesStorage, backupVerkey, bytesArray);
+            var signedBytesArray = await Crypto.SignAsync(agentContext.AriesStorage.Wallet,  backupVerkey, bytesArray);
 
             var payload = bytesArray.ToBase64String();
 
@@ -114,7 +114,7 @@ namespace Hyperledger.Aries.Routing.Edge
             var publicKey = await EnsureBackupKeyAsync(context, seed);
 
             var decodedKey = Multibase.Base58.Decode(publicKey);
-            var publicKeySigned = await CryptoUtils.CreateSignatureAsync(context.AriesStorage, publicKey, decodedKey);
+            var publicKeySigned = await Crypto.SignAsync(context.AriesStorage.Wallet, publicKey, decodedKey);
 
             var retrieveBackupResponseMessage = new RetrieveBackupAgentMessage()
             {

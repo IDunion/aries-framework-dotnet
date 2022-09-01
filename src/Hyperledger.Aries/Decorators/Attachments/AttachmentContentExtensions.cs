@@ -1,15 +1,12 @@
-using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
 using Multiformats.Base;
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 
 namespace Hyperledger.Aries.Decorators.Attachments
 {
@@ -24,7 +21,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
         /// <param name="storage">The Storage of Wallet or Store object.</param>
         /// <param name="verkey">The verkey to be used for the signing.</param>
         /// <exception cref="NullReferenceException">Throws if payload is null.</exception>
-        public static async Task SignWithJsonWebSignature(this AttachmentContent content, AriesStorage storage, string verkey)
+        public static async Task SignWithJsonWebSignature(this AttachmentContent content, AriesStorage storage, IWalletRecordService recordService, string verkey)
         {
             if (!DidUtils.IsVerkey(verkey))
             {
@@ -54,61 +51,8 @@ namespace Hyperledger.Aries.Decorators.Attachments
 
             string message = $"{protectedHeader}.{payload}";
 
-            string signature = (await CryptoUtils.CreateSignatureAsync(storage, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
+            string signature = (await CryptoUtils.CreateSignatureAsync(storage, recordService, verkey, Encoding.ASCII.GetBytes(message))).ToBase64UrlString();
 
-            content.JsonWebSignature = new JsonWebSignature
-            {
-                Header = new JsonWebSignatureHeader { Kid = did },
-                Protected = protectedHeader,
-                Signature = signature
-            };
-        }
-
-        /// <summary>
-        /// Sign attachment content using json web signature
-        /// </summary>
-        /// <param name="content">The attachment content to be signed.</param>
-        /// <param name="store">The aries-askar store.</param>
-        /// <param name="verkey">The verkey to be used for the signing.</param>
-        /// <exception cref="NullReferenceException">Throws if payload is null.</exception>
-        public static async Task SignWithJsonWebSignature(this AttachmentContent content, Store store, string verkey)
-        {
-            if (!DidUtils.IsVerkey(verkey))
-            {
-                throw new ArgumentException("Not a valid verkey: " + verkey);
-            }
-
-            string payload = content.Base64;
-            if (payload == null)
-            {
-                throw new NullReferenceException("No data to sign");
-            }
-
-            string did = DidUtils.ConvertVerkeyToDidKey(verkey);
-
-            string protectedHeader = new
-            {
-                alg = "EdDSA",
-                kid = did,
-                jwk = new
-                {
-                    kty = "OKP",
-                    crv = "Ed25519",
-                    x = Multibase.Base58.Decode(verkey).ToBase64UrlString(),
-                    kid = did
-                }
-            }.ToJson().ToBase64Url();
-
-            string message = $"{protectedHeader}.{payload}";
-
-            if (store.session is null)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(store);
-            }
-
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(await AriesAskarStore.FetchKeyAsync(store.session, verkey), 0);
-            /*** TODO : ??? - which SignatureType ? Could not find default from indy-sdk methods "indy_crypto_sign". probably EdDSA ***/
-            string signature = (await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, Encoding.ASCII.GetBytes(message), SignatureType.EdDSA)).ToBase64UrlString();
             content.JsonWebSignature = new JsonWebSignature
             {
                 Header = new JsonWebSignatureHeader { Kid = did },
@@ -134,32 +78,6 @@ namespace Hyperledger.Aries.Decorators.Attachments
 
                 return await CryptoUtils.VerifyAsync(agentContext.AriesStorage, verkey, Encoding.ASCII.GetBytes(message),
                     content.JsonWebSignature.Signature.GetBytesFromBase64());
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-        /*** TODO : ??? - combine with VerifyJsonWebSignature and use AgentContext.AriesStoarge for distinguishing between Crypt.Verify and AriesAskarKey.VerifySignatureFromKeyAsync ***/
-        /// <summary>
-        /// Verify the json web signature of an attachment
-        /// </summary>
-        /// <param name="content">The attachment content to be verified.</param>
-        /// <returns>True - signature is valid; False - signature is missing or invalid.</returns>
-        public static async Task<bool> VerifyJsonWebSignatureAskar(this AttachmentContent content, IAgentContext agentContext)
-        {
-            try
-            {
-                string did = content.JsonWebSignature.Header.Kid;
-
-                string verkey = DidUtils.ConvertDidKeyToVerkey(did);
-
-                string message = $"{content.JsonWebSignature.Protected}.{content.Base64}";
-
-                /*** TODO : ??? - which SignatureType / KeyAlg ?***/
-                IntPtr publicVerKey = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(verkey));
-                return await AriesAskarKey.VerifySignatureFromKeyAsync(publicVerKey, Encoding.ASCII.GetBytes(message),
-                    content.JsonWebSignature.Signature.GetBytesFromBase64(), SignatureType.EdDSA);
             }
             catch (Exception)
             {

@@ -59,11 +59,18 @@ namespace Hyperledger.Aries.Storage
         Task<bool> DeleteAsync<T>(AriesStorage storage, string id) where T : RecordBase, new();
 
         /// <summary>
-        /// Adds a key for a given did.
+        /// Adds a key for a given verkey.
         /// </summary>
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="keyHandle"></param>
-        /// <param name="did"></param>
-        Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did);
+        /// <param name="myVerkey"></param>
+        Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string myVerkey);
+
+        /// <summary>
+        /// Gets a key for a given verkey.
+        /// </summary>
+        /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
+        /// <param name="myVerkey"></param>
+        Task<IntPtr> GetKeyAsync(AriesStorage storage, string myVerkey);
     }
 }

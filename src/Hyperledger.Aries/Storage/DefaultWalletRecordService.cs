@@ -143,7 +143,12 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
-        public Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string did)
+        public Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string verkey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IntPtr> GetKeyAsync(AriesStorage storage, string verkey)
         {
             throw new NotImplementedException();
         }

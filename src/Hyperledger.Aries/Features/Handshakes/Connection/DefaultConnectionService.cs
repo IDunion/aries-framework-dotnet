@@ -426,7 +426,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 DidDoc = connection.MyDidDoc(provisioning)
             };
 
-            SignatureDecorator sigData = await SignatureUtils.SignDataAsync(agentContext, connectionData, connection.GetTag(TagConstants.ConnectionKey));
+            SignatureDecorator sigData = await SignatureUtils.SignDataAsync(agentContext, RecordService, connectionData, connection.GetTag(TagConstants.ConnectionKey));
             string threadId = connection.GetTag(TagConstants.LastThreadId);
 
             ConnectionResponseMessage response = new(agentContext.UseMessageTypesHttps) { ConnectionSig = sigData };

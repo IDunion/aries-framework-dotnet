@@ -23,7 +23,7 @@ namespace Hyperledger.Aries.Signatures
         public async Task<byte[]> SignMessageAsync(IAgentContext context, string signingDid, byte[] message)
         {
             string key = await DidUtils.KeyForLocalDidAsync(context, _recordService, signingDid);
-            return await CryptoUtils.CreateSignatureAsync(context.AriesStorage, key, message);
+            return await CryptoUtils.CreateSignatureAsync(context.AriesStorage, _recordService, key, message);
         }
     }
 }

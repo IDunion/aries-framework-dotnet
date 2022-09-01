@@ -7,9 +7,12 @@ using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
+using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Features.Routing;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.CryptoApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Multiformats.Base;
 using Newtonsoft.Json;
@@ -17,7 +20,7 @@ using Newtonsoft.Json.Linq;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using IndySharedRsObject = indy_shared_rs_dotnet.IndyCredx.ObjectApi;
+using SignatureType = aries_askar_dotnet.Models.SignatureType;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -194,9 +197,10 @@ namespace Hyperledger.Aries.Utils
         /// </summary>
         /// <param name="storage"></param>
         /// <param name="keyJson"></param>
+        /// <param name="recordService"></param>
         /// <returns></returns>
         /// <exception cref="AriesFrameworkException"></exception>
-        public static async Task<string> CreateKeyAsync(AriesStorage storage, string keyJson)
+        public static async Task<string> CreateKeyAsync(AriesStorage storage, IWalletRecordService recordService, string seed = null, string cryptoType = "ed25519")
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -204,49 +208,58 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await CreateKeyStore(keyJson);
+                return await CreateKeyStore(storage, recordService, seed, cryptoType);
             }
-            else
+            else if (storage?.Wallet != null)
             {
-                return await CreateKeyWallet(storage.Wallet, keyJson);
+                JsonSerializerSettings settings = new JsonSerializerSettings();
+                settings.NullValueHandling = NullValueHandling.Ignore;
+                cryptoType = cryptoType != null ? cryptoType == "ed25519" ? cryptoType : null : null;
+                return await CreateKeyWallet(
+                    storage.Wallet, 
+                    JsonConvert.SerializeObject(
+                        new {seed, crypto_type = cryptoType},
+                        settings
+                        )
+                    );
             }
+            else return null;
         }
 
-        private static async Task<string> CreateKeyStore(string keyJson)
+        private static async Task<string> CreateKeyStore(AriesStorage storage, IWalletRecordService recordService, string seed, string cryptoType)
         {
-            
-            JObject keyObj = JsonConvert.DeserializeObject<JObject>(keyJson);
-            JToken seedToken;
-            JToken algoToken;
+            KeyAlg keyAlg = cryptoType switch
+            {   // only member currently supported is "ed25519"
+                "ed25519" => KeyAlg.ED25519,
+                _ => KeyAlg.ED25519,
+            };
 
-            string seed;
-            KeyAlg algo;
+            if (string.IsNullOrEmpty(seed))
+                seed = GetUniqueKey(32);
 
-            if(keyObj.TryGetValue("seed", out seedToken))
-            {
-                seed = seedToken.ToString();
-            }
-            else
-            {
-                using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-                {
-                    byte[] seedBytes = new byte[32];
-                    rng.GetBytes(seedBytes);
-                    seed = Convert.ToBase64String(seedBytes);
-                }
-            }
-            
-            if(keyObj.TryGetValue("crypto_type", out algoToken))
-            {
-                algo = (KeyAlg)Enum.Parse(typeof(KeyAlg), algoToken.ToString());
-            }
-            else
-            {
-                algo = KeyAlg.ED25519;
-            }
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
+                keyAlg: keyAlg,
+                seed: seed,
+                SeedMethod.BlsKeyGen);
 
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(algo, seed, SeedMethod.BlsKeyGen);
-            return await IndySharedRsObject.ToJsonAsync(keyHandle);
+            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            string verKeyBase58 = Multibase.Base58.Encode(verKey);
+            if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
+                verKeyBase58 = verKeyBase58 + ":" + cryptoType;
+
+            var signKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+            var signKeyBase58 = Multibase.Base58.Encode(signKey);
+
+            KeyRecord keyRecord = new KeyRecord
+            {
+                Id = verKeyBase58,
+                Verkey = verKeyBase58,
+                Signkey = signKeyBase58
+            };
+            await recordService.AddAsync(storage, keyRecord);
+            await recordService.AddKeyAsync(storage, keyHandle, verKeyBase58);
+
+            return verKeyBase58;
         }
 
         private static async Task<string> CreateKeyWallet(Wallet wallet, string keyJson)
@@ -262,7 +275,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="message"></param>
         /// <returns></returns>
         /// <exception cref="AriesFrameworkException"></exception>
-        public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, string myVerkey, byte[] message)
+        public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, IWalletRecordService recordService, string myVerkey, byte[] message)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -270,19 +283,19 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await CreateSignatureStore(storage.Store, myVerkey, message);
+                return await CreateSignatureStore(storage, recordService, myVerkey, message);
             }
-            else
+            else if (storage?.Wallet != null)
             {
                 return await CreateSignatureWallet(storage.Wallet, myVerkey, message);
             }
+            else return null;
         }
 
-        private static async Task<byte[]> CreateSignatureStore(Store store, string myVerkey, byte[] message)
+        private static async Task<byte[]> CreateSignatureStore(AriesStorage storage, IWalletRecordService recordService, string myVerkey, byte[] message)
         {
             byte[] signature;
-            IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, myVerkey);
-            IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
+            IntPtr keyHandle = await recordService.GetKeyAsync(storage, myVerkey); 
             signature = await AriesAskarKey.SignMessageFromKeyAsync(keyHandle, message, SignatureType.EdDSA);
             return signature;
         }
@@ -321,9 +334,6 @@ namespace Hyperledger.Aries.Utils
         {
             byte[] theirVKByte = Multibase.Base58.Decode(theirVerkey);
             IntPtr keyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, theirVKByte);
-
-            //IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, theirVerkey);
-            //IntPtr keyHandle = await AriesAskarResult.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             return await AriesAskarKey.VerifySignatureFromKeyAsync(keyHandle, message, signature, SignatureType.EdDSA);
         }
 
