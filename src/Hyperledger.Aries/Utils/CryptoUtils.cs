@@ -322,7 +322,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await VerifyAsyncStore(storage.Store, key, message, signature);
+                return await VerifyAsyncStore(key, message, signature);
             }
             else
             {
@@ -330,7 +330,7 @@ namespace Hyperledger.Aries.Utils
             }
         }
 
-        private static async Task<bool> VerifyAsyncStore(Store store, string theirVerkey, byte[] message, byte[] signature)
+        private static async Task<bool> VerifyAsyncStore(string theirVerkey, byte[] message, byte[] signature)
         {
             byte[] theirVKByte = Multibase.Base58.Decode(theirVerkey);
             IntPtr keyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, theirVKByte);
