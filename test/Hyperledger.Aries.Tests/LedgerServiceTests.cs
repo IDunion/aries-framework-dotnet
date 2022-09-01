@@ -46,7 +46,7 @@ namespace Hyperledger.Aries.Tests
             var context = await _fixture.Host.Services.GetService<IAgentProvider>().GetContextAsync();
             var recordService = _fixture.Host.Services.GetService<IWalletRecordService>();
 
-            (string did, string verkey) = await DidUtils.CreateAndStoreMyDidAsync(context.AriesStorage, recordService, did: "{}");
+            (string did, string verkey) = await DidUtils.CreateAndStoreMyDidAsync(context.AriesStorage, recordService);
 
             await _fixture.Host.Services.GetService<ILedgerService>()
                 .RegisterNymAsync(context, TestConstants.StewardDid, did, verkey, null);
