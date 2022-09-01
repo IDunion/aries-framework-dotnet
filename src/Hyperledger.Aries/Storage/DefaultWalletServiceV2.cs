@@ -48,8 +48,13 @@ namespace Hyperledger.Aries.Storage
 
                 if (ariesStorage.Store == null)
                 {
-                    /** TODO : ??? - Other Input parameter needed like KeyDerivationMethod, profile? **/
-                    ariesStorage.Store = await AriesAskarStore.OpenAsync(await BuildSpecUriAsync(configuration), passKey: credentials.Key);
+                    /** TODO : ??? - Other Input parameter needed like profile? **/
+                    string keyDerivationMethod = 
+                        string.IsNullOrEmpty(credentials.KeyDerivationMethod) ? "none" : credentials.KeyDerivationMethod;
+                    ariesStorage.Store = await AriesAskarStore.OpenAsync(
+                        await BuildSpecUriAsync(configuration),
+                        keyMethod: KeyMethodConverter.ToKeyMethod(keyDerivationMethod),
+                        passKey: credentials.Key);
                     Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
@@ -80,8 +85,14 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            /** TODO : ??? - Other Input parameter needed like KeyDerivationMethod, profile? **/
-            Store store = await AriesAskarStore.ProvisionAsync(await BuildSpecUriAsync(configuration), passKey: credentials.Key);
+            /** TODO : ??? - Other Input parameter needed like profile? **/
+            string keyDerivationMethod = 
+                string.IsNullOrEmpty(credentials.KeyDerivationMethod)? "none" : credentials.KeyDerivationMethod;
+
+            Store store = await AriesAskarStore.ProvisionAsync(
+                await BuildSpecUriAsync(configuration), 
+                keyMethod: KeyMethodConverter.ToKeyMethod(keyDerivationMethod),
+                passKey: credentials.Key);
             /** Need to close it again, cause here we just create the store backend. Analog to the <see cref="DefaultWalletService" />.**/
             await AriesAskarStore.CloseAsync(store);
         }
