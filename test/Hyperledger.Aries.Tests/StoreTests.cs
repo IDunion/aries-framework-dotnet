@@ -63,15 +63,9 @@ namespace Hyperledger.Aries.Tests
         [Fact(DisplayName = "Should create wallet with RAW key derivation")]
         public async Task CanCreateWallet_WhenRawKeyDerivationIsUsed()
         {
-            var creds = new WalletCredentials
-            {
-                Key = await StoreApi.GenerateRawKeyAsync(null),
-                KeyDerivationMethod = "RAW",
-            };
+            await _walletService.CreateWalletAsync(_config, TestConstants.TestSingelWalletCredsRawEncoding);
 
-            await _walletService.CreateWalletAsync(_config, creds);
-
-            var storage = await _walletService.GetWalletAsync(_config, creds);
+            var storage = await _walletService.GetWalletAsync(_config, TestConstants.TestSingelWalletCredsRawEncoding);
 
             Assert.NotNull(storage.Store);
             Assert.NotEqual(default, storage.Store.storeHandle);
