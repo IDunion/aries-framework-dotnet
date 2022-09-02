@@ -347,7 +347,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         }
     }
 
-    [Trait("Category", "DefaultV1")]
+    [Trait("Category", "DefaultV2")]
     public class ConnectionTestsV2 : IClassFixture<ConnectionTestsV2.SingleTestWalletFixtureV2>
     {
         private SingleTestWalletFixtureV2 _fixture;
