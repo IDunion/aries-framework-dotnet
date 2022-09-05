@@ -473,16 +473,16 @@ namespace Hyperledger.Aries.Tests.Protocols
         {
             var provisioningService = ServiceUtils.GetDefaultMockProvisioningService(null, "DefaultMasterSecret", null);
 
-            _connectionService = new DefaultConnectionServiceV2(
+            var connectionService = new DefaultConnectionServiceV2(
                 _eventAggregator,
                 new DefaultWalletRecordServiceV2(),
-                _provisioningService,
+                provisioningService,
                 new Mock<ILogger<DefaultConnectionServiceV2>>().Object);
 
             var (invite, _) = await _connectionService.CreateInvitationAsync(_fixture.issuerWallet,
                 new InviteConfiguration());
 
-            var (request, _) = await _connectionService.CreateRequestAsync(_fixture.holderWallet, invite);
+            var (request, _) = await connectionService.CreateRequestAsync(_fixture.holderWallet, invite);
 
             Assert.True(request.Connection.DidDoc.Services.Count == 0);
         }
@@ -492,16 +492,16 @@ namespace Hyperledger.Aries.Tests.Protocols
         {
             var provisioningService = ServiceUtils.GetDefaultMockProvisioningService(null, "DefaultMasterSecret", null);
 
-            _connectionService = new DefaultConnectionServiceV2(
+            var connectionService = new DefaultConnectionServiceV2(
                 _eventAggregator,
                 new DefaultWalletRecordServiceV2(),
-                _provisioningService,
+                provisioningService,
                 new Mock<ILogger<DefaultConnectionServiceV2>>().Object);
 
             var (invite, inviteeConnection) = await _connectionService.CreateInvitationAsync(_fixture.issuerWallet,
                 new InviteConfiguration());
 
-            var (request, _) = await _connectionService.CreateRequestAsync(_fixture.holderWallet, invite);
+            var (request, _) = await connectionService.CreateRequestAsync(_fixture.holderWallet, invite);
 
             var id = await _connectionService.ProcessRequestAsync(_fixture.issuerWallet, request, inviteeConnection);
 
