@@ -63,11 +63,6 @@ namespace Hyperledger.Aries.Features.PresentProof
         protected readonly ILogger<DefaultProofServiceV2> Logger;
 
         /// <summary>
-        /// The tails service
-        /// </summary>
-        protected readonly ITailsService TailsService;
-
-        /// <summary>
         /// Message Service
         /// </summary>
         protected readonly IMessageService MessageService;
@@ -89,12 +84,10 @@ namespace Hyperledger.Aries.Features.PresentProof
             IWalletRecordService recordService,
             IProvisioningService provisioningService,
             ILedgerService ledgerService,
-            ITailsService tailsService,
             IMessageService messageService,
             ILogger<DefaultProofServiceV2> logger)
         {
             EventAggregator = eventAggregator;
-            TailsService = tailsService;
             MessageService = messageService;
             ConnectionService = connectionService;
             RecordService = recordService;
@@ -811,27 +804,26 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         private async Task<(AriesRegistryResponse, string)> BuildRevocationStateAsync(
-            IAgentContext agentContext, CredentialInfo credential, AriesResponse registryDefinition,
+            IAgentContext agentContext, CredentialInfo credentialInfo, AriesResponse registryDefinition,
             RevocationInterval nonRevoked)
         {
             var delta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                 agentContext: agentContext,
-                revocationRegistryId: credential.RevocationRegistryId,
+                revocationRegistryId: credentialInfo.RevocationRegistryId,
                 // Ledger will not return correct revocation state if the 'from' field
                 // is other than 0
                 from: 0, //nonRevoked.From,
                 to: nonRevoked.To);
 
-            var tailsFile = await TailsService.EnsureTailsExistsAsync(agentContext, credential.RevocationRegistryId);
+            RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credentialInfo.RevocationRegistryId);
 
             string state = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                 registryDefinition.ObjectJson,
                 delta.ObjectJson,
                 0,
                 (long)delta.Timestamp,
-                tailsFile,
-                new CredentialRevocationState().JsonString
-                );
+                revRegRecord.TailsLocation,
+                new CredentialRevocationState().JsonString);
 
             return (delta, state);
         }
