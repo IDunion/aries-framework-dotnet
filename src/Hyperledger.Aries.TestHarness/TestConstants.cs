@@ -2,6 +2,7 @@
 using static Hyperledger.Aries.Storage.WalletConfiguration;
 using System.IO;
 using System;
+using aries_askar_dotnet.AriesAskar;
 
 namespace Hyperledger.TestHarness
 {
@@ -16,6 +17,8 @@ namespace Hyperledger.TestHarness
         public const string StewardSeed = "000000000000000000000000Steward1";
 
         public const string StewardDid = "Th7MpTaRZVRYnPiabds81Y";
+
+        public const string WalletSeed = "000000000000000000000000Wallet11";
 
         public static WalletConfiguration TestSingleWalletV2WalletConfig = new WalletConfiguration
         {
@@ -50,5 +53,8 @@ namespace Hyperledger.TestHarness
         public static WalletCredentials TestSingelWalletV2WalletCreds = new WalletCredentials { Key = "key" };
         public static WalletCredentials TestSingelWalletV2HolderCreds = new WalletCredentials { Key = "holder-key" };
         public static WalletCredentials TestSingelWalletV2IssuerCreds = new WalletCredentials { Key = "issuer-key" };
+        public static WalletCredentials TestSingelWalletCredsRawEncoding = new WalletCredentials { 
+            Key = StoreApi.GenerateRawKeyAsync(WalletSeed).GetAwaiter().GetResult(), 
+            KeyDerivationMethod = "raw" };
     }
 }
