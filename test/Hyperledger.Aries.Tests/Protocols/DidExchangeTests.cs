@@ -7,9 +7,11 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
+using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;
@@ -168,26 +170,26 @@ namespace Hyperledger.Aries.Tests.Protocols
     [Trait("Category", "DefaultV2")]
     public class DidExchangeTestsV2 : IAsyncLifetime
     {
-        private readonly string _responderConfig = $"{{\"id\":\"{Guid.NewGuid()}\"}}";
-        private readonly string _requesterConfig = $"{{\"id\":\"{Guid.NewGuid()}\"}}";
-        private const string _credentials = "{\"key\":\"test_wallet_key\"}";
+        private readonly WalletConfiguration _responderConfig = TestConstants.TestSingleWalletV2WalletConfig;
+        private readonly WalletConfiguration _requesterConfig = TestConstants.TestSingleWalletV2WalletConfig;
+        private readonly WalletCredentials _responderCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+        private readonly WalletCredentials _requesterCredentials = TestConstants.TestSingelWalletV2WalletCreds;
 
         private IAgentContext _responder;
         private IAgentContext _requester;
 
+        private readonly IWalletService _walletService;
         private readonly IDidExchangeService _didExchangeService;
 
         public DidExchangeTestsV2()
         {
 
             IWalletRecordService recordService = new DefaultWalletRecordServiceV2();
-            IWalletService walletService = new DefaultWalletServiceV2();
+            _walletService = new DefaultWalletServiceV2();
             IOptions<AgentOptions> agentOptions = Options.Create<AgentOptions>(new AgentOptions());
-            IProvisioningService provisioningService = new DefaultProvisioningServiceV2(
-                recordService,
-                walletService,
-                agentOptions
-                );
+
+            IProvisioningService provisioningService = ServiceUtils.GetDefaultMockProvisioningService();
+
             ISigningService signingService = new DefaultSigningServiceV2(recordService);
             IPoolService poolService = new DefaultPoolServiceV2();
             ILedgerService ledgerService = new DefaultLedgerServiceV2(
@@ -207,8 +209,8 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task InitializeAsync()
         {
-            _responder = await AgentUtils.Create(_responderConfig, _credentials);
-            _requester = await AgentUtils.Create(_requesterConfig, _credentials, true);
+            _responder = await AgentUtils.CreateV2(_walletService, _responderConfig, new WalletCredentials { Key = "test_wallet_key" });
+            _requester = await AgentUtils.CreateV2(_walletService, _requesterConfig, new WalletCredentials { Key = "test_wallet_key" }, true);
         }
 
         [Fact]
@@ -320,11 +322,15 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         public async Task DisposeAsync()
         {
-            if (_responder != null) await _responder.AriesStorage.Wallet.CloseAsync();
-            if (_requester != null) await _requester.AriesStorage.Wallet.CloseAsync();
+            if (_responder != null)
+            {
+                await _walletService.DeleteWalletAsync(_responderConfig, _responderCredentials);
+            }
 
-            await Wallet.DeleteWalletAsync(_responderConfig, _credentials);
-            await Wallet.DeleteWalletAsync(_requesterConfig, _credentials);
+            if (_requester != null)
+            {
+                await _walletService.DeleteWalletAsync(_requesterConfig, _requesterCredentials);
+            }
         }
     }
 }

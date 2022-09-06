@@ -278,7 +278,7 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange
                 SearchQuery.Equal(TagConstants.ParentThreadId, requestMessage.GetParentThreadId()));
             record ??= existingConnectionRecords?.SingleOrDefault();
 
-            if (record != null)
+            if (record != null && record.State != ConnectionState.Negotiating)
                 await record.TriggerAsync(ConnectionTrigger.Request);
 
             DidDoc didDoc = null;
