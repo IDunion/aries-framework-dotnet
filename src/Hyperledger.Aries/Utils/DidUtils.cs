@@ -2,16 +2,12 @@
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
-using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Stateless.Graph;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -19,11 +15,9 @@ using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
 using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
-using Newtonsoft.Json.Linq;
-using Hyperledger.Aries.Contracts;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
-using System.Buffers.Text;
+using System.Text;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -271,10 +265,14 @@ namespace Hyperledger.Aries.Utils
             if (string.IsNullOrEmpty(seed))
                 seed = CryptoUtils.GetUniqueKey(32);
 
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
+            //IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
+            //    keyAlg: keyAlg,
+            //    seed: seed,
+            //    SeedMethod.BlsKeyGen);
+
+            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(
                 keyAlg: keyAlg,
-                seed: seed,
-                SeedMethod.BlsKeyGen);
+                secretBytes:  Encoding.ASCII.GetBytes(seed));
 
             var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
 
