@@ -124,7 +124,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _recordService, _schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
                     new CredentialPreviewAttribute("last_name", "Holder")
@@ -146,7 +146,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _recordService, _schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute
                     {
@@ -611,7 +611,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _recordService,_schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
                     new CredentialPreviewAttribute("last_name", "Holder")
@@ -633,7 +633,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             var (issuerCredential, holderCredential) = await Scenarios.IssueCredentialAsync(
                 _recordService, _schemaService, _credentialService, _messages, issuerConnection,
-                holderConnection, _issuerWallet, _holderWallet, (await _holderWallet.Pool).Pool, TestConstants.DefaultMasterSecret, false, new List<CredentialPreviewAttribute>
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute
                     {
@@ -789,7 +789,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService);
+            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -900,7 +900,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService);
+            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             (var request, var _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -969,7 +969,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService);
+            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);

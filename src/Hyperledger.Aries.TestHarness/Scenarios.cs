@@ -13,8 +13,6 @@ using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.DidApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
 using Newtonsoft.Json;
@@ -101,7 +99,7 @@ namespace Hyperledger.Aries.TestHarness
             IProducerConsumerCollection<AgentMessage> messages,
             ConnectionRecord issuerConnection, ConnectionRecord holderConnection,
             IAgentContext issuerContext,
-            IAgentContext holderContext, string proverMasterSecretId, bool revocable, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
+            IAgentContext holderContext, string proverMasterSecretId, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
         {
             // Create an issuer DID/VK. Can also be created during provisioning
             var (issuerDid, issuerVerkey) = await DidUtils.CreateAndStoreMyDidAsync(issuerContext.AriesStorage, recordService, seed: TestConstants.StewardSeed);
@@ -132,7 +130,14 @@ namespace Hyperledger.Aries.TestHarness
                 await credentialService.ProcessOfferAsync(holderContext, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await AnonCreds.ProverCreateMasterSecretAsync(holderContext.AriesStorage.Wallet, proverMasterSecretId);
+            if(holderContext.AriesStorage.Wallet != null)
+            {
+                await AnonCreds.ProverCreateMasterSecretAsync(holderContext.AriesStorage.Wallet, proverMasterSecretId);
+            }
+            else if (holderContext.AriesStorage.Store != null)
+            {
+                await MasterSecretUtils.CreateAndStoreMasterSecretAsync(holderContext.AriesStorage, recordService, proverMasterSecretId);
+            }
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await credentialService.CreateRequestAsync(holderContext, holderCredentialId);

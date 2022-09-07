@@ -15,10 +15,15 @@ namespace Hyperledger.Aries.Utils
         /// </summary>
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="recordService">The record service.</param>
+        /// /// <param name="masterSecretId">The master secret id.</param>
         /// <returns>The master secret id for accessing the corresponding record.</returns>
-        public static async Task<string> CreateAndStoreMasterSecretAsync(AriesStorage storage, IWalletRecordService recordService)
+        public static async Task<string> CreateAndStoreMasterSecretAsync(AriesStorage storage, IWalletRecordService recordService, string masterSecretId = null)
         {
-            string masterSecretId = Guid.NewGuid().ToString();
+            if (string.IsNullOrEmpty(masterSecretId))
+            {
+                masterSecretId = Guid.NewGuid().ToString();
+            }
+               
             MasterSecretRecord masterSecretRecord = new()
             {
                 Id = masterSecretId,
