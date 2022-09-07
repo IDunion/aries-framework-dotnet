@@ -34,9 +34,10 @@ using Xunit;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
-    public class CredentialTests : IAsyncLifetime
+    [Trait("Category", "DefaultV1")]
+    public class CredentialTestsV1 : IAsyncLifetime
     {
-        static CredentialTests()
+        static CredentialTestsV1()
         {
             global::Hyperledger.Aries.Utils.Runtime.SetFlags(Hyperledger.Aries.Utils.Runtime.LedgerLookupRetryFlag);
         }
@@ -56,7 +57,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
         private readonly ConcurrentBag<AgentMessage> _messages = new ConcurrentBag<AgentMessage>();
 
-        public CredentialTests()
+        public CredentialTestsV1()
         {
             _recordService = new DefaultWalletRecordService();
             var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(_recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
@@ -514,6 +515,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         }
     }
 
+    [Trait("Category", "DefaultV2")]
     public class CredentialTestsV2 : IAsyncLifetime
     {
         static CredentialTestsV2()
