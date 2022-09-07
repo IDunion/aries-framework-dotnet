@@ -101,8 +101,7 @@ namespace Hyperledger.Aries.TestHarness
             IProducerConsumerCollection<AgentMessage> messages,
             ConnectionRecord issuerConnection, ConnectionRecord holderConnection,
             IAgentContext issuerContext,
-            IAgentContext holderContext,
-            Pool pool, string proverMasterSecretId, bool revocable, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
+            IAgentContext holderContext, string proverMasterSecretId, bool revocable, List<CredentialPreviewAttribute> credentialAttributes, OfferConfiguration offerConfiguration = null)
         {
             // Create an issuer DID/VK. Can also be created during provisioning
             var (issuerDid, issuerVerkey) = await DidUtils.CreateAndStoreMyDidAsync(issuerContext.AriesStorage, recordService, seed: TestConstants.StewardSeed);
