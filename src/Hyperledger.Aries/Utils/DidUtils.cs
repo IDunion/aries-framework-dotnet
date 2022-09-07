@@ -256,23 +256,14 @@ namespace Hyperledger.Aries.Utils
             string cryptoType = "ed25519",
             bool cid = false)
         {
-            KeyAlg keyAlg = cryptoType switch
-            {   // only member currently supported is "ed25519"
+            KeyAlg keyAlg = cryptoType.ToLower() switch
+            {
                 "ed25519" => KeyAlg.ED25519,
+                "bls12381g2" => KeyAlg.BLS12_381_G2,
                 _ => KeyAlg.ED25519,
             };
 
-            if (string.IsNullOrEmpty(seed))
-                seed = CryptoUtils.GetUniqueKey(32);
-
-            //IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
-            //    keyAlg: keyAlg,
-            //    seed: seed,
-            //    SeedMethod.BlsKeyGen);
-
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(
-                keyAlg: keyAlg,
-                secretBytes:  Encoding.ASCII.GetBytes(seed));
+            IntPtr keyHandle = await CryptoUtils.CreateKeyPair(keyAlg, seed);
 
             var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
 
