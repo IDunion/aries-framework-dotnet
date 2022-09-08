@@ -5,15 +5,14 @@ using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage.Models;
 using Newtonsoft.Json;
-using Stateless.Graph;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -40,22 +39,12 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task AddAsync<T>(AriesStorage storage, T record)
             where T : RecordBase, new()
         {
-            /*** TODO : ??? - rework, try catch needed when duplicate entry is made -> wrapper throws ***/
+            await Validate(storage);
+
             try
             {
-                if (storage.Store is null)
-                {
-                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-                }
-
                 Debug.WriteLine($"Adding record of type {record.TypeName} with Id {record.Id}");
-
                 record.CreatedAtUtc = DateTime.UtcNow;
-
-                if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
-                {
-                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
-                }
 
                 _ = await AriesAskarStore.InsertAsync(
                     session: storage.Store.session,
@@ -64,98 +53,112 @@ namespace Hyperledger.Aries.Storage
                     value: record.ToJson(_jsonSettings),
                     tags: record.Tags.ToJson());
             }
-            catch
+            catch (AriesAskarException e)
             {
-                //Do nothing
+                if (e.errorCode == AriesAskarErrorCode.Duplicate)
+                    Debug.WriteLine($"Record of type '{record.TypeName}' already exists in store for id: {record.Id}");
+                else
+                    throw new AriesAskarException(e.Message, e.errorCode);
+            }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
-
+        
         /// <inheritdoc />
-            // TODO : ??? - change SearchAsync to use the aries-askar methods
         public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
             where T : RecordBase, new()
         {
-            if (storage.Store is null)
+            await Validate(storage);
+
+            try
             {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
+                options ??= new SearchOptions();
+                string filter = (query ?? SearchQuery.Empty).ToJson();
+                Scan search = await AriesAskarStore.StartScanAsync(
+                    store: storage.Store,
+                    category: new T().TypeName,
+                    tagFilter: filter,
+                    offset: skip,
+                    limit: count);
+                IntPtr entryListHandle = await AriesAskarStore.NextAsync(search);
 
-            if (storage.Store.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
-
-            options ??= new SearchOptions();
-
-            Scan search = await AriesAskarStore.StartScanAsync(
-                store: storage.Store,
-                category: new T().TypeName,
-                tagFilter: (query ?? SearchQuery.Empty).ToJson(),
-                offset: skip,
-                limit: count);
-            IntPtr entryListHandle = await AriesAskarStore.NextAsync(search);
-
-            //empty result for given filter 
-            if (entryListHandle == new IntPtr())
-                return new List<T>();
-
-            List<SearchItem> records = new();
-            int numRecords = await AriesAskarResults.EntryListCountAsync(entryListHandle);
-            for (int i = 0; i < numRecords; i++)
-            {
-                string tagsJson = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(entryListHandle, i) : null;
-
-                SearchItem item = new()
+                //empty result for given filter 
+                if (entryListHandle == new IntPtr())
                 {
-                    Id = await AriesAskarResults.EntryListGetNameAsync(entryListHandle, i),
-                    Type = options.RetrieveType ? await AriesAskarResults.EntryListGetCategoryAsync(entryListHandle, i) : null,
-                    Value = options.RetrieveValue ? await AriesAskarResults.EntryListGetValueAsync(entryListHandle, i) : null,
-                    Tags = !string.IsNullOrEmpty(tagsJson) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(tagsJson) : null,
-                };
-                records.Add(item);
-            }
-            SearchResult result = new() { Records = records };
+                    Debug.WriteLine($"Record of type {new T().TypeName} doesn't exist in store for tagFilter: {filter}");
+                    return new List<T>();
+                }
 
-            return result.Records?
-                           .Select(x =>
-                           {
-                               T record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
-                               foreach (KeyValuePair<string, string> tag in x.Tags)
-                                   record.Tags[tag.Key] = tag.Value;
-                               return record;
-                           })
-                           .ToList()
-                       ?? new List<T>();
+                List<SearchItem> records = new();
+                int numRecords = await AriesAskarResults.EntryListCountAsync(entryListHandle);
+                for (int i = 0; i < numRecords; i++)
+                {
+                    string tagsJson = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(entryListHandle, i) : null;
+
+                    SearchItem item = new()
+                    {
+                        Id = await AriesAskarResults.EntryListGetNameAsync(entryListHandle, i),
+                        Type = options.RetrieveType ? await AriesAskarResults.EntryListGetCategoryAsync(entryListHandle, i) : null,
+                        Value = options.RetrieveValue ? await AriesAskarResults.EntryListGetValueAsync(entryListHandle, i) : null,
+                        Tags = !string.IsNullOrEmpty(tagsJson) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(tagsJson) : null,
+                    };
+                    records.Add(item);
+                }
+                SearchResult result = new() { Records = records };
+
+                return result.Records?
+                               .Select(x =>
+                               {
+                                   T record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
+                                   foreach (KeyValuePair<string, string> tag in x.Tags)
+                                       record.Tags[tag.Key] = tag.Value;
+                                   return record;
+                               })
+                               .ToList()
+                           ?? new List<T>();
+            }
+            catch (AriesAskarException e)
+            {
+                throw new AriesAskarException(e.Message, e.errorCode);
+            }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+            }
         }
 
         /// <inheritdoc />
         public virtual async Task UpdateAsync(AriesStorage storage, RecordBase record)
         {
-            if (storage.Store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
+            await Validate(storage);
 
             record.UpdatedAtUtc = DateTime.UtcNow;
-            if (storage.Store.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
-            _ = await AriesAskarStore.ReplaceAsync(
-                session: storage.Store.session,
-                category: record.TypeName,
-                name: record.Id,
-                value: record.ToJson(_jsonSettings),
-                tags: record.Tags.ToJson(_jsonSettings));
+            try
+            {
+                _ = await AriesAskarStore.ReplaceAsync(
+                    session: storage.Store.session,
+                    category: record.TypeName,
+                    name: record.Id,
+                    value: record.ToJson(_jsonSettings),
+                    tags: record.Tags.ToJson(_jsonSettings));
+            }
+            catch (AriesAskarException e)
+            {
+                throw new AriesAskarException(e.Message, e.errorCode);
+            }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+            }
         }
 
         /// <inheritdoc />
         public virtual async Task<T> GetAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
-            if (storage.Store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
-
-            if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+            await Validate(storage);
 
             try
             {
@@ -165,11 +168,13 @@ namespace Hyperledger.Aries.Storage
                     id);
 
                 //empty result for given filter 
-                if (recordHandle == new IntPtr())
+                if (recordHandle == default)
+                {
+                    Debug.WriteLine($"Record of type {new T().TypeName} doesn't exist in store for id: {id}");
                     return null;
+                }
 
                 SearchOptions options = new();
-
                 string tagsJson = options.RetrieveTags ? await AriesAskarResults.EntryListGetTagsAsync(recordHandle, 0) : null;
                 SearchItem item = new()
                 {
@@ -183,24 +188,29 @@ namespace Hyperledger.Aries.Storage
 
                 foreach (KeyValuePair<string, string> tag in item.Tags)
                     record.Tags[tag.Key] = tag.Value;
+               
                 return record;
             }
-            catch (AriesAskarException)
+            catch (AriesAskarException e)
             {
-                return null;
+                if (e.errorCode == AriesAskarErrorCode.Input)
+                {
+                    Debug.WriteLine($"Record of type {new T().TypeName} doesn't exist in store for id: {id}");
+                    return null;
+                }
+                else
+                    throw new AriesAskarException(e.Message, e.errorCode);
+            }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
         /// <inheritdoc />
         public virtual async Task<bool> DeleteAsync<T>(AriesStorage storage, string id) where T : RecordBase, new()
         {
-            if (storage.Store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
-
-            if (storage.Store.session == null)
-                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+            await Validate(storage);
 
             try
             {
@@ -212,7 +222,7 @@ namespace Hyperledger.Aries.Storage
                      category: typeName,
                      name: id);
 
-                //await AriesAskarStore.CloseAndCommitAsync(wallet.session);
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
 
                 return result;
             }
@@ -221,51 +231,74 @@ namespace Hyperledger.Aries.Storage
                 Debug.WriteLine($"Couldn't delete record: {e}");
                 return false;
             }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+            }
         }
 
         public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string myVerkey)
         {
-            try 
-            { 
-                if (storage.Store is null)
-                {
-                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-                }
+            await Validate(storage);
 
+            try
+            {
                 Debug.WriteLine($"Adding key for verkey: {myVerkey}");
-
-                if (storage.Store.session == null)
-                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
 
                 _ = await AriesAskarStore.InsertKeyAsync(
                     storage.Store.session,
                     keyHandle,
                     myVerkey);
             }
-            catch { }
+            catch (AriesAskarException e)
+            {
+                if (e.errorCode == AriesAskarErrorCode.Duplicate)
+                    Debug.WriteLine($"Keypair already exists in store for verkey: {myVerkey}");
+                else
+                    throw new AriesAskarException(e.Message, e.errorCode);
+            }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+            }
         }
 
         public virtual async Task<IntPtr> GetKeyAsync(AriesStorage storage, string myVerkey)
         {
+            await Validate(storage);
+
             try
             {
-                if (storage.Store is null)
-                {
-                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-                }
-
-                Debug.WriteLine($"Getting keyHandle for verkey: {myVerkey}");
-
-                if (storage.Store.session == null)
-                    _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+                Debug.WriteLine($"Getting keypair for verkey: {myVerkey}");
 
                 IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(storage.Store.session, myVerkey);
                 return await AriesAskarResults.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             }
-            catch 
+            catch (AriesAskarException e)
             { 
-                return new IntPtr(); 
+                if(e.errorCode == AriesAskarErrorCode.Input) 
+                { 
+                    Debug.WriteLine($"Keypair doesn't exist in store for verkey: {myVerkey}");
+                    return new IntPtr(); 
+                }
+                else
+                    throw new AriesAskarException(e.Message, e.errorCode);
             }
+            finally
+            {
+                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+            }
+        }
+
+        private async Task Validate(AriesStorage storage)
+        {
+            if (storage.Store is null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+            }
+
+            if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
+                _ = await AriesAskarStore.StartSessionAsync(storage.Store);
         }
     }
 }

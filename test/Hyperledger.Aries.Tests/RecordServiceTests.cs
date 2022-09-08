@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
@@ -16,9 +17,12 @@ using Hyperledger.TestHarness;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Multiformats.Base;
 using Polly;
 using Xunit;
 using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
+using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
+using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
 
 namespace Hyperledger.Aries.Tests
 {
@@ -236,6 +240,32 @@ namespace Hyperledger.Aries.Tests
         [Trait("Category", "DefaultV2")]
         public class RecordServiceTestsV2 : RecordServiceTests, IAsyncLifetime
         {
+            [Fact]
+            public async Task CanStoreAndRetrieveKey()
+            {
+                //Arrange
+                var keyHandle = await CryptoUtils.CreateKeyPair(KeyAlg.ED25519);
+                var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+                string verKeyBase58 = Multibase.Base58.Encode(verKey);
+                var secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+                string secretKeyBase58 = Multibase.Base58.Encode(secretKey);
+
+                var initialKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
+                Assert.Equal(default, initialKeyHandle);
+
+                //Act
+                await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
+                await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
+                var actualKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
+                var actualVerkey = Multibase.Base58.Encode(await AriesAskarKey.GetPublicBytesFromKeyAsync(actualKeyHandle));
+                var actualSecretKey = Multibase.Base58.Encode(await AriesAskarKey.GetSecretBytesFromKeyAsync(actualKeyHandle));
+
+                //Assert
+                Assert.NotEqual(default, actualKeyHandle);
+                Assert.Equal(verKeyBase58, actualVerkey);
+                Assert.Equal(secretKeyBase58, actualSecretKey);
+            }
+
             public async Task DisposeAsync()
             {
                 var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
