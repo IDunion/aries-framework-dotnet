@@ -47,7 +47,7 @@ namespace Hyperledger.Aries.Routing.Edge
 
         public async Task ProvisionAsync(AgentOptions options, CancellationToken cancellationToken = default)
         {
-            var discovery = await _edgeClientService.DiscoverConfigurationAsync(options.EndpointUri);
+            AgentPublicConfiguration discovery = await _edgeClientService.DiscoverConfigurationAsync(options.EndpointUri);
 
             try
             {
@@ -61,16 +61,16 @@ namespace Hyperledger.Aries.Routing.Edge
                 // OK
             }
 
-            var agentContext = await _agentProvider.GetContextAsync();
-            var provisioning = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
+            IAgentContext agentContext = await _agentProvider.GetContextAsync();
+            ProvisioningRecord provisioning = await _provisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             // Check if connection has been established with mediator agent
             if (provisioning.GetTag(MediatorConnectionIdTagName) == null)
             {
-                var (request, record) = await _connectionService.CreateRequestAsync(agentContext, discovery.Invitation);
-                var response = await _messageService.SendReceiveAsync<ConnectionResponseMessage>(agentContext, request, record);
+                (ConnectionRequestMessage request, Features.Handshakes.Common.ConnectionRecord record) = await _connectionService.CreateRequestAsync(agentContext, discovery.Invitation);
+                ConnectionResponseMessage response = await _messageService.SendReceiveAsync<ConnectionResponseMessage>(agentContext, request, record);
 
-                await _connectionService.ProcessResponseAsync(agentContext, response, record);
+                _ = await _connectionService.ProcessResponseAsync(agentContext, response, record);
 
                 // Remove the routing key explicitly as it won't ever be needed.
                 // Messages will always be sent directly with return routing enabled
@@ -85,11 +85,19 @@ namespace Hyperledger.Aries.Routing.Edge
             await _edgeClientService.CreateInboxAsync(agentContext, options.MetaData);
         }
 
-        public Task ProvisionAsync(CancellationToken cancellationToken = default) => ProvisionAsync(_options, cancellationToken);
+        public Task ProvisionAsync(CancellationToken cancellationToken = default)
+        {
+            return ProvisionAsync(_options, cancellationToken);
+        }
 
-        public Task StartAsync(CancellationToken cancellationToken) => ProvisionAsync(cancellationToken);
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return ProvisionAsync(cancellationToken);
+        }
 
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }
