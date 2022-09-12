@@ -109,12 +109,19 @@ namespace Hyperledger.TestHarness
             return trustee;
         }
 
-        protected async Task PromoteTrustAnchor(string did, string verkey)
+        public virtual async Task PromoteTrustAnchor(string did, string verkey)
         {
-            await ledgerService.RegisterNymAsync(Context, Trustee.Did, did, verkey, "ENDORSER");
+            try
+            { 
+                await ledgerService.RegisterNymAsync(Context, Trustee.Did, did, verkey, "ENDORSER");
+            }
+            catch (Exception)
+            {
+                // Do nothing - this is expected if the ENDORSER is already registered
+            }
         }
 
-        protected async Task PromoteTrustAnchor()
+        public virtual async Task PromoteTrustAnchor()
         {
             var record = await Host.Services.GetService<IProvisioningService>().GetProvisioningAsync(Context.AriesStorage);
             if (record.IssuerDid == null || record.IssuerVerkey == null)
@@ -205,7 +212,7 @@ namespace Hyperledger.TestHarness
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
         }
 
-        protected new async Task<DidRecord> PromoteTrustee(string seed)
+        public new async Task<DidRecord> PromoteTrustee(string seed)
         {
             (string trusteeDid, string trusteeVerkey) = await DidUtils.CreateAndStoreMyDidAsync(Context.AriesStorage, recordService, seed : seed);
 
@@ -219,6 +226,18 @@ namespace Hyperledger.TestHarness
             }
 
             return new DidRecord { Did = trusteeDid, Verkey = trusteeVerkey };
+        }
+
+        public override async Task PromoteTrustAnchor(string did, string verkey)
+        {
+            try
+            {
+                await ledgerService.RegisterNymAsync(Context, Trustee.Did, did, verkey, "ENDORSER");
+            }
+            catch (Exception)
+            {
+                // Do nothing - this is expected if the ENDORSER is already registered
+            }
         }
     }
 }

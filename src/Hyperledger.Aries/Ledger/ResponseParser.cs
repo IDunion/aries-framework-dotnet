@@ -55,7 +55,7 @@ namespace Hyperledger.Aries.Ledger
         ///     ver: Version of the Credential Definition json
         /// }
         /// </returns>
-        internal static AriesResponse ParseGetCredDefResponse(string credDefId, string schemaTxnId, string getCredDefResponse)
+        internal static AriesResponse ParseGetCredDefResponse(string credDefId, string getCredDefResponse)
         {
             CredDefId id = new CredDefId(credDefId);
             var credDef = JObject.Parse(getCredDefResponse)["result"]!;
@@ -63,11 +63,10 @@ namespace Hyperledger.Aries.Ledger
             {
                 ver = "1.0",
                 id = id.ToString(),
-                schemaId = schemaTxnId,
+                schemaId = credDef!["ref"], //here it is the schemaSequenceId
                 type = credDef!["signature_type"]!,
                 tag = credDef["tag"]!,
-                value = credDef["data"]!,
-                seqNo = credDef["seqNo"]!
+                value = credDef["data"]!
             };
             return new AriesResponse(credDefId, objectJson.ToJson());
         }

@@ -88,7 +88,12 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<string> LookupTransactionAsync(IAgentContext agentContext, string ledgerType, int sequenceId)
         {
-            var req = await LedgerApi.BuildGetTxnRequestAsync(int.Parse(ledgerType), sequenceId);
+            if (int.TryParse(ledgerType, out int ledgerTypeParsed))
+            {
+                // Success
+            }
+            else ledgerTypeParsed = 1; //Default Domain
+            var req = await LedgerApi.BuildGetTxnRequestAsync(ledgerTypeParsed, sequenceId);
 
             return await SubmitRequestAsync(agentContext, req);
         }
@@ -96,15 +101,10 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<AriesResponse> LookupDefinitionAsync(IAgentContext agentContext, string definitionId)
         {
-            CredDefId credDefId = new CredDefId(definitionId);
-            var response = await LookupTransactionAsync(agentContext, "1", credDefId.SeqNo);
-            var jobj = JObject.Parse(response);
-            var schemaTxnId = jobj["result"]?["data"]?["txnMetadata"]?["txnId"]?.ToString() ?? throw new ArgumentNullException("schemaTxnId");
-
             var req = await LedgerApi.BuildGetCredDefRequest(definitionId);
             var res = await SubmitRequestAsync(agentContext, req);
 
-            return ResponseParser.ParseGetCredDefResponse(definitionId, schemaTxnId, res);
+            return ResponseParser.ParseGetCredDefResponse(definitionId, res);
         }
 
         /// <inheritdoc />
