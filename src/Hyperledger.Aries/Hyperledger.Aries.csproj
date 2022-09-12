@@ -6,9 +6,9 @@
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.10-alpha" />
-        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.6-alpha" />
-        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.4" />
+        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.12-alpha" />
+        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.7-alpha" />
+        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.5" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />

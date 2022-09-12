@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using aries_askar_dotnet;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
@@ -18,8 +19,7 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using AriesAskarResult = aries_askar_dotnet.AriesAskar.ResultListApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
+using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
 using SignatureType = aries_askar_dotnet.Models.SignatureType;
 
 namespace Hyperledger.Aries.Utils
@@ -228,19 +228,22 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task<string> CreateKeyStore(AriesStorage storage, IWalletRecordService recordService, string seed, string cryptoType)
         {
-            KeyAlg keyAlg = cryptoType switch
-            {   // only member currently supported is "ed25519"
+            KeyAlg keyAlg = cryptoType.ToLower() switch
+            {
                 "ed25519" => KeyAlg.ED25519,
+                "bls12381g2" => KeyAlg.BLS12_381_G2,
                 _ => KeyAlg.ED25519,
             };
 
-            if (string.IsNullOrEmpty(seed))
-                seed = GetUniqueKey(32);
+            IntPtr keyHandle = await CreateKeyPair(keyAlg, seed);
 
-            IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
-                keyAlg: keyAlg,
-                seed: seed,
-                SeedMethod.BlsKeyGen);
+            //if (string.IsNullOrEmpty(seed))
+            //   seed = GetUniqueKey(32);
+
+            //IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
+            //    keyAlg: keyAlg,
+            //    seed: seed,
+            //   SeedMethod.BlsKeyGen);
 
             var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
@@ -340,6 +343,55 @@ namespace Hyperledger.Aries.Utils
         private static async Task<bool> VerifyAsyncWallet(string theirVerkey, byte[] message, byte[] signature)
         {
             return await Crypto.VerifyAsync(theirVerkey, message, signature);
+        }
+
+        public static async Task<IntPtr> CreateKeyPair(KeyAlg keyAlg, string seed = null)
+        {
+            if (keyAlg != KeyAlg.ED25519 && keyAlg != KeyAlg.BLS12_381_G2) 
+                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Unsupported key algorithm {keyAlg}");
+
+            if (!string.IsNullOrEmpty(seed))
+            {
+                try
+                {
+                    if (keyAlg == KeyAlg.ED25519)
+                    {
+                        // Here the seed is equal to the secret key parameter
+                        return await AriesAskarKey.CreateKeyFromSecretBytesAsync(
+                            keyAlg: keyAlg,
+                            secretBytes: await validateAndConvertSeed(seed));
+                    }
+                    else
+                    {
+                        // Here the seed is equal to a seed parameter
+                        return await AriesAskarKey.CreateKeyFromSeedAsync(keyAlg, seed, SeedMethod.BlsKeyGen);
+                    }
+                }
+                catch (AriesAskarException e)
+                {
+                    if (e.errorCode == AriesAskarErrorCode.Input)
+                        throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat,"Invalid seed for key generation");
+                    else
+                        throw new AriesAskarException(e.Message, e.errorCode);
+                }
+            }
+            else
+            {
+                return await AriesAskarKey.CreateKeyAsync(keyAlg, ephemeral: false);
+            }
+        }
+
+        private static async Task<byte[]> validateAndConvertSeed(string seed)
+        {
+            byte[] seedBytes;
+
+            if (string.IsNullOrEmpty(seed)) return null;
+            if (seed.Contains("="))
+                seedBytes = Multibase.Base64.Decode(seed);
+            else
+                seedBytes = Encoding.ASCII.GetBytes(seed);
+            
+            return (seedBytes.Length == 32)? seedBytes : throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Seed value must be 32 bytes in length");
         }
     }
 

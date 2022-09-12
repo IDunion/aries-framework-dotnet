@@ -203,7 +203,6 @@ namespace Hyperledger.TestHarness
             Trustee = new() { Did = did, Verkey = verkey };
             Trustee2 = await PromoteTrustee("000000000000000000000000Trustee2");
             Trustee3 = await PromoteTrustee("000000000000000000000000Trustee3");
-            //(string TEMPSTEWARD_DID, string TEMPSTEWARD_Verkey) = await DidUtils.CreateAndStoreMyDidAsync(Context.AriesStorage, recordService, seed: "000000000000000000000000Steward1");
         }
 
         protected new async Task<DidRecord> PromoteTrustee(string seed)
