@@ -779,12 +779,30 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForIndySharedRs(credentialRecord.CredentialAttributesValues);
-            List<long> regUsed = new(); /** TODO : ??? - Where to get this parameter? **/
-            string credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson;
+            List<long> regUsed = new();
+            /** TODO : ??? - Where to get this parameter? **/
+            string credentialJson;
+            string revocationRegistryUpdatedJson;
+            string revocationRegistryDeltaJson;
 
             try
             {
-                _ = long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long revRegistryIndex);
+                long revRegistryIndex = 0;
+                if (definitionRecord.CurrentRevocationRegistryId != null)
+                {
+                    _ = long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out revRegistryIndex);
+                }
+
+                string revRegDefJson = null;
+                string revRegDefPrivateJson = null;
+                string revRegJson = null;
+
+                if(revocationRecord != null)
+                {
+                    revRegDefJson = revocationRecord.RevRegDefJson;
+                    revRegDefPrivateJson = revocationRecord.RevRegDefPrivateJson;
+                    revRegJson = revocationRecord.RevRegJson;
+                }
 
                 (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
                     credentialRecord.CredDefJson,
@@ -794,16 +812,19 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     attrNames,
                     attrNamesRaw,
                     attrNamesEnc,
-                    revocationRecord.RevRegDefJson,
-                    revocationRecord.RevRegDefPrivateJson,
-                    revocationRecord.RevRegJson,
+                    revRegDefJson,
+                    revRegDefPrivateJson,
+                    revRegJson,
                     revRegistryIndex,
                     regUsed);
 
-                /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
-                revocationRecord.RevRegJson = revocationRegistryUpdatedJson;
-                await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
-
+                if (revocationRecord != null)
+                {
+                    /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
+                    revocationRecord.RevRegJson = revocationRegistryUpdatedJson;
+                    await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
+                }
+                
                 return (
                     new AriesIssuerCreateCredentialResult(
                         credentialJson: credentialJson,

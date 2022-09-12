@@ -166,7 +166,6 @@ namespace Hyperledger.Aries.Tests.Protocols
             Assert.Equal(pngFile, actualResult);
         }
         
-
         [Fact]
         public async Task CanCreateCredentialOffer()
         {
@@ -652,7 +651,6 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             Assert.Equal(pngFile, actualResult);
         }
-
 
         [Fact]
         public async Task CanCreateCredentialOffer()
