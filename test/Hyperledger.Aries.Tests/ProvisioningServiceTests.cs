@@ -17,11 +17,11 @@ namespace Hyperledger.Aries.Tests
 {
     public abstract class ProvisioningServiceTests
     {
-        private WalletConfiguration _config;
-        private WalletCredentials _creds;
+        protected WalletConfiguration _config;
+        protected WalletCredentials _creds;
 
-        private IWalletService _walletService;
-        private IProvisioningService _provisioningService;
+        protected IWalletService _walletService;
+        protected IProvisioningService _provisioningService;
 
         [Fact]
         public async Task ProvisionNewWalletWithEndpoint()
@@ -83,53 +83,53 @@ namespace Hyperledger.Aries.Tests
             Assert.NotNull(provisioning.Endpoint);
             Assert.NotNull(provisioning.Endpoint.Uri);
         }
+    }
 
-        [Trait("Category", "DefaultV1")]
-        public class ProvisioningServiceTestsV1 : ProvisioningServiceTests, IAsyncLifetime
+    [Trait("Category", "DefaultV1")]
+    public class ProvisioningServiceTestsV1 : ProvisioningServiceTests, IAsyncLifetime
+    {
+        public async Task DisposeAsync()
         {
-            public async Task DisposeAsync()
-            {
-                await _walletService.DeleteWalletAsync(_config, _creds);
-            }
-
-            public async Task InitializeAsync()
-            {
-                _config = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
-                _creds = new WalletCredentials { Key = "1" };
-                _walletService = new DefaultWalletService();
-                _provisioningService = new DefaultProvisioningService(
-                    new DefaultWalletRecordService(),
-                    _walletService,
-                    Options.Create(new AgentOptions
-                    {
-                        WalletConfiguration = _config,
-                        WalletCredentials = _creds
-                    }));
-            }
+            await _walletService.DeleteWalletAsync(_config, _creds);
         }
 
-        [Trait("Category", "DefaultV2")]
-        public class ProvisioningServiceTestsV2 : ProvisioningServiceTests, IAsyncLifetime
+        public async Task InitializeAsync()
         {
-            public async Task DisposeAsync()
-            {
-                await _walletService.DeleteWalletAsync(_config, _creds);
-            }
+            _config = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
+            _creds = new WalletCredentials { Key = "1" };
+            _walletService = new DefaultWalletService();
+            _provisioningService = new DefaultProvisioningService(
+                new DefaultWalletRecordService(),
+                _walletService,
+                Options.Create(new AgentOptions
+                {
+                    WalletConfiguration = _config,
+                    WalletCredentials = _creds
+                }));
+        }
+    }
 
-            public async Task InitializeAsync()
-            {
-                _config = TestConstants.TestSingleWalletV2WalletConfig;
-                _creds = TestConstants.TestSingelWalletV2WalletCreds;
-                _walletService = new DefaultWalletServiceV2();
-                _provisioningService = new DefaultProvisioningServiceV2(
-                    new DefaultWalletRecordServiceV2(),
-                    _walletService,
-                    Options.Create(new AgentOptions
-                    {
-                        WalletConfiguration = _config,
-                        WalletCredentials = _creds
-                    }));
-            }
+    [Trait("Category", "DefaultV2")]
+    public class ProvisioningServiceTestsV2 : ProvisioningServiceTests, IAsyncLifetime
+    {
+        public async Task DisposeAsync()
+        {
+            await _walletService.DeleteWalletAsync(_config, _creds);
+        }
+
+        public async Task InitializeAsync()
+        {
+            _config = TestConstants.TestSingleWalletV2WalletConfig;
+            _creds = TestConstants.TestSingelWalletV2WalletCreds;
+            _walletService = new DefaultWalletServiceV2();
+            _provisioningService = new DefaultProvisioningServiceV2(
+                new DefaultWalletRecordServiceV2(),
+                _walletService,
+                Options.Create(new AgentOptions
+                {
+                    WalletConfiguration = _config,
+                    WalletCredentials = _creds
+                }));
         }
     }
 }
