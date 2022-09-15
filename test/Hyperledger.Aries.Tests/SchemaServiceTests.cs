@@ -13,16 +13,13 @@ using Xunit;
 
 namespace Hyperledger.Aries.Tests
 {
-    public abstract class SchemaServiceTests //: TestSingleWallet
+    public abstract class SchemaServiceTests
     {
         protected TestSingleWallet _fixture;
         protected IAgentContext Context { get; set; }
         protected ISchemaService SchemaService { get; set; }
         protected IProvisioningService ProvisioningService { get; set; }
 
-        //TODO : ??? - Check if right services for V1 bzw. V2 are used. 
-        // see: var schemaService = Host.Services.GetService<ISchemaService>();  _fixture is missing, solution
-        // var schemaService = _fixture.Host.Services.GetService<ISchemaService>(); or add schemaService in TestSingleWallet as global like WalletRecordService and so on
         [Fact]
         public async Task CanCreateAndResolveSchema()
         {
@@ -112,31 +109,31 @@ namespace Hyperledger.Aries.Tests
 
             Assert.Equal(schemaId, recordResult.SchemaId);
         }
+    }
 
-        [Trait("Category", "DefaultV1")]
-        public class SchemaServiceTestsV1 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV1.SingleTestWalletFixture>
+    [Trait("Category", "DefaultV1")]
+    public class SchemaServiceTestsV1 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV1.SingleTestWalletFixture>
+    {
+        public class SingleTestWalletFixture : TestSingleWallet
         {
-            public class SingleTestWalletFixture : TestSingleWallet
-            {
-            }
-        
-            public SchemaServiceTestsV1(SingleTestWalletFixture fixture)
-            {
-                _fixture = fixture;
-            }
         }
 
-        [Trait("Category", "DefaultV2")]
-        public class SchemaServiceTestsV2 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV2.SingleTestWalletV2Fixture>
+        public SchemaServiceTestsV1(SingleTestWalletFixture fixture)
         {
-            public class SingleTestWalletV2Fixture : TestSingleWalletV2
-            {
-            }
-        
-            public SchemaServiceTestsV2(SingleTestWalletV2Fixture fixture)
-            {
-                _fixture = fixture;
-            }
+            _fixture = fixture;
+        }
+    }
+
+    [Trait("Category", "DefaultV2")]
+    public class SchemaServiceTestsV2 : SchemaServiceTests, IClassFixture<SchemaServiceTestsV2.SingleTestWalletV2Fixture>
+    {
+        public class SingleTestWalletV2Fixture : TestSingleWalletV2
+        {
+        }
+
+        public SchemaServiceTestsV2(SingleTestWalletV2Fixture fixture)
+        {
+            _fixture = fixture;
         }
     }
 }

@@ -195,112 +195,111 @@ namespace Hyperledger.Aries.Tests
             Assert.True(records.Count == 1);
             Assert.True(records[0].Id == "456");
         }
+    }
 
-        
-        [Trait("Category", "DefaultV1")]
-        public class RecordServiceTestsV1 : RecordServiceTests, IAsyncLifetime
+    [Trait("Category", "DefaultV1")]
+    public class RecordServiceTestsV1 : RecordServiceTests, IAsyncLifetime
+    {
+        public async Task DisposeAsync()
         {
-            public async Task DisposeAsync()
-            {
-                var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
-                var walletService = Host.Services.GetService<IWalletService>();
-                await Host.StopAsync();
-                await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
-                Host.Dispose();
-            }
-
-            public async Task InitializeAsync()
-            {
-                Host = new HostBuilder()
-                .ConfigureServices(services =>
-                {
-                    services.Configure<ConsoleLifetimeOptions>(options =>
-                        options.SuppressStatusMessages = true);
-                    services.AddAriesFramework(builder => builder
-                        .RegisterAgent(options =>
-                        {
-                            options.WalletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
-                            options.WalletCredentials = new WalletCredentials { Key = "test" };
-                            options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
-                            options.PoolName = GetPoolName();
-                            options.EndpointUri = "http://test";
-                            options.IssuerKeySeed = GetIssuerSeed();
-                        }));
-                })
-                .Build();
-
-                await Host.StartAsync();
-                await Pool.SetProtocolVersionAsync(2);
-
-                RecordService = Host.Services.GetService<IWalletRecordService>();
-                Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
-            }
+            var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
+            var walletService = Host.Services.GetService<IWalletService>();
+            await Host.StopAsync();
+            await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
+            Host.Dispose();
         }
-        
-        [Trait("Category", "DefaultV2")]
-        public class RecordServiceTestsV2 : RecordServiceTests, IAsyncLifetime
+
+        public async Task InitializeAsync()
         {
-            [Fact]
-            public async Task CanStoreAndRetrieveKey()
+            Host = new HostBuilder()
+            .ConfigureServices(services =>
             {
-                //Arrange
-                var keyHandle = await CryptoUtils.CreateKeyPair(KeyAlg.ED25519);
-                var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
-                string verKeyBase58 = Multibase.Base58.Encode(verKey);
-                var secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
-                string secretKeyBase58 = Multibase.Base58.Encode(secretKey);
+                services.Configure<ConsoleLifetimeOptions>(options =>
+                    options.SuppressStatusMessages = true);
+                services.AddAriesFramework(builder => builder
+                    .RegisterAgent(options =>
+                    {
+                        options.WalletConfiguration = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
+                        options.WalletCredentials = new WalletCredentials { Key = "test" };
+                        options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
+                        options.PoolName = GetPoolName();
+                        options.EndpointUri = "http://test";
+                        options.IssuerKeySeed = GetIssuerSeed();
+                    }));
+            })
+            .Build();
 
-                var initialKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
-                Assert.Equal(default, initialKeyHandle);
+            await Host.StartAsync();
+            await Pool.SetProtocolVersionAsync(2);
 
-                //Act
-                await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
-                await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
-                var actualKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
-                var actualVerkey = Multibase.Base58.Encode(await AriesAskarKey.GetPublicBytesFromKeyAsync(actualKeyHandle));
-                var actualSecretKey = Multibase.Base58.Encode(await AriesAskarKey.GetSecretBytesFromKeyAsync(actualKeyHandle));
+            RecordService = Host.Services.GetService<IWalletRecordService>();
+            Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
+        }
+    }
 
-                //Assert
-                Assert.NotEqual(default, actualKeyHandle);
-                Assert.Equal(verKeyBase58, actualVerkey);
-                Assert.Equal(secretKeyBase58, actualSecretKey);
-            }
+    [Trait("Category", "DefaultV2")]
+    public class RecordServiceTestsV2 : RecordServiceTests, IAsyncLifetime
+    {
+        [Fact]
+        public async Task CanStoreAndRetrieveKey()
+        {
+            //Arrange
+            var keyHandle = await CryptoUtils.CreateKeyPair(KeyAlg.ED25519);
+            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            string verKeyBase58 = Multibase.Base58.Encode(verKey);
+            var secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+            string secretKeyBase58 = Multibase.Base58.Encode(secretKey);
 
-            public async Task DisposeAsync()
+            var initialKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
+            Assert.Equal(default, initialKeyHandle);
+
+            //Act
+            await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
+            await RecordService.AddKeyAsync(Context.AriesStorage, keyHandle, verKeyBase58);
+            var actualKeyHandle = await RecordService.GetKeyAsync(Context.AriesStorage, verKeyBase58);
+            var actualVerkey = Multibase.Base58.Encode(await AriesAskarKey.GetPublicBytesFromKeyAsync(actualKeyHandle));
+            var actualSecretKey = Multibase.Base58.Encode(await AriesAskarKey.GetSecretBytesFromKeyAsync(actualKeyHandle));
+
+            //Assert
+            Assert.NotEqual(default, actualKeyHandle);
+            Assert.Equal(verKeyBase58, actualVerkey);
+            Assert.Equal(secretKeyBase58, actualSecretKey);
+        }
+
+        public async Task DisposeAsync()
+        {
+            var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
+            var walletService = Host.Services.GetService<IWalletService>();
+            await Host.StopAsync();
+            await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
+            Host.Dispose();
+        }
+
+        public async Task InitializeAsync()
+        {
+            Host = new HostBuilder()
+            .ConfigureServices(services =>
             {
-                var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
-                var walletService = Host.Services.GetService<IWalletService>();
-                await Host.StopAsync();
-                await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
-                Host.Dispose();
-            }
+                services.Configure<ConsoleLifetimeOptions>(options =>
+                    options.SuppressStatusMessages = true);
+                services.AddAriesFrameworkV2(builder => builder
+                    .RegisterAgent(options =>
+                    {
+                        options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
+                        options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+                        options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
+                        options.PoolName = GetPoolName();
+                        options.EndpointUri = "http://test";
+                        options.IssuerKeySeed = GetIssuerSeed();
+                    }));
+            })
+            .Build();
 
-            public async Task InitializeAsync()
-            {
-                Host = new HostBuilder()
-                .ConfigureServices(services =>
-                {
-                    services.Configure<ConsoleLifetimeOptions>(options =>
-                        options.SuppressStatusMessages = true);
-                    services.AddAriesFrameworkV2(builder => builder
-                        .RegisterAgent(options =>
-                        {
-                            options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
-                            options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
-                            options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
-                            options.PoolName = GetPoolName();
-                            options.EndpointUri = "http://test";
-                            options.IssuerKeySeed = GetIssuerSeed();
-                        }));
-                })
-                .Build();
+            await Host.StartAsync();
+            await IndyVdrMod.SetProtocolVersionAsync(2);
 
-                await Host.StartAsync();
-                await IndyVdrMod.SetProtocolVersionAsync(2);
-
-                RecordService = Host.Services.GetService<IWalletRecordService>();
-                Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
-            }
+            RecordService = Host.Services.GetService<IWalletRecordService>();
+            Context = await Host.Services.GetService<IAgentProvider>().GetContextAsync();
         }
     }
 }

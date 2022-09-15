@@ -41,7 +41,7 @@ namespace Hyperledger.TestHarness
 
         public IHost Host { get; set; }
 
-        protected virtual string GetPoolName() => "TestPool";
+        public virtual string GetPoolName() => "TestPool";
         protected virtual string GetIssuerSeed() => null;
         public virtual async Task DisposeAsync()
         {

@@ -59,12 +59,17 @@ namespace Hyperledger.Aries.Ledger
             var req = await LedgerApi.BuildGetTxnAuthorAgreementRequestAsync();
             var res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
 
-            var jobj = JObject.Parse(res);
-            taa = new IndyTaa
+            var jresponse = JObject.Parse(res);
+            if (jresponse["result"]["data"].HasValues)
             {
-                Text = jobj["result"]!["data"]!["text"]!.ToString(),
-                Version = jobj["result"]!["data"]!["version"]!.ToString()
-            };
+                taa = new IndyTaa
+                {
+                    Text = jresponse["result"]["data"]["text"].ToString(),
+                    Version = jresponse["result"]["data"]["version"].ToString()
+                };
+            }
+            else taa = null;
+
             Taas.TryAdd(poolName, taa);
 
             return taa;
@@ -84,8 +89,15 @@ namespace Hyperledger.Aries.Ledger
                 version: version);
             var res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
 
-            var jobj = JObject.Parse(res);
-            return jobj["result"]!["data"]!.ToObject<IndyAml>();
+            var jresponse = JObject.Parse(res);
+            if (jresponse["result"]["data"].HasValues)
+            {
+                aml = jresponse["result"]["data"].ToObject<IndyAml>();
+            }
+            else aml = null;
+            Amls.TryAdd(poolName, aml);
+
+            return aml;
         }
 
         /// <inheritdoc />

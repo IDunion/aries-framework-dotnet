@@ -6,18 +6,18 @@ using Xunit;
 
 namespace Hyperledger.Aries.Tests
 {
-    public abstract class PoolServiceTests : TestSingleWallet
+    public abstract class PoolServiceTests
     {
         protected TestSingleWallet _fixture;
         
         [Fact(DisplayName = "Get Transaction Author Agreement from ledger if exists")]
         public async Task GetTaaFromLedger()
         {
-            var taa = await Host.Services.GetService<IPoolService>()
-                .GetTaaAsync(GetPoolName());
+            var taa = await _fixture.Host.Services.GetService<IPoolService>()
+                .GetTaaAsync(_fixture.GetPoolName());
 
-            var aml = await Host.Services.GetService<IPoolService>()
-                .GetAmlAsync(GetPoolName());
+            var aml = await _fixture.Host.Services.GetService<IPoolService>()
+                .GetAmlAsync(_fixture.GetPoolName());
 
             Assert.True(true);
         }
@@ -25,36 +25,36 @@ namespace Hyperledger.Aries.Tests
         [Fact(DisplayName = "Get Acceptance Mechanisms List from ledger if exists")]
         public async Task GetAmlFromLedger()
         {
-            var aml = await Host.Services.GetService<IPoolService>()
-                .GetAmlAsync(GetPoolName());
+            var aml = await _fixture.Host.Services.GetService<IPoolService>()
+                .GetAmlAsync(_fixture.GetPoolName());
 
             Assert.True(true);
         }
+    }
 
-        [Trait("Category", "DefaultV1")]
-        public class PoolServiceV1Tests : PoolServiceTests, IClassFixture<PoolServiceV1Tests.SingleTestWalletFixture>
+    [Trait("Category", "DefaultV1")]
+    public class PoolServiceV1Tests : PoolServiceTests, IClassFixture<PoolServiceV1Tests.SingleTestWalletFixture>
+    {
+        public class SingleTestWalletFixture : TestSingleWallet
         {
-            public class SingleTestWalletFixture : TestSingleWallet
-            {
-            }
-        
-            public PoolServiceV1Tests(SingleTestWalletFixture fixture)
-            {
-                _fixture = fixture;
-            }
         }
 
-        [Trait("Category", "DefaultV2")]
-        public class PoolServiceV2Tests : PoolServiceTests, IClassFixture<PoolServiceV2Tests.SingleTestWalletV2Fixture>
+        public PoolServiceV1Tests(SingleTestWalletFixture fixture)
         {
-            public class SingleTestWalletV2Fixture : TestSingleWalletV2
-            {
-            }
-        
-            public PoolServiceV2Tests(SingleTestWalletV2Fixture fixture)
-            {
-                _fixture = fixture;
-            }
+            _fixture = fixture;
+        }
+    }
+
+    [Trait("Category", "DefaultV2")]
+    public class PoolServiceV2Tests : PoolServiceTests, IClassFixture<PoolServiceV2Tests.SingleTestWalletV2Fixture>
+    {
+        public class SingleTestWalletV2Fixture : TestSingleWalletV2
+        {
+        }
+
+        public PoolServiceV2Tests(SingleTestWalletV2Fixture fixture)
+        {
+            _fixture = fixture;
         }
     }
 }
