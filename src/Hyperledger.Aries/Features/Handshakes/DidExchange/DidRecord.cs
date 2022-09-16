@@ -1,7 +1,4 @@
 ﻿using Hyperledger.Aries.Storage;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 {

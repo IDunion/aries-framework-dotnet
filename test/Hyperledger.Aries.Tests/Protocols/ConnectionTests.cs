@@ -606,6 +606,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             await _connectionService.RevokeInvitationAsync(_fixture.issuerWallet, connectionId);
 
             var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _connectionService.CreateResponseAsync(_fixture.issuerWallet, connectionId));
+            
             Assert.True(ex.ErrorCode == ErrorCode.RecordNotFound);
         }
 

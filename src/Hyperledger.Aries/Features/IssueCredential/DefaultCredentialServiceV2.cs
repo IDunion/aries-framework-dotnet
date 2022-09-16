@@ -23,6 +23,7 @@ using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Polly;
 using System;
@@ -779,15 +780,17 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForIndySharedRs(credentialRecord.CredentialAttributesValues);
-            List<long> regUsed = new();
-            /** TODO : ??? - Where to get this parameter? **/
+            
             string credentialJson;
             string revocationRegistryUpdatedJson;
             string revocationRegistryDeltaJson;
 
+            List<long> regUsed = null;
+            long revRegistryIndex = -1;
+
             try
             {
-                long revRegistryIndex = 0;
+                
                 if (definitionRecord.CurrentRevocationRegistryId != null)
                 {
                     _ = long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out revRegistryIndex);
@@ -802,11 +805,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     revRegDefJson = revocationRecord.RevRegDefJson;
                     revRegDefPrivateJson = revocationRecord.RevRegDefPrivateJson;
                     revRegJson = revocationRecord.RevRegJson;
+                    RevocationRegistryDelta delta = JsonConvert.DeserializeObject<RevocationRegistryDelta>(revocationRecord.RevRegDeltaJson);
+
+                    regUsed = delta.Value.Revoked.Select(x => (long)x).ToList();
                 }
 
                 (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
-                    credentialRecord.CredDefJson,
-                    credentialRecord.CredDefPrivateJson,
+                    definitionRecord.CredDefJson,
+                    definitionRecord.PrivateJson,
                     credentialRecord.OfferJson,
                     credentialRecord.RequestJson,
                     attrNames,
