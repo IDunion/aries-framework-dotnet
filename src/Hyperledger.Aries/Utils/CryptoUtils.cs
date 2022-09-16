@@ -359,7 +359,7 @@ namespace Hyperledger.Aries.Utils
                         // Here the seed is equal to the secret key parameter
                         return await AriesAskarKey.CreateKeyFromSecretBytesAsync(
                             keyAlg: keyAlg,
-                            secretBytes: await validateAndConvertSeed(seed));
+                            secretBytes: await ValidateAndConvertSeed(seed));
                     }
                     else
                     {
@@ -381,7 +381,7 @@ namespace Hyperledger.Aries.Utils
             }
         }
 
-        private static async Task<byte[]> validateAndConvertSeed(string seed)
+        private static async Task<byte[]> ValidateAndConvertSeed(string seed)
         {
             byte[] seedBytes;
 

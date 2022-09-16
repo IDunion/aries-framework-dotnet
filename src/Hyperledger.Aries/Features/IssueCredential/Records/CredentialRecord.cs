@@ -54,28 +54,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <summary>
-        /// Gets or sets the credential definition json.
-        /// </summary>
-        /// <value>Json of the credential definition.</value>
-        [JsonIgnore]
-        public string CredDefJson
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Gets or sets the private credential definition json.
-        /// </summary>
-        /// <value>Json of the private credential definition.</value>
-        [JsonIgnore]
-        public string CredDefPrivateJson
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// Gets or sets the credential json.
         /// </summary>
         /// <value>Json of the credential.</value>

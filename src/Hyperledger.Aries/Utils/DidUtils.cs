@@ -357,6 +357,10 @@ namespace Hyperledger.Aries.Utils
             }
 
             record.Verkey = await BuildFullVerkey(record.Did, record.Verkey);
+            if (string.IsNullOrEmpty(record.Id))
+            {
+                record.Id = record.Did;
+            }
             return record;
         }
 

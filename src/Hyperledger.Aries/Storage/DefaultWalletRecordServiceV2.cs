@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
 using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
+using aries_askar_dotnet.AriesAskar;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -214,15 +215,7 @@ namespace Hyperledger.Aries.Storage
 
             try
             {
-                T record = await GetAsync<T>(storage, id);
-                string typeName = new T().TypeName;
-
-                bool result = await AriesAskarStore.RemoveAsync(
-                     session: storage.Store.session,
-                     category: typeName,
-                     name: id);
-
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                bool result = await storage.Store.session.RemoveAsync(new T().TypeName, id);
 
                 return result;
             }
@@ -233,7 +226,14 @@ namespace Hyperledger.Aries.Storage
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                try
+                {
+                    await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                }
+                catch
+                {
+
+                }
             }
         }
 
