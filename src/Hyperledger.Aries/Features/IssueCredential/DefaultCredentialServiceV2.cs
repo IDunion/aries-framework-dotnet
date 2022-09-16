@@ -420,6 +420,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             AriesResponse definition = await LedgerService.LookupDefinitionAsync(agentContext, credential.CredentialDefinitionId);
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
+            //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
+            definition.ObjectJson = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
+
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
@@ -457,7 +460,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             response.ThreadFrom(threadId);
             return (response, credential);
         }
-
+        
         /// <inheritdoc />
         public virtual async Task<string> ProcessCredentialAsync(IAgentContext agentContext, CredentialIssueMessage credential,
             ConnectionRecord connection)
@@ -493,6 +496,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
+
+            //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
+            credentialDefinition.ObjectJson = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
 
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
@@ -885,6 +891,24 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     revocId: await IndySharedRsCred.GetCredentialAttributeAsync(credentialJson, "rev_reg_id"),  //Alternative: revocationRegistryResult.RevRegId
                     revocRegDeltaJson: revocationRegistryDeltaJson),
                 nextRevocationRecord);
+        }
+
+        /// <summary>
+        /// Converts the schemaId in CredDefJson from seqNo to id string. 
+        /// </summary>
+        /// <param name="agentContext"></param>
+        /// <param name="credDefJson"></param>
+        /// <param name="credDefId"></param>
+        /// <returns></returns>
+        private async Task<string> ReplaceSchemaIdSeqNoWithString(IAgentContext agentContext, string credDefJson, string credDefId)
+        {
+            string schemaJson = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefId);
+            JObject jresponseSchema = JObject.Parse(schemaJson);
+            string schemaId = jresponseSchema["id"].ToString();
+
+            JObject jresponseCredDef = JObject.Parse(credDefJson);
+            jresponseCredDef["schemaId"].Replace(schemaId);
+            return jresponseCredDef.ToString();
         }
     }
 }
