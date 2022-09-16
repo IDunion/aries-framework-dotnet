@@ -96,7 +96,6 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.AddSingleton<IConnectionService, DefaultConnectionServiceV2>();
             builder.AddSingleton<ICredentialService, DefaultCredentialServiceV2>();
             builder.AddSingleton<IDidExchangeService, DefaultDidExchangeServiceV2>();
-            builder.AddSingleton<ILedgerSigningService, DefaultLedgerSigningServiceV2>();
             builder.AddSingleton<IProofService, DefaultProofServiceV2>();
             builder.AddSingleton<IProvisioningService, DefaultProvisioningServiceV2>();
             builder.AddSingleton<ISchemaService, DefaultSchemaServiceV2>();
