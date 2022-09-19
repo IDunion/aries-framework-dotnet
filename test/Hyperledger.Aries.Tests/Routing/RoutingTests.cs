@@ -115,12 +115,12 @@ namespace Hyperledger.Aries.Tests.Routing
     [Trait("Category", "DefaultV2")]
     public class RoutingTestsV2 : IAsyncLifetime
     {
-        IMessageService messageService;
+        private IMessageService _messageService;
         private IHostedService _mediatorProvisioningService;
         private IEdgeProvisioningService _edgeProvisioningService;
 
-        private WalletConfiguration _walletConfig = TestConstants.TestSingleWalletV2WalletConfig;
-        private WalletCredentials _walletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+        private readonly WalletConfiguration _walletConfig = TestConstants.TestSingleWalletV2WalletConfig;
+        private readonly WalletCredentials _walletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
 
         private IWalletService _walletService;
         private IWalletRecordService _recordService;
@@ -138,7 +138,7 @@ namespace Hyperledger.Aries.Tests.Routing
             });
             IEventAggregator eventAggregator = new EventAggregator();
             IPoolService poolService = new DefaultPoolServiceV2();
-            IMessageService messageService = new Mock<IMessageService>().Object;
+            _messageService = new Mock<IMessageService>().Object;
             Mock<IEdgeClientService> mockEdgeClientService = new();
             mockEdgeClientService.Setup(x => x.DiscoverConfigurationAsync(It.IsAny<string>())).Returns(Task.FromResult(new AgentPublicConfiguration
             {
@@ -187,7 +187,7 @@ namespace Hyperledger.Aries.Tests.Routing
             _edgeProvisioningService = new EdgeProvisioningServiceV2(
                 mockProvisioningService.Object,
                 _connectionService,
-                messageService,
+                _messageService,
                 mockEdgeClientService.Object,
                 _recordService,
                 _agentProvider,
@@ -274,7 +274,6 @@ namespace Hyperledger.Aries.Tests.Routing
         {
             //Arrange
             await _provisioningService.ProvisionAgentAsync();
-            //var expectedProvisioningRecord = await _provisioningService.GetProvisioningAsync(_agentContext.AriesStorage);
 
             CancellationTokenSource source = new CancellationTokenSource();
             CancellationToken token = source.Token;
