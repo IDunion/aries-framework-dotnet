@@ -63,7 +63,7 @@ namespace Hyperledger.Aries.Tests.Decorators
             var content = new AttachmentContent();
             var key = await Crypto.CreateKeyAsync(_agent.AriesStorage.Wallet, "{}");
 
-            await Assert.ThrowsAsync<NullReferenceException>(async () => await content.SignWithJsonWebSignature(_agent.AriesStorage, _recordService, key));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await content.SignWithJsonWebSignature(_agent.AriesStorage, _recordService, key));
         }
 
         [Fact]

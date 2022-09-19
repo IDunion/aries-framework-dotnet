@@ -19,6 +19,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
         /// </summary>
         /// <param name="content">The attachment content to be signed.</param>
         /// <param name="storage">The Storage of Wallet or Store object.</param>
+        /// <param name="recordService"></param> 
         /// <param name="verkey">The verkey to be used for the signing.</param>
         /// <exception cref="NullReferenceException">Throws if payload is null.</exception>
         public static async Task SignWithJsonWebSignature(this AttachmentContent content, AriesStorage storage, IWalletRecordService recordService, string verkey)
@@ -31,7 +32,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
             string payload = content.Base64;
             if (payload == null)
             {
-                throw new NullReferenceException("No data to sign");
+                throw new ArgumentNullException("No data to sign");
             }
 
             string did = DidUtils.ConvertVerkeyToDidKey(verkey);
@@ -65,6 +66,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
         /// Verify the json web signature of an attachment
         /// </summary>
         /// <param name="content">The attachment content to be verified.</param>
+        /// <param name="agentContext">Corresponding agent context.</param>
         /// <returns>True - signature is valid; False - signature is missing or invalid.</returns>
         public static async Task<bool> VerifyJsonWebSignature(this AttachmentContent content, IAgentContext agentContext)
         {

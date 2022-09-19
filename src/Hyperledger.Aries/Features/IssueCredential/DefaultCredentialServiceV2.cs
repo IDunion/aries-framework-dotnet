@@ -125,7 +125,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         {
             CredentialRecord record = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credentialId);
 
-            return record == null ? throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Credential record not found") : record;
+            return record ?? throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Credential record not found");
         }
 
         /// <inheritdoc />
@@ -136,9 +136,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public virtual async Task RejectOfferAsync(IAgentContext agentContext, string credentialId)
+        public virtual async Task RejectOfferAsync(IAgentContext agentContext, string offerId)
         {
-            CredentialRecord credential = await GetAsync(agentContext, credentialId);
+            CredentialRecord credential = await GetAsync(agentContext, offerId);
 
             if (credential.State != CredentialState.Offered)
             {
@@ -200,7 +200,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     credentialRecord.RevocationRegistryId);
 
             // Revoke the credential
-            /** TODO : ??? - Format of credRevIdx like revRegistryIndex from revocationRegistryId? **/
+            // TODO : ??? - Format of credRevIdx like revRegistryIndex from revocationRegistryId?
             if (long.TryParse(credentialRecord.CredentialRevocationId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long credRevIdx))
             {
                 //if (false == long.TryParse(credentialRecord.CredentialRevocationId, out long credRevIdx))
@@ -356,42 +356,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
             return credentialRecord.Id;
         }
 
-        /// <inheritdoc />
-        public async Task<CredentialRecord> CreateCredentialAsync(IAgentContext agentContext,
-            CredentialOfferMessage message)
-        {
-            string credentialRecordId = "";
-            try
-            {
-                ServiceDecorator service = message.GetDecorator<ServiceDecorator>(DecoratorNames.ServiceDecorator);
-
-                credentialRecordId = await ProcessOfferAsync(agentContext, message, null);
-
-                (CredentialRequestMessage request, CredentialRecord record) = await CreateRequestAsync(agentContext, credentialRecordId);
-                ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
-
-                try
-                {
-                    CredentialIssueMessage credentialIssueMessage = await MessageService.SendReceiveAsync<CredentialIssueMessage>(
-                        agentContext: agentContext,
-                        message: request,
-                        recipientKey: service.RecipientKeys.First(),
-                        endpointUri: service.ServiceEndpoint,
-                        routingKeys: service.RoutingKeys.ToArray(),
-                        senderKey: provisioning.IssuerVerkey);
-                    string recordId = await ProcessCredentialAsync(agentContext, credentialIssueMessage, null);
-                    return await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, recordId);
-                }
-                catch (AriesFrameworkException ex) when (ex.ErrorCode == ErrorCode.A2AMessageTransmissionError)
-                {
-                    throw new AriesFrameworkException(ex.ErrorCode, ex.Message, record, null);
-                }
-            }
-            catch (Exception e)
-            {
-                throw new AriesFrameworkException(ErrorCode.LedgerItemNotFound, e.Message + ": " + credentialRecordId);
-            }
-        }
 
         /// <inheritdoc />
         public async Task<(CredentialRequestMessage, CredentialRecord)> CreateRequestAsync(IAgentContext agentContext,
@@ -460,7 +424,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             response.ThreadFrom(threadId);
             return (response, credential);
         }
-        
+
         /// <inheritdoc />
         public virtual async Task<string> ProcessCredentialAsync(IAgentContext agentContext, CredentialIssueMessage credential,
             ConnectionRecord connection)
@@ -509,8 +473,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 );
             string credentialProcessedId = await IndySharedRsCred.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
 
-            /** TODO : ??? - need to update credentialJson information
-             * we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential **/
+            // TODO : ??? - need to update credentialJson information. We also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential
             credentialRecord.CredentialJson = credentialProcessedJson;
 
             credentialRecord.CredentialId = credentialProcessedId;
@@ -678,6 +641,44 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
+        public async Task<CredentialRecord> CreateCredentialAsync(IAgentContext agentContext,
+            CredentialOfferMessage message)
+        {
+            string credentialRecordId = "";
+            try
+            {
+                ServiceDecorator service = message.GetDecorator<ServiceDecorator>(DecoratorNames.ServiceDecorator);
+
+                credentialRecordId = await ProcessOfferAsync(agentContext, message, null);
+
+                (CredentialRequestMessage request, CredentialRecord record) = await CreateRequestAsync(agentContext, credentialRecordId);
+                ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
+
+                try
+                {
+                    CredentialIssueMessage credentialIssueMessage = await MessageService.SendReceiveAsync<CredentialIssueMessage>(
+                        agentContext: agentContext,
+                        message: request,
+                        recipientKey: service.RecipientKeys.First(),
+                        endpointUri: service.ServiceEndpoint,
+                        routingKeys: service.RoutingKeys.ToArray(),
+                        senderKey: provisioning.IssuerVerkey);
+                    string recordId = await ProcessCredentialAsync(agentContext, credentialIssueMessage, null);
+                    return await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, recordId);
+                }
+                catch (AriesFrameworkException ex) when (ex.ErrorCode == ErrorCode.A2AMessageTransmissionError)
+                {
+                    throw new AriesFrameworkException(ex.ErrorCode, ex.Message, record, null);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new AriesFrameworkException(ErrorCode.LedgerItemNotFound, e.Message + ": " + credentialRecordId);
+            }
+        }
+
+
+        /// <inheritdoc />
         public Task<(CredentialIssueMessage, CredentialRecord)> CreateCredentialAsync(IAgentContext agentContext, string
             credentialId)
         {
@@ -786,7 +787,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForIndySharedRs(credentialRecord.CredentialAttributesValues);
-            
+
             string credentialJson;
             string revocationRegistryUpdatedJson;
             string revocationRegistryDeltaJson;
@@ -796,7 +797,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             try
             {
-                
+
                 if (definitionRecord.CurrentRevocationRegistryId != null)
                 {
                     _ = long.TryParse(definitionRecord.CurrentRevocationRegistryId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out revRegistryIndex);
@@ -806,7 +807,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 string revRegDefPrivateJson = null;
                 string revRegJson = null;
 
-                if(revocationRecord != null)
+                if (revocationRecord != null)
                 {
                     revRegDefJson = revocationRecord.RevRegDefJson;
                     revRegDefPrivateJson = revocationRecord.RevRegDefPrivateJson;
@@ -832,11 +833,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                 if (revocationRecord != null)
                 {
-                    /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
+                    // TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential
                     revocationRecord.RevRegJson = revocationRegistryUpdatedJson;
                     await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
                 }
-                
+
                 return (
                     new AriesIssuerCreateCredentialResult(
                         credentialJson: credentialJson,
@@ -881,7 +882,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 regUsed
                 );
 
-            /** TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential **/
+            // TODO : ??? - need to update revRegJson info , see indy-sdk : indy_issuer_create_credential
             nextRevocationRecord.RevRegJson = revocationRegistryUpdatedJson;
             await RecordService.UpdateAsync(agentContext.AriesStorage, nextRevocationRecord);
 

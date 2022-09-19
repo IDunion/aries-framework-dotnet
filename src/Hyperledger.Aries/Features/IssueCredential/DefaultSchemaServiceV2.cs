@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Contracts;
+﻿using Flurl;
 using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Models.Records;
-using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Configuration;
+using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Features.IssueCredential.Models;
+using Hyperledger.Aries.Features.IssueCredential.Records;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
+using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Options;
-using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
 using IndySharedRsRevoc = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
-using Flurl;
-using aries_askar_dotnet.Models;
-using System.Linq;
-using indy_shared_rs_dotnet.Models;
-using Hyperledger.Aries.Features.IssueCredential.Models;
-using Hyperledger.Aries.Utils;
-using Hyperledger.Aries.Storage.Models;
-using Hyperledger.Aries.Features.IssueCredential.Records;
+using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -71,11 +68,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string issuerDid, string name,
             string version, string[] attributeNames)
         {
-            //var schema = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, name, version, attributeNames.ToJson());
             uint seqNo = 0;
             string schemaJson = await IndySharedRsSchema.CreateSchemaJsonAsync(issuerDid, name, version, attributeNames.ToList(), seqNo);
             string schemaId = await IndySharedRsSchema.GetSchemaAttributeAsync(schemaJson, "id");
-            var schemaRecord = new SchemaRecord
+            SchemaRecord schemaRecord = new()
             {
                 Id = schemaId,
                 Name = name,
@@ -83,7 +79,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 AttributeNames = attributeNames
             };
 
-            var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
+            TransactionCost paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
             await LedgerService.RegisterSchemaAsync(context, issuerDid, schemaJson, paymentInfo);
 
             await RecordService.AddAsync(context.AriesStorage, schemaRecord);
@@ -100,30 +96,32 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string name,
             string version, string[] attributeNames)
         {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
-            if (provisioning?.IssuerDid == null)
-            {
-                throw new AriesFrameworkException(ErrorCode.RecordNotFound, "This wallet is not provisioned with issuer");
-            }
-
-            return await CreateSchemaAsync(context, provisioning.IssuerDid, name, version, attributeNames);
+            ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
+            return provisioning?.IssuerDid == null
+                ? throw new AriesFrameworkException(ErrorCode.RecordNotFound, "This wallet is not provisioned with issuer")
+                : await CreateSchemaAsync(context, provisioning.IssuerDid, name, version, attributeNames);
         }
 
         /// <inheritdoc />
         public async Task<string> LookupSchemaFromCredentialDefinitionAsync(IAgentContext agentContext,
             string credentialDefinitionId)
         {
-            var credDef = await LookupCredentialDefinitionAsync(agentContext, credentialDefinitionId);
+            string credDef = await LookupCredentialDefinitionAsync(agentContext, credentialDefinitionId);
 
             if (string.IsNullOrEmpty(credDef))
+            {
                 return null;
+            }
 
             try
             {
-                var schemaSequenceId = Convert.ToInt32(JObject.Parse(credDef)["schemaId"].ToString());
+                int schemaSequenceId = Convert.ToInt32(JObject.Parse(credDef)["schemaId"].ToString());
                 return await LookupSchemaAsync(agentContext, schemaSequenceId);
             }
-            catch (Exception) { }
+            catch (Exception) 
+            {
+                // Do nothing.
+            }
 
             return null;
         }
@@ -132,14 +130,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public virtual async Task<string> LookupSchemaAsync(IAgentContext agentContext, int sequenceId)
         {
-            var result = await LedgerService.LookupTransactionAsync(agentContext, null, sequenceId);
+            string result = await LedgerService.LookupTransactionAsync(agentContext, null, sequenceId);
 
             if (!string.IsNullOrEmpty(result))
             {
                 try
                 {
-                    var txnData = JObject.Parse(result)["result"]["data"]["txn"]["data"]["data"] as JObject;
-                    var txnId = JObject.Parse(result)["result"]["data"]["txnMetadata"]["txnId"].ToString();
+                    JObject txnData = JObject.Parse(result)["result"]["data"]["txn"]["data"]["data"] as JObject;
+                    string txnId = JObject.Parse(result)["result"]["data"]["txnMetadata"]["txnId"].ToString();
 
                     int seperator = txnId.LastIndexOf(':');
 
@@ -151,7 +149,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                     return txnData.ToString();
                 }
-                catch (Exception) { }
+                catch (Exception) 
+                {
+                    // Do nothing.
+                }
             }
 
             return null;
@@ -161,13 +162,15 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public virtual async Task<string> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
         {
-            var result = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
+            Ledger.Models.AriesResponse result = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
             return result?.ObjectJson;
         }
 
         /// <inheritdoc />
-        public virtual Task<List<SchemaRecord>> ListSchemasAsync(AriesStorage storage) =>
-            RecordService.SearchAsync<SchemaRecord>(storage, null, null, 100);
+        public virtual Task<List<SchemaRecord>> ListSchemasAsync(AriesStorage storage)
+        {
+            return RecordService.SearchAsync<SchemaRecord>(storage, null, null, 100);
+        }
 
         /// <inheritdoc />
         [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(INewAgentContext, CredentialDefinitionConfiguration)'")]
@@ -187,17 +190,54 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(INewAgentContext, CredentialDefinitionConfiguration)'")]
+        public virtual async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId,
+            string tag, bool supportsRevocation, int maxCredentialCount)
+        {
+            ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
+            
+            Uri baseUri = null;
+            if(provisioning.TailsBaseUri != null)
+            {
+                baseUri = new Uri(provisioning.TailsBaseUri);
+            }
+
+            return provisioning?.IssuerDid == null
+                ? throw new AriesFrameworkException(ErrorCode.RecordNotFound,
+                    "This wallet is not provisioned with issuer")
+                : await CreateCredentialDefinitionAsync(
+                context: context,
+                schemaId: schemaId,
+                issuerDid: provisioning.IssuerDid,
+                tag: tag,
+                supportsRevocation: supportsRevocation,
+                maxCredentialCount: maxCredentialCount,
+                tailsBaseUri: baseUri);
+        }
+
+        /// <inheritdoc />
         public async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, CredentialDefinitionConfiguration configuration)
         {
-            if (configuration == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Configuration must be specified.");
-            if (configuration.SchemaId == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "SchemaId must be specified.");
+            if (configuration == null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Configuration must be specified.");
+            }
+
+            if (configuration.SchemaId == null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "SchemaId must be specified.");
+            }
+
             if (configuration.EnableRevocation &&
                 configuration.RevocationRegistryBaseUri == null &&
-                AgentOptions.RevocationRegistryUriPath == null) throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "RevocationRegistryBaseUri must be specified either in the configuration or the AgentOptions");
+                AgentOptions.RevocationRegistryUriPath == null)
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "RevocationRegistryBaseUri must be specified either in the configuration or the AgentOptions");
+            }
 
-            var schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
+            Ledger.Models.AriesResponse schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
 
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
+            ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await IndySharedRsCredDef.CreateCredentialDefinitionJsonAsync(
@@ -208,21 +248,21 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 supportRevocation: configuration.EnableRevocation);
             string credentialDefinitionId = await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credentialDefinitionJson, "id");
 
-            var definitionRecord = new DefinitionRecord();
-            definitionRecord.IssuerDid = configuration.IssuerDid;
+            DefinitionRecord definitionRecord = new()
+            {
+                IssuerDid = configuration.IssuerDid,
 
-            definitionRecord.CredDefJson = credentialDefinitionJson;
-            definitionRecord.PrivateJson = credentialDefinitionPrivateJson;
-            definitionRecord.KeyCorrectnesProofJson = credentialKeyCorrectnessProofJson;
-
-            //var paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.CRED_DEF);
+                CredDefJson = credentialDefinitionJson,
+                PrivateJson = credentialDefinitionPrivateJson,
+                KeyCorrectnesProofJson = credentialKeyCorrectnessProofJson
+            };
 
             await LedgerService.RegisterCredentialDefinitionAsync(
                 context: context,
                 submitterDid: configuration.IssuerDid,
                 data: credentialDefinitionJson,
                 paymentInfo: null);
-            
+
             definitionRecord.SupportsRevocation = configuration.EnableRevocation;
             definitionRecord.Id = credentialDefinitionId;
             definitionRecord.SchemaId = configuration.SchemaId;
@@ -232,7 +272,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 definitionRecord.MaxCredentialCount = configuration.RevocationRegistrySize;
                 definitionRecord.RevocationAutoScale = configuration.RevocationRegistryAutoScale;
 
-                var (_, revocationRecord) = await CreateRevocationRegistryAsync(
+                (RevocationRegistryResult _, RevocationRegistryRecord revocationRecord) = await CreateRevocationRegistryAsync(
                     context: context,
                     tag: $"1-{configuration.RevocationRegistrySize}",
                     definitionRecord: definitionRecord);
@@ -250,7 +290,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     string tag,
                     DefinitionRecord definitionRecord)
         {
-            /** TODO : ??? - remove after fixing issue in line 276 **/
+            //TODO : ??? - remove after fixing issue in line 276
             //var tailsHandle = await TailsService.CreateTailsAsync(); 
 
             IssuerType issuanceType = IssuerType.ISSUANCE_BY_DEFAULT;
@@ -261,33 +301,33 @@ namespace Hyperledger.Aries.Features.IssueCredential
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
              string revocationRegistryDeltaJson) = await IndySharedRsRevoc.CreateRevocationRegistryJsonAsync(
-                 originDid : definitionRecord.IssuerDid,
+                 originDid: definitionRecord.IssuerDid,
                  credentialDefinitionJson,
-                 tag : tag,
-                 revRegType : RegistryType.CL_ACCUM,
-                 issuanceType : issuanceType,
-                 maxCredNumber : maxCredNum,
+                 tag: tag,
+                 revRegType: RegistryType.CL_ACCUM,
+                 issuanceType: issuanceType,
+                 maxCredNumber: maxCredNum,
                  tailsDirPath: null // null : default path set in IndySharedRs method 
-                 /** TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
-                 revocationRecord.TailsLocation  **/
+                 //TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
+                 //revocationRecord.TailsLocation 
                  );
-            
+
             string revocationRegistryDefinitionId = await IndySharedRsRevoc.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
 
-            var revocationRecord = new RevocationRegistryRecord
+            RevocationRegistryRecord revocationRecord = new()
             {
                 Id = revocationRegistryDefinitionId,
-                CredentialDefinitionId = definitionRecord.Id
+                CredentialDefinitionId = definitionRecord.Id,
+                RevRegDefJson = revocationRegistryDefinitionJson,
+                RevRegJson = revocationRegistryJson,
+                RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson,
+                RevRegDeltaJson = revocationRegistryDeltaJson
             };
-            revocationRecord.RevRegDefJson = revocationRegistryDefinitionJson;
-            revocationRecord.RevRegJson = revocationRegistryJson;
-            revocationRecord.RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson;
-            revocationRecord.RevRegDeltaJson = revocationRegistryDeltaJson;
 
             // Update tails location URI
-            var revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);
-            var tailsfile = Path.GetFileName(revocationDefinition["value"]["tailsLocation"].ToObject<string>());
-            var tailsLocation = Url.Combine(
+            JObject revocationDefinition = JObject.Parse(revocationRegistryDefinitionJson);
+            string tailsfile = Path.GetFileName(revocationDefinition["value"]["tailsLocation"].ToObject<string>());
+            string tailsLocation = Url.Combine(
                 AgentOptions.EndpointUri,
                 AgentOptions.RevocationRegistryUriPath,
                 tailsfile);
@@ -295,7 +335,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
             revocationRecord.TailsFile = tailsfile;
             revocationRecord.TailsLocation = tailsLocation;
 
-            //paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.REVOC_REG_DEF);
             await LedgerService.RegisterRevocationRegistryDefinitionAsync(
                 context: context,
                 submitterDid: definitionRecord.IssuerDid,
@@ -307,57 +346,39 @@ namespace Hyperledger.Aries.Features.IssueCredential
             await LedgerService.SendRevocationRegistryEntryAsync(
                 context: context,
                 issuerDid: definitionRecord.IssuerDid,
-                revocationRegistryDefinitionId:revocationRegistryDefinitionId,
+                revocationRegistryDefinitionId: revocationRegistryDefinitionId,
                 revocationDefinitionType: "CL_ACCUM", //RegistryType.CL_ACCUM.ToString()
                 value: revocationRegistryJson,
                 paymentInfo: null);
 
             return (
                 new RevocationRegistryResult(
-                    revocationRegistryDefinitionId, 
-                    revocationRegistryDefinitionJson, 
-                    revocationRegistryDefinitionPrivateJson, 
+                    revocationRegistryDefinitionId,
+                    revocationRegistryDefinitionJson,
+                    revocationRegistryDefinitionPrivateJson,
                     revocationRegistryJson),
                 revocationRecord
                 );
-        }
-
-        /// <inheritdoc />
-        [Obsolete("This method is obsolete. Please use 'CreateCredentialDefinitionAsync(INewAgentContext, CredentialDefinitionConfiguration)'")]
-        public virtual async Task<string> CreateCredentialDefinitionAsync(IAgentContext context, string schemaId,
-            string tag, bool supportsRevocation, int maxCredentialCount)
-        {
-            var provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
-            if (provisioning?.IssuerDid == null)
-            {
-                throw new AriesFrameworkException(ErrorCode.RecordNotFound,
-                    "This wallet is not provisioned with issuer");
-            }
-
-            return await CreateCredentialDefinitionAsync(
-                context: context,
-                schemaId: schemaId,
-                issuerDid: provisioning.IssuerDid,
-                tag: tag,
-                supportsRevocation: supportsRevocation,
-                maxCredentialCount: maxCredentialCount,
-                tailsBaseUri: provisioning.TailsBaseUri != null ? new Uri(provisioning.TailsBaseUri) : null);
         }
 
         /// TODO this should return a definition object
         /// <inheritdoc />
         public virtual async Task<string> LookupCredentialDefinitionAsync(IAgentContext agentContext, string definitionId)
         {
-            var result = await LedgerService.LookupDefinitionAsync(agentContext, definitionId);
+            Ledger.Models.AriesResponse result = await LedgerService.LookupDefinitionAsync(agentContext, definitionId);
             return result?.ObjectJson;
         }
 
         /// <inheritdoc />
-        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(AriesStorage storage) =>
-            RecordService.SearchAsync<DefinitionRecord>(storage, null, null, 100);
+        public virtual Task<List<DefinitionRecord>> ListCredentialDefinitionsAsync(AriesStorage storage)
+        {
+            return RecordService.SearchAsync<DefinitionRecord>(storage, null, null, 100);
+        }
 
         /// <inheritdoc />
-        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(AriesStorage storage, string credentialDefinitionId) =>
-            RecordService.GetAsync<DefinitionRecord>(storage, credentialDefinitionId);
+        public virtual Task<DefinitionRecord> GetCredentialDefinitionAsync(AriesStorage storage, string credentialDefinitionId)
+        {
+            return RecordService.GetAsync<DefinitionRecord>(storage, credentialDefinitionId);
+        }
     }
 }

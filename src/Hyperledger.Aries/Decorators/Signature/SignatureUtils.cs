@@ -25,6 +25,7 @@ namespace Hyperledger.Aries.Decorators.Signature
         /// </summary>
         /// <typeparam name="T">Data object type to sign.</typeparam>
         /// <param name="agentContext">Agent context.</param>
+        /// <param name="recordService"></param>
         /// <param name="data">Data to sign.</param>
         /// <param name="signerKey">Signers verkey.</param>
         /// <returns>Async signature decorator.</returns>
@@ -53,6 +54,7 @@ namespace Hyperledger.Aries.Decorators.Signature
         /// </summary>
         /// <typeparam name="T">Type in which to cast the result to.</typeparam>
         /// <param name="decorator">Signature decorator to unpack and verify</param>
+        /// <param name="agentContext">Corresponding agent context</param>
         /// <returns>Resulting data cast to type T.</returns>
         public static async Task<T> UnpackAndVerifyAsync<T>(SignatureDecorator decorator, IAgentContext agentContext)
         {

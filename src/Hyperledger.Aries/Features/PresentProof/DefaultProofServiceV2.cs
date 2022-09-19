@@ -75,7 +75,6 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <param name="recordService">The record service.</param>
         /// <param name="provisioningService">The provisioning service.</param>
         /// <param name="ledgerService">The ledger service.</param>
-        /// <param name="tailsService">The tails service.</param>
         /// <param name="messageService">The message service.</param>
         /// <param name="logger">The logger.</param>
         public DefaultProofServiceV2(
@@ -100,18 +99,17 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<string> CreateProofAsync(IAgentContext agentContext,
             ProofRequest proofRequest, RequestedCredentials requestedCredentials)
         {
-            var provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
+            ProvisioningRecord provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
-            var credentialObjects = new List<CredentialInfo>();
-            var credentialEntryJsons = new List<string>();
-            var credentialProofJsons = new List<string>();
-            foreach (var credId in requestedCredentials.GetCredentialIdentifiers())
+            List<CredentialInfo> credentialObjects = new();
+            List<string> credentialEntryJsons = new();
+            foreach (string credId in requestedCredentials.GetCredentialIdentifiers())
             {
                 //TODO : ??? Test
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credId);
                 indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
                 string recordJson = JsonConvert.SerializeObject(credentialRecord);
-                var credentialInfo = JsonConvert.DeserializeObject<CredentialInfo>(recordJson);
+                CredentialInfo credentialInfo = JsonConvert.DeserializeObject<CredentialInfo>(recordJson);
 
                 credentialObjects.Add(credentialInfo);
 
@@ -133,17 +131,11 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             List<string> selfAttestNames = new();
             List<string> selfAttestValues = new();
-            foreach (var pair in requestedCredentials.SelfAttestedAttributes)
+            foreach (KeyValuePair<string, string> pair in requestedCredentials.SelfAttestedAttributes)
             {
                 selfAttestNames.Add(pair.Key);
                 selfAttestValues.Add(pair.Value);
             }
-
-            var revocationStates = await BuildRevocationStatesAsync(
-                agentContext: agentContext,
-                credentialObjects: credentialObjects,
-                proofRequest: proofRequest,
-                requestedCredentials: requestedCredentials);
 
             string presentation = await IndySharedRsPres.CreatePresentationAsync(
                 proofRequest.ToJson(),
@@ -161,10 +153,10 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<ProofRecord> CreatePresentationAsync(IAgentContext agentContext, RequestPresentationMessage requestPresentation, RequestedCredentials requestedCredentials)
         {
-            var service = requestPresentation.GetDecorator<ServiceDecorator>(DecoratorNames.ServiceDecorator);
+            ServiceDecorator service = requestPresentation.GetDecorator<ServiceDecorator>(DecoratorNames.ServiceDecorator);
 
-            var record = await ProcessRequestAsync(agentContext, requestPresentation, null);
-            var (presentationMessage, proofRecord) = await CreatePresentationAsync(agentContext, record.Id, requestedCredentials);
+            ProofRecord record = await ProcessRequestAsync(agentContext, requestPresentation, null);
+            (PresentationMessage presentationMessage, ProofRecord proofRecord) = await CreatePresentationAsync(agentContext, record.Id, requestedCredentials);
 
             await MessageService.SendAsync(
                 agentContext: agentContext,
@@ -179,11 +171,13 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task RejectProofRequestAsync(IAgentContext agentContext, string proofRequestId)
         {
-            var request = await GetAsync(agentContext, proofRequestId);
+            ProofRecord request = await GetAsync(agentContext, proofRequestId);
 
             if (request.State != ProofState.Requested)
+            {
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Proof record state was invalid. Expected '{ProofState.Requested}', found '{request.State}'");
+            }
 
             await request.TriggerAsync(ProofTrigger.Reject);
             await RecordService.UpdateAsync(agentContext.AriesStorage, request);
@@ -198,12 +192,23 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public async Task<bool> IsRevokedAsync(IAgentContext context, CredentialRecord record)
         {
-            if (record.RevocationRegistryId == null) return false;
-            if (record.State == CredentialState.Offered || record.State == CredentialState.Requested) return false;
-            if (record.State == CredentialState.Revoked || record.State == CredentialState.Rejected) return true;
+            if (record.RevocationRegistryId == null)
+            {
+                return false;
+            }
 
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var proofRequest = new ProofRequest
+            if (record.State is CredentialState.Offered or CredentialState.Requested)
+            {
+                return false;
+            }
+
+            if (record.State is CredentialState.Revoked or CredentialState.Rejected)
+            {
+                return true;
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            ProofRequest proofRequest = new()
             {
                 Name = "revocation check",
                 Version = "1.0",
@@ -219,7 +224,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 }
             };
 
-            var proof = await CreateProofAsync(context, proofRequest, new RequestedCredentials
+            string proof = await CreateProofAsync(context, proofRequest, new RequestedCredentials
             {
                 RequestedAttributes = new Dictionary<string, RequestedAttribute>
                 {
@@ -227,7 +232,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 }
             });
 
-            var isValid = await VerifyProofAsync(context, proofRequest.ToJson(), proof);
+            bool isValid = await VerifyProofAsync(context, proofRequest.ToJson(), proof);
 
             if (!isValid)
             {
@@ -243,12 +248,13 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<bool> VerifyProofAsync(IAgentContext agentContext, string proofRequestJson, string proofJson, bool validateEncoding = true)
         {
-            var proof = JsonConvert.DeserializeObject<PartialProof>(proofJson);
+            PartialProof proof = JsonConvert.DeserializeObject<PartialProof>(proofJson);
 
             // If any values are revealed, validate encoding
             // against expected values
             if (validateEncoding && proof.RequestedProof.RevealedAttributes != null)
-                foreach (var attribute in proof.RequestedProof.RevealedAttributes)
+            {
+                foreach (KeyValuePair<string, ProofAttribute> attribute in proof.RequestedProof.RevealedAttributes)
                 {
                     if (!CredentialUtils.CheckValidEncoding(attribute.Value.Raw, attribute.Value.Encoded))
                     {
@@ -258,26 +264,27 @@ namespace Hyperledger.Aries.Features.PresentProof
                             $"Actual '{attribute.Value.Encoded}'");
                     }
                 }
+            }
 
-            var schemas = await BuildSchemasAsync(agentContext,
+            List<string> schemas = await BuildSchemasAsync(agentContext,
                 proof.Identifiers
                     .Select(x => x.SchemaId)
                     .Where(x => x != null)
                     .Distinct());
 
-            var definitions = await BuildCredentialDefinitionsAsync(agentContext,
+            List<string> definitions = await BuildCredentialDefinitionsAsync(agentContext,
                 proof.Identifiers
                     .Select(x => x.CredentialDefintionId)
                     .Where(x => x != null)
                     .Distinct());
 
-            var revocationDefinitions = await BuildRevocationRegistryDefinitionsAsync(agentContext,
+            List<string> revocationDefinitions = await BuildRevocationRegistryDefinitionsAsync(agentContext,
                 proof.Identifiers
                     .Select(x => x.RevocationRegistryId)
                     .Where(x => x != null)
                     .Distinct());
 
-            var revocationRegistries = await BuildRevocationRegistriesAsync(
+            List<string> revocationRegistries = await BuildRevocationRegistriesAsync(
                 agentContext,
                 proof.Identifiers.Where(x => x.RevocationRegistryId != null));
 
@@ -290,20 +297,22 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         /// <inheritdoc />
-        public virtual async Task<bool> VerifyProofAsync(IAgentContext agentContext, string proofRecId)
+        public virtual async Task<bool> VerifyProofAsync(IAgentContext agentContext, string proofRecordId)
         {
-            var proofRecord = await GetAsync(agentContext, proofRecId);
+            ProofRecord proofRecord = await GetAsync(agentContext, proofRecordId);
 
-            if (proofRecord.State != ProofState.Accepted)
-                throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
-                    $"Proof record state was invalid. Expected '{ProofState.Accepted}', found '{proofRecord.State}'");
-
-            return await VerifyProofAsync(agentContext, proofRecord.RequestJson, proofRecord.ProofJson);
+            return proofRecord.State != ProofState.Accepted
+                ? throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
+                    $"Proof record state was invalid. Expected '{ProofState.Accepted}', found '{proofRecord.State}'")
+                : await VerifyProofAsync(agentContext, proofRecord.RequestJson, proofRecord.ProofJson);
         }
 
         /// <inheritdoc />
         public virtual Task<List<ProofRecord>> ListAsync(IAgentContext agentContext, ISearchQuery query = null,
-            int count = 100) => RecordService.SearchAsync<ProofRecord>(agentContext.AriesStorage, query, null, count);
+            int count = 100)
+        {
+            return RecordService.SearchAsync<ProofRecord>(agentContext.AriesStorage, query, null, count);
+        }
 
         /// <inheritdoc />
         public virtual async Task<ProofRecord> GetAsync(IAgentContext agentContext, string proofRecId)
@@ -318,20 +327,20 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
-            var credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, proofRequest);
-            var result = from cred in credentials
-                         where cred.CredentialInfo.Referent == attributeReferent
-                         select cred;
+            List<IssueCredential.Credential> credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, proofRequest);
+            IEnumerable<IssueCredential.Credential> result = from cred in credentials
+                                                             where cred.CredentialInfo.Referent == attributeReferent
+                                                             select cred;
             return result.ToList();
         }
 
         /// <inheritdoc />
         public async Task<PresentationAcknowledgeMessage> CreateAcknowledgeMessageAsync(IAgentContext agentContext, string proofRecordId, string status = AcknowledgementStatusConstants.Ok)
         {
-            var record = await GetAsync(agentContext, proofRecordId);
+            ProofRecord record = await GetAsync(agentContext, proofRecordId);
 
-            var threadId = record.GetTag(TagConstants.LastThreadId);
-            var acknowledgeMessage = new PresentationAcknowledgeMessage(agentContext.UseMessageTypesHttps)
+            string threadId = record.GetTag(TagConstants.LastThreadId);
+            PresentationAcknowledgeMessage acknowledgeMessage = new(agentContext.UseMessageTypesHttps)
             {
                 Id = threadId,
                 Status = status
@@ -342,15 +351,15 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         /// <inheritdoc />
-        public virtual async Task<ProofRecord> ProcessAcknowledgeMessageAsync(IAgentContext agentContext, PresentationAcknowledgeMessage acknowledgeMessage)
+        public virtual async Task<ProofRecord> ProcessAcknowledgeMessageAsync(IAgentContext agentContext, PresentationAcknowledgeMessage presentationAcknowledgeMessage)
         {
-            var proofRecord = await this.GetByThreadIdAsync(agentContext, acknowledgeMessage.GetThreadId());
+            ProofRecord proofRecord = await this.GetByThreadIdAsync(agentContext, presentationAcknowledgeMessage.GetThreadId());
 
             EventAggregator.Publish(new ServiceMessageProcessingEvent
             {
                 RecordId = proofRecord.Id,
-                MessageType = acknowledgeMessage.Type,
-                ThreadId = acknowledgeMessage.GetThreadId()
+                MessageType = presentationAcknowledgeMessage.Type,
+                ThreadId = presentationAcknowledgeMessage.GetThreadId()
             });
 
             return proofRecord;
@@ -363,21 +372,23 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             if (proofProposal == null)
             {
-                throw new ArgumentNullException(nameof(proofProposal), "You must provide a presentation preview"); ;
+                throw new ArgumentNullException(nameof(proofProposal), "You must provide a presentation preview");
             }
             if (connectionId != null)
             {
-                var connection = await ConnectionService.GetAsync(agentContext, connectionId);
+                ConnectionRecord connection = await ConnectionService.GetAsync(agentContext, connectionId);
 
                 if (connection.State != ConnectionState.Connected)
+                {
                     throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                         $"Connection state was invalid. Expected '{ConnectionState.Connected}', found '{connection.State}'");
+                }
             }
-            this.CheckProofProposalParameters(proofProposal);
+            CheckProofProposalParameters(proofProposal);
 
 
-            var threadId = Guid.NewGuid().ToString();
-            var proofRecord = new ProofRecord
+            string threadId = Guid.NewGuid().ToString();
+            ProofRecord proofRecord = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 ConnectionId = connectionId,
@@ -390,7 +401,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             await RecordService.AddAsync(agentContext.AriesStorage, proofRecord);
 
-            var message = new ProposePresentationMessage(agentContext.UseMessageTypesHttps)
+            ProposePresentationMessage message = new(agentContext.UseMessageTypesHttps)
             {
                 Id = threadId,
                 Comment = proofProposal.Comment,
@@ -408,14 +419,14 @@ namespace Hyperledger.Aries.Features.PresentProof
         {
             // save in wallet
 
-            var proofProposal = new ProofProposal
+            ProofProposal proofProposal = new()
             {
                 Comment = proposePresentationMessage.Comment,
                 ProposedAttributes = proposePresentationMessage.PresentationPreviewMessage.ProposedAttributes.ToList<ProposedAttribute>(),
                 ProposedPredicates = proposePresentationMessage.PresentationPreviewMessage.ProposedPredicates.ToList<ProposedPredicate>()
             };
 
-            var proofRecord = new ProofRecord
+            ProofRecord proofRecord = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 ProposalJson = proofProposal.ToJson(),
@@ -438,7 +449,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         /// <inheritdoc />
-        public async Task<(RequestPresentationMessage, ProofRecord)> CreateRequestFromProposalAsync(IAgentContext agentContext, ProofRequestParameters requestParams,
+        public async Task<(RequestPresentationMessage, ProofRecord)> CreateRequestFromProposalAsync(IAgentContext agentContext, ProofRequestParameters requestParameters,
             string proofRecordId, string connectionId)
         {
             Logger.LogInformation(LoggingEvents.CreateProofRequest, "ConnectionId {0}", connectionId);
@@ -449,36 +460,35 @@ namespace Hyperledger.Aries.Features.PresentProof
             }
             if (connectionId != null)
             {
-                var connection = await ConnectionService.GetAsync(agentContext, connectionId);
+                ConnectionRecord connection = await ConnectionService.GetAsync(agentContext, connectionId);
 
                 if (connection.State != ConnectionState.Connected)
+                {
                     throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                         $"Connection state was invalid. Expected '{ConnectionState.Connected}', found '{connection.State}'");
+                }
             }
 
-            var proofRecord = await RecordService.GetAsync<ProofRecord>(agentContext.AriesStorage, proofRecordId);
-            var proofProposal = proofRecord.ProposalJson.ToObject<ProofProposal>();
+            ProofRecord proofRecord = await RecordService.GetAsync<ProofRecord>(agentContext.AriesStorage, proofRecordId);
+            ProofProposal proofProposal = proofRecord.ProposalJson.ToObject<ProofProposal>();
 
 
             // Build Proof Request from Proposal info
-            var proofRequest = new ProofRequest
+            ProofRequest proofRequest = new()
             {
-                Name = requestParams.Name,
-                Version = requestParams.Version,
+                Name = requestParameters.Name,
+                Version = requestParameters.Version,
                 Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
                 RequestedAttributes = new Dictionary<string, ProofAttributeInfo>(),
-                NonRevoked = requestParams.NonRevoked
+                NonRevoked = requestParameters.NonRevoked
             };
 
-            var attributesByReferent = new Dictionary<string, List<ProposedAttribute>>();
-            foreach (var proposedAttribute in proofProposal.ProposedAttributes)
+            Dictionary<string, List<ProposedAttribute>> attributesByReferent = new();
+            foreach (ProposedAttribute proposedAttribute in proofProposal.ProposedAttributes)
             {
-                if (proposedAttribute.Referent == null)
-                {
-                    proposedAttribute.Referent = Guid.NewGuid().ToString();
-                }
+                proposedAttribute.Referent ??= Guid.NewGuid().ToString();
 
-                if (attributesByReferent.TryGetValue(proposedAttribute.Referent, out var referentAttributes))
+                if (attributesByReferent.TryGetValue(proposedAttribute.Referent, out List<ProposedAttribute> referentAttributes))
                 {
                     referentAttributes.Add(proposedAttribute);
                 }
@@ -488,14 +498,14 @@ namespace Hyperledger.Aries.Features.PresentProof
                 }
             }
 
-            foreach (var referent in attributesByReferent.AsEnumerable())
+            foreach (KeyValuePair<string, List<ProposedAttribute>> referent in attributesByReferent.AsEnumerable())
             {
-                var proposedAttributes = referent.Value;
-                var attributeName = proposedAttributes.Count() == 1 ? proposedAttributes.Single().Name : null;
-                var attributeNames = proposedAttributes.Count() > 1 ? proposedAttributes.ConvertAll<string>(r => r.Name).ToArray() : null;
+                List<ProposedAttribute> proposedAttributes = referent.Value;
+                string attributeName = proposedAttributes.Count == 1 ? proposedAttributes.Single().Name : null;
+                string[] attributeNames = proposedAttributes.Count > 1 ? proposedAttributes.ConvertAll<string>(r => r.Name).ToArray() : null;
 
 
-                var requestedAttribute = new ProofAttributeInfo()
+                ProofAttributeInfo requestedAttribute = new()
                 {
                     Name = attributeName,
                     Names = attributeNames,
@@ -509,16 +519,13 @@ namespace Hyperledger.Aries.Features.PresentProof
                     }
                 };
                 proofRequest.RequestedAttributes.Add(referent.Key, requestedAttribute);
-                Console.WriteLine($"Added Attribute to Proof Request \n {proofRequest.ToString()}");
+                Console.WriteLine($"Added Attribute to Proof Request \n {proofRequest}");
             }
 
-            foreach (var pred in proofProposal.ProposedPredicates)
+            foreach (ProposedPredicate pred in proofProposal.ProposedPredicates)
             {
-                if (pred.Referent == null)
-                {
-                    pred.Referent = Guid.NewGuid().ToString();
-                }
-                var predicate = new ProofPredicateInfo()
+                pred.Referent ??= Guid.NewGuid().ToString();
+                ProofPredicateInfo predicate = new()
                 {
                     Name = pred.Name,
                     PredicateType = pred.Predicate,
@@ -540,7 +547,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             await proofRecord.TriggerAsync(ProofTrigger.Request);
             await RecordService.UpdateAsync(agentContext.AriesStorage, proofRecord);
 
-            var message = new RequestPresentationMessage(agentContext.UseMessageTypesHttps)
+            RequestPresentationMessage message = new(agentContext.UseMessageTypesHttps)
             {
                 Id = proofRecord.Id,
                 Requests = new[]
@@ -567,11 +574,13 @@ namespace Hyperledger.Aries.Features.PresentProof
         public Task<(RequestPresentationMessage, ProofRecord)> CreateRequestAsync(
             IAgentContext agentContext,
             ProofRequest proofRequest,
-            string connectionId) =>
-            CreateRequestAsync(
+            string connectionId)
+        {
+            return CreateRequestAsync(
                 agentContext: agentContext,
                 proofRequestJson: proofRequest?.ToJson(),
                 connectionId: connectionId);
+        }
 
         /// <inheritdoc />
         public virtual async Task<(RequestPresentationMessage, ProofRecord)> CreateRequestAsync(IAgentContext agentContext, string proofRequestJson, string connectionId)
@@ -584,15 +593,17 @@ namespace Hyperledger.Aries.Features.PresentProof
             }
             if (connectionId != null)
             {
-                var connection = await ConnectionService.GetAsync(agentContext, connectionId);
+                ConnectionRecord connection = await ConnectionService.GetAsync(agentContext, connectionId);
 
                 if (connection.State != ConnectionState.Connected)
+                {
                     throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                         $"Connection state was invalid. Expected '{ConnectionState.Connected}', found '{connection.State}'");
+                }
             }
 
-            var threadId = Guid.NewGuid().ToString();
-            var proofRecord = new ProofRecord
+            string threadId = Guid.NewGuid().ToString();
+            ProofRecord proofRecord = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 ConnectionId = connectionId,
@@ -602,7 +613,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             proofRecord.SetTag(TagConstants.LastThreadId, threadId);
             await RecordService.AddAsync(agentContext.AriesStorage, proofRecord);
 
-            var message = new RequestPresentationMessage(agentContext.UseMessageTypesHttps)
+            RequestPresentationMessage message = new(agentContext.UseMessageTypesHttps)
             {
                 Id = threadId,
                 Requests = new[]
@@ -627,8 +638,8 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<(RequestPresentationMessage, ProofRecord)> CreateRequestAsync(IAgentContext agentContext, ProofRequest proofRequest, bool useDidKeyFormat = false)
         {
-            var (message, record) = await CreateRequestAsync(agentContext, proofRequest, null);
-            var provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
+            (RequestPresentationMessage message, ProofRecord record) = await CreateRequestAsync(agentContext, proofRequest, null);
+            ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             message.AddDecorator(provisioning.ToServiceDecorator(useDidKeyFormat), DecoratorNames.ServiceDecorator);
             record.SetTag("RequestData", message.ToByteArray().ToBase64UrlString());
@@ -639,10 +650,10 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<ProofRecord> ProcessRequestAsync(IAgentContext agentContext, RequestPresentationMessage requestPresentationMessage, ConnectionRecord connection)
         {
-            var requestAttachment = requestPresentationMessage.Requests.FirstOrDefault(x => x.Id == "libindy-request-presentation-0")
+            Attachment requestAttachment = requestPresentationMessage.Requests.FirstOrDefault(x => x.Id == "libindy-request-presentation-0")
                 ?? throw new ArgumentException("Presentation request attachment not found.");
 
-            var requestJson = requestAttachment.Data.Base64.GetBytesFromBase64().GetUTF8String();
+            string requestJson = requestAttachment.Data.Base64.GetBytesFromBase64().GetUTF8String();
 
             ProofRecord proofRecord = null;
 
@@ -691,16 +702,18 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<ProofRecord> ProcessPresentationAsync(IAgentContext agentContext, PresentationMessage presentationMessage)
         {
-            var proofRecord = await this.GetByThreadIdAsync(agentContext, presentationMessage.GetThreadId());
+            ProofRecord proofRecord = await this.GetByThreadIdAsync(agentContext, presentationMessage.GetThreadId());
 
-            var requestAttachment = presentationMessage.Presentations.FirstOrDefault(x => x.Id == "libindy-presentation-0")
+            Attachment requestAttachment = presentationMessage.Presentations.FirstOrDefault(x => x.Id == "libindy-presentation-0")
                 ?? throw new ArgumentException("Presentation attachment not found.");
 
-            var proofJson = requestAttachment.Data.Base64.GetBytesFromBase64().GetUTF8String();
+            string proofJson = requestAttachment.Data.Base64.GetBytesFromBase64().GetUTF8String();
 
             if (proofRecord.State != ProofState.Requested)
+            {
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Proof state was invalid. Expected '{ProofState.Requested}', found '{proofRecord.State}'");
+            }
 
             proofRecord.ProofJson = proofJson;
             await proofRecord.TriggerAsync(ProofTrigger.Accept);
@@ -717,18 +730,23 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         /// <inheritdoc />
-        public virtual Task<string> CreatePresentationAsync(IAgentContext agentContext, ProofRequest proofRequest, RequestedCredentials requestedCredentials) =>
-            CreateProofAsync(agentContext, proofRequest, requestedCredentials);
+        public virtual Task<string> CreatePresentationAsync(IAgentContext agentContext, ProofRequest proofRequest, RequestedCredentials requestedCredentials)
+        {
+            return CreateProofAsync(agentContext, proofRequest, requestedCredentials);
+        }
 
         /// <inheritdoc />
         public virtual async Task<(PresentationMessage, ProofRecord)> CreatePresentationAsync(IAgentContext agentContext, string proofRecordId, RequestedCredentials requestedCredentials)
         {
-            var record = await GetAsync(agentContext, proofRecordId);
+            ProofRecord record = await GetAsync(agentContext, proofRecordId);
 
             if (record.State != ProofState.Requested)
+            {
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Proof state was invalid. Expected '{ProofState.Requested}', found '{record.State}'");
-            var proofJson = await CreatePresentationAsync(
+            }
+
+            string proofJson = await CreatePresentationAsync(
                 agentContext,
                 record.RequestJson.ToObject<ProofRequest>(),
                 requestedCredentials);
@@ -737,9 +755,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             await record.TriggerAsync(ProofTrigger.Accept);
             await RecordService.UpdateAsync(agentContext.AriesStorage, record);
 
-            var threadId = record.GetTag(TagConstants.LastThreadId);
+            string threadId = record.GetTag(TagConstants.LastThreadId);
 
-            var proofMsg = new PresentationMessage(agentContext.UseMessageTypesHttps)
+            PresentationMessage proofMsg = new(agentContext.UseMessageTypesHttps)
             {
                 Id = Guid.NewGuid().ToString(),
                 Presentations = new[]
@@ -766,11 +784,11 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private async Task<List<string>> BuildSchemasAsync(IAgentContext agentContext, IEnumerable<string> schemaIds)
         {
-            var result = new List<string>();
+            List<string> result = new();
 
-            foreach (var schemaId in schemaIds)
+            foreach (string schemaId in schemaIds)
             {
-                var ledgerSchema = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
+                AriesResponse ledgerSchema = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
                 result.Add(ledgerSchema.ObjectJson);
             }
 
@@ -779,11 +797,11 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private async Task<List<string>> BuildCredentialDefinitionsAsync(IAgentContext agentContext, IEnumerable<string> credentialDefIds)
         {
-            var result = new List<string>();
+            List<string> result = new();
 
-            foreach (var credDefId in credentialDefIds)
+            foreach (string credDefId in credentialDefIds)
             {
-                var ledgerDefinition = await LedgerService.LookupDefinitionAsync(agentContext, credDefId);
+                AriesResponse ledgerDefinition = await LedgerService.LookupDefinitionAsync(agentContext, credDefId);
                 result.Add(ledgerDefinition.ObjectJson);
             }
 
@@ -792,13 +810,21 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private bool HasNonRevokedOnAttributeLevel(ProofRequest proofRequest)
         {
-            foreach (var proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
+            foreach (KeyValuePair<string, ProofAttributeInfo> proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
+            {
                 if (proofRequestRequestedAttribute.Value.NonRevoked != null)
+                {
                     return true;
+                }
+            }
 
-            foreach (var proofRequestRequestedPredicate in proofRequest.RequestedPredicates)
+            foreach (KeyValuePair<string, ProofPredicateInfo> proofRequestRequestedPredicate in proofRequest.RequestedPredicates)
+            {
                 if (proofRequestRequestedPredicate.Value.NonRevoked != null)
+                {
                     return true;
+                }
+            }
 
             return false;
         }
@@ -807,7 +833,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             IAgentContext agentContext, CredentialInfo credentialInfo, AriesResponse registryDefinition,
             RevocationInterval nonRevoked)
         {
-            var delta = await LedgerService.LookupRevocationRegistryDeltaAsync(
+            AriesRegistryResponse delta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                 agentContext: agentContext,
                 revocationRegistryId: credentialInfo.RevocationRegistryId,
                 // Ledger will not return correct revocation state if the 'from' field
@@ -833,23 +859,27 @@ namespace Hyperledger.Aries.Features.PresentProof
             ProofRequest proofRequest,
             RequestedCredentials requestedCredentials)
         {
-            var allCredentials = new List<RequestedAttribute>();
+            List<RequestedAttribute> allCredentials = new();
             allCredentials.AddRange(requestedCredentials.RequestedAttributes.Values);
             allCredentials.AddRange(requestedCredentials.RequestedPredicates.Values);
 
-            var result = new Dictionary<string, Dictionary<string, JObject>>();
+            Dictionary<string, Dictionary<string, JObject>> result = new();
 
             if (proofRequest.NonRevoked == null && !HasNonRevokedOnAttributeLevel(proofRequest))
+            {
                 return result.ToJson();
+            }
 
-            foreach (var requestedCredential in allCredentials)
+            foreach (RequestedAttribute requestedCredential in allCredentials)
             {
                 // ReSharper disable once PossibleMultipleEnumeration
-                var credential = credentialObjects.First(x => x.Referent == requestedCredential.CredentialId);
+                CredentialInfo credential = credentialObjects.First(x => x.Referent == requestedCredential.CredentialId);
                 if (credential.RevocationRegistryId == null)
+                {
                     continue;
+                }
 
-                var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                AriesResponse registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
                     agentContext: agentContext,
                     registryId: credential.RevocationRegistryId);
 
@@ -859,41 +889,53 @@ namespace Hyperledger.Aries.Features.PresentProof
                         agentContext, credential, registryDefinition, proofRequest.NonRevoked);
 
                     if (!result.ContainsKey(credential.RevocationRegistryId))
+                    {
                         result.Add(credential.RevocationRegistryId, new Dictionary<string, JObject>());
+                    }
 
                     requestedCredential.Timestamp = (long)delta.Timestamp;
                     if (!result[credential.RevocationRegistryId].ContainsKey($"{delta.Timestamp}"))
+                    {
                         result[credential.RevocationRegistryId].Add($"{delta.Timestamp}", JObject.Parse(state));
+                    }
 
                     continue;
                 }
 
-                foreach (var proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
+                foreach (KeyValuePair<string, ProofAttributeInfo> proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
                 {
-                    var revocationInterval = proofRequestRequestedAttribute.Value.NonRevoked;
-                    var (delta, state) = await BuildRevocationStateAsync(
+                    RevocationInterval revocationInterval = proofRequestRequestedAttribute.Value.NonRevoked;
+                    (AriesRegistryResponse delta, string state) = await BuildRevocationStateAsync(
                         agentContext, credential, registryDefinition, revocationInterval);
 
                     if (!result.ContainsKey(credential.RevocationRegistryId))
+                    {
                         result.Add(credential.RevocationRegistryId, new Dictionary<string, JObject>());
+                    }
 
                     requestedCredential.Timestamp = (long)delta.Timestamp;
                     if (!result[credential.RevocationRegistryId].ContainsKey($"{delta.Timestamp}"))
+                    {
                         result[credential.RevocationRegistryId].Add($"{delta.Timestamp}", JObject.Parse(state));
+                    }
                 }
 
-                foreach (var proofRequestRequestedPredicate in proofRequest.RequestedPredicates)
+                foreach (KeyValuePair<string, ProofPredicateInfo> proofRequestRequestedPredicate in proofRequest.RequestedPredicates)
                 {
-                    var revocationInterval = proofRequestRequestedPredicate.Value.NonRevoked;
-                    var (delta, state) = await BuildRevocationStateAsync(
+                    RevocationInterval revocationInterval = proofRequestRequestedPredicate.Value.NonRevoked;
+                    (AriesRegistryResponse delta, string state) = await BuildRevocationStateAsync(
                         agentContext, credential, registryDefinition, revocationInterval);
 
                     if (!result.ContainsKey(credential.RevocationRegistryId))
+                    {
                         result.Add(credential.RevocationRegistryId, new Dictionary<string, JObject>());
+                    }
 
                     requestedCredential.Timestamp = (long)delta.Timestamp;
                     if (!result[credential.RevocationRegistryId].ContainsKey($"{delta.Timestamp}"))
+                    {
                         result[credential.RevocationRegistryId].Add($"{delta.Timestamp}", JObject.Parse(state));
+                    }
                 }
             }
 
@@ -904,13 +946,16 @@ namespace Hyperledger.Aries.Features.PresentProof
             IAgentContext agentContext,
             IEnumerable<ProofIdentifier> proofIdentifiers)
         {
-            var result = new List<string>();
+            List<string> result = new();
 
-            foreach (var identifier in proofIdentifiers)
+            foreach (ProofIdentifier identifier in proofIdentifiers)
             {
-                if (identifier.Timestamp == null) continue;
+                if (identifier.Timestamp == null)
+                {
+                    continue;
+                }
 
-                var revocationRegistry = await LedgerService.LookupRevocationRegistryAsync(
+                AriesRegistryResponse revocationRegistry = await LedgerService.LookupRevocationRegistryAsync(
                     agentContext,
                     identifier.RevocationRegistryId,
                     long.Parse(identifier.Timestamp));
@@ -924,11 +969,11 @@ namespace Hyperledger.Aries.Features.PresentProof
         private async Task<List<string>> BuildRevocationRegistryDefinitionsAsync(IAgentContext agentContext,
             IEnumerable<string> revocationRegistryIds)
         {
-            var result = new List<string>();
+            List<string> result = new();
 
-            foreach (var revRegId in revocationRegistryIds)
+            foreach (string revRegId in revocationRegistryIds)
             {
-                var ledgerRegistry = await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revRegId);
+                AriesResponse ledgerRegistry = await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revRegId);
                 result.Add(ledgerRegistry.ObjectJson);
             }
 
@@ -939,13 +984,13 @@ namespace Hyperledger.Aries.Features.PresentProof
         {
             if (proofProposal.ProposedAttributes.Count > 1)
             {
-                var attrList = proofProposal.ProposedAttributes;
-                var referents = new Dictionary<string, ProposedAttribute>();
+                List<ProposedAttribute> attrList = proofProposal.ProposedAttributes;
+                Dictionary<string, ProposedAttribute> referents = new();
 
                 // Check if all attributes that share referent have same requirements
                 for (int i = 0; i < attrList.Count; i++)
                 {
-                    var attr = attrList[i];
+                    ProposedAttribute attr = attrList[i];
                     if (referents.ContainsKey(attr.Referent))
                     {
                         if (referents[attr.Referent].IssuerDid != attr.IssuerDid ||
@@ -968,12 +1013,12 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             if (proofProposal.ProposedPredicates.Count > 1)
             {
-                var predList = proofProposal.ProposedPredicates;
-                var referents = new Dictionary<string, ProposedPredicate>();
+                List<ProposedPredicate> predList = proofProposal.ProposedPredicates;
+                Dictionary<string, ProposedPredicate> referents = new();
 
                 for (int i = 0; i < predList.Count; i++)
                 {
-                    var pred = predList[i];
+                    ProposedPredicate pred = predList[i];
                     if (referents.ContainsKey(pred.Referent))
                     {
                         throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Proposed Predicates must all have unique referents");
@@ -989,19 +1034,20 @@ namespace Hyperledger.Aries.Features.PresentProof
         private async Task<List<IssueCredential.Credential>> ProverSearchCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest)
         {
-            List<IssueCredential.Credential> result = new List<IssueCredential.Credential>();
+            List<IssueCredential.Credential> result = new();
 
-            List<ISearchQuery> queryList = new List<ISearchQuery>();
+            List<ISearchQuery> queryList = new();
 
             foreach (ProofAttributeInfo attributeInfo in proofRequest.RequestedAttributes.Select(x => x.Value))
             {
-                foreach(AttributeFilter attributeFilter in attributeInfo.Restrictions)
+                foreach (AttributeFilter attributeFilter in attributeInfo.Restrictions)
                 {
-                    List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
+                    List<ISearchQuery> currentQueryList = new()
+                    {
+                        SearchQuery.Equal("State", "Issued")
+                    };
 
-                    currentQueryList.Add(SearchQuery.Equal("State", "Issued"));
-
-                    if(attributeFilter.SchemaId != null)
+                    if (attributeFilter.SchemaId != null)
                     {
                         currentQueryList.Add(SearchQuery.Equal("SchemaId", attributeFilter.SchemaId));
                     }
@@ -1034,9 +1080,10 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 foreach (AttributeFilter attributeFilter in predicateInfo.Restrictions)
                 {
-                    List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
-
-                    currentQueryList.Add(SearchQuery.Equal("State", "Issued"));
+                    List<ISearchQuery> currentQueryList = new()
+                    {
+                        SearchQuery.Equal("State", "Issued")
+                    };
 
                     if (attributeFilter.SchemaId != null)
                     {
@@ -1069,15 +1116,10 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             ISearchQuery finalQuery = SearchQuery.Or(queryList.ToArray());
 
-            var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
-            foreach(var cred in credRecs)
-            {
-                if (!string.IsNullOrEmpty(cred.CredentialJson))
-                {
-                    result.Add(JsonConvert.DeserializeObject<IssueCredential.Credential>(cred.CredentialJson));
-                }
-            }
-
+            List<CredentialRecord> credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
+            result.AddRange(from CredentialRecord cred in credRecs
+                            where !string.IsNullOrEmpty(cred.CredentialJson)
+                            select JsonConvert.DeserializeObject<IssueCredential.Credential>(cred.CredentialJson));
             return result;
         }
 
