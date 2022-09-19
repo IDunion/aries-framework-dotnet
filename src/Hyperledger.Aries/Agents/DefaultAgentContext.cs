@@ -1,10 +1,7 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using aries_askar_dotnet.Models;
-using Hyperledger.Aries.Ledger;
-using Hyperledger.Aries.Ledger.Models;
+﻿using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Storage.Models;
-using Hyperledger.Indy.WalletApi;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Hyperledger.Aries.Agents
 {
@@ -51,14 +48,20 @@ namespace Hyperledger.Aries.Agents
         /// </summary>
         public IAgent Agent { get; set; }
 
-        private readonly ConcurrentQueue<MessageContext> _queue = new ConcurrentQueue<MessageContext>();
+        private readonly ConcurrentQueue<MessageContext> _queue = new();
 
         /// <summary>
         /// Adds a message to the current processing queue
         /// </summary>
-        /// <param name="message"></param>
-        internal void AddNext(MessageContext message) => _queue.Enqueue(message);
+        /// <param name="message">Message to queue</param>
+        internal void AddNext(MessageContext message)
+        {
+            _queue.Enqueue(message);
+        }
 
-        internal bool TryGetNext(out MessageContext message) => _queue.TryDequeue(out message);
+        internal bool TryGetNext(out MessageContext message)
+        {
+            return _queue.TryDequeue(out message);
+        }
     }
 }

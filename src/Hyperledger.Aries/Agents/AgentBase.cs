@@ -128,7 +128,7 @@ namespace Hyperledger.Aries.Agents
                 }
                 return outgoingMessageContext;
             }
-            throw new Exception("Unsupported agent context. When using custom context, please inherit from 'DefaultAgentContext'");
+            throw new ArgumentException("Unsupported agent context. When using custom context, please inherit from 'DefaultAgentContext'");
         }
 
         private async Task<MessageContext> ProcessMessage(IAgentContext agentContext, MessageContext messageContext)
@@ -178,7 +178,7 @@ namespace Hyperledger.Aries.Agents
 
                         var result = inboundMessageContext.Connection != null
                             ? await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
-                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked.SenderVerkey, response.ToByteArray());
+                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked?.SenderVerkey, response.ToByteArray());
                         return new PackedMessageContext(result);
                     }
                     if (inboundMessageContext.Connection != null)
