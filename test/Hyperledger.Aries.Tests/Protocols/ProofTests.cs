@@ -731,7 +731,13 @@ namespace Hyperledger.Aries.Tests.Protocols
                     Nonce = await AnonCreds.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
-                        {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
+                        {
+                            "first-name-requirement",
+                            new ProofAttributeInfo
+                            {
+                                Name = "first_name"
+                            }
+                        }
                     }
                 };
 
@@ -1542,7 +1548,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             var (issuerConnection, holderConnection) = await Scenarios.EstablishConnectionAsync(
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
-            await Scenarios.IssueCredentialAsync(
+            var (cred1, cred2) = await Scenarios.IssueCredentialAsync(
                 _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {

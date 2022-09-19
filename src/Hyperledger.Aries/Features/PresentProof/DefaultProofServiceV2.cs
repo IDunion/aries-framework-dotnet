@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
 using IndySharedRsPres = indy_shared_rs_dotnet.IndyCredx.PresentationApi;
 using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
 using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
@@ -105,30 +106,78 @@ namespace Hyperledger.Aries.Features.PresentProof
             var credentialObjects = new List<CredentialInfo>();
             var credentialEntryJsons = new List<string>();
             var credentialProofJsons = new List<string>();
-            foreach (var credId in requestedCredentials.GetCredentialIdentifiers())
+            int index = 0;
+            foreach (var attr in requestedCredentials.RequestedAttributes)
             {
-                //TODO : ??? Test
-                CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, credId);
+                CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, attr.Value.CredentialId);
                 indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
-                string recordJson = JsonConvert.SerializeObject(credentialRecord);
-                var credentialInfo = JsonConvert.DeserializeObject<CredentialInfo>(recordJson);
+                credentialObjects.Add(new CredentialInfo { SchemaId = credentialRecord.SchemaId, CredentialDefinitionId = credentialRecord.CredentialDefinitionId, RevocationRegistryId = credentialRecord.RevocationRegistryId });
 
-                credentialObjects.Add(credentialInfo);
+                RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
+                if(revRegRecord != null)
+                {
+                    string revRegDefJson = revRegRecord.RevRegDefJson;
+                    string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
 
-                RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credentialInfo.RevocationRegistryId);
-                string revRegDefJson = revRegRecord.RevRegDefJson;
-                string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+                    string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                        revRegDefJson,
+                        revRegDeltaJson,
+                        0,
+                        0,
+                        revRegRecord.TailsLocation,
+                        new CredentialRevocationState().JsonString);
 
-                string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
-                    revRegDefJson,
-                    revRegDeltaJson,
-                    0,
-                    0,
-                    revRegRecord.TailsLocation,
-                    new CredentialRevocationState().JsonString);
+                    CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
+                }
+                else
+                {
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                }
+                credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
+                {
+                    EntryIndex = index,
+                    IsPredicate = Convert.ToByte(false),
+                    Referent = attr.Key,
+                    Reveal = Convert.ToByte(attr.Value.Revealed)
+                }));
+                index += 1;
+            }
+            foreach (var pred in requestedCredentials.RequestedPredicates)
+            {
+                CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
+                indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
+                credentialObjects.Add(new CredentialInfo { SchemaId = credentialRecord.SchemaId, CredentialDefinitionId = credentialRecord.CredentialDefinitionId, RevocationRegistryId = credentialRecord.RevocationRegistryId });
 
-                CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
-                credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
+                RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
+                if (revRegRecord != null)
+                {
+                    string revRegDefJson = revRegRecord.RevRegDefJson;
+                    string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+
+                    string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                        revRegDefJson,
+                        revRegDeltaJson,
+                        0,
+                        0,
+                        revRegRecord.TailsLocation,
+                        new CredentialRevocationState().JsonString);
+
+                    CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
+                }
+                else
+                {
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                }
+                credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
+                {
+                    EntryIndex = index,
+                    IsPredicate = Convert.ToByte(true),
+                    Referent = pred.Key,
+                    Reveal = Convert.ToByte(pred.Value.Revealed)
+                }));
+                index += 1;
             }
 
             List<string> selfAttestNames = new();
@@ -139,6 +188,14 @@ namespace Hyperledger.Aries.Features.PresentProof
                 selfAttestValues.Add(pair.Value);
             }
 
+            var schemas = await BuildSchemasAsync(
+                agentContext: agentContext,
+                schemaIds: credentialObjects.Select(x => x.SchemaId).Distinct());
+
+            var definitions = await BuildCredentialDefinitionsAsync(
+                agentContext: agentContext,
+                credentialDefIds: credentialObjects.Select(x => x.CredentialDefinitionId).Distinct());
+
             var revocationStates = await BuildRevocationStatesAsync(
                 agentContext: agentContext,
                 credentialObjects: credentialObjects,
@@ -147,13 +204,13 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             string presentation = await IndySharedRsPres.CreatePresentationAsync(
                 proofRequest.ToJson(),
-                new List<string>(),
-                new List<string>(),
+                credentialEntryJsons,
+                credentialProofJsons,
                 selfAttestNames,
                 selfAttestValues,
                 await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioningRecord.MasterSecretId),
-                credentialObjects.Select(x => x.SchemaId).Distinct().ToList(),
-                credentialObjects.Select(x => x.CredentialDefinitionId).Distinct().ToList());
+                schemas,
+                definitions);
 
             return presentation;
         }
@@ -318,11 +375,14 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
-            var credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, proofRequest);
-            var result = from cred in credentials
-                         where cred.CredentialInfo.Referent == attributeReferent
-                         select cred;
-            return result.ToList();
+            var attributeInfo = await GetProofAttributeInfo(proofRequest, attributeReferent);
+            if(attributeInfo == null)
+            {
+                return new List<IssueCredential.Credential>();
+            }
+            var credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, attributeInfo);
+
+            return credentials.Where(x => CheckAttributes(x, attributeInfo) == true).ToList();
         }
 
         /// <inheritdoc />
@@ -986,53 +1046,64 @@ namespace Hyperledger.Aries.Features.PresentProof
             }
         }
 
+        private async Task<ProofAttributeInfo> GetProofAttributeInfo(ProofRequest proofRequest, string attributeReferent)
+        {
+            ProofAttributeInfo proofAttributeInfo;
+            bool found = proofRequest.RequestedAttributes.TryGetValue(attributeReferent, out proofAttributeInfo);
+            if (!found)
+            {
+                ProofPredicateInfo proofPredicateInfo;
+                proofRequest.RequestedPredicates.TryGetValue(attributeReferent, out proofPredicateInfo);
+                return proofPredicateInfo;
+            }
+            return proofAttributeInfo;
+        }
         private async Task<List<IssueCredential.Credential>> ProverSearchCredentialsForProofRequestAsync(IAgentContext agentContext,
-            ProofRequest proofRequest)
+            ProofAttributeInfo attributeInfo)
         {
             List<IssueCredential.Credential> result = new List<IssueCredential.Credential>();
 
             List<ISearchQuery> queryList = new List<ISearchQuery>();
 
-            foreach (ProofAttributeInfo attributeInfo in proofRequest.RequestedAttributes.Select(x => x.Value))
+            queryList.AddRange(await CheckRestrictions(attributeInfo.Restrictions));
+
+            ISearchQuery finalQuery;
+            if (queryList.Count > 1)
             {
-                foreach(AttributeFilter attributeFilter in attributeInfo.Restrictions)
+                finalQuery = SearchQuery.Or(queryList.ToArray());
+            }
+            else if(queryList.Count == 1)
+            {
+                finalQuery = queryList[0];
+            }
+            else
+            {
+                return result;
+            }
+
+            var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
+            foreach(var cred in credRecs)
+            {
+                if (!string.IsNullOrEmpty(cred.CredentialJson))
                 {
-                    List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
-
-                    currentQueryList.Add(SearchQuery.Equal("State", "Issued"));
-
-                    if(attributeFilter.SchemaId != null)
-                    {
-                        currentQueryList.Add(SearchQuery.Equal("SchemaId", attributeFilter.SchemaId));
-                    }
-                    if (attributeFilter.SchemaIssuerDid != null)
-                    {
-                        currentQueryList.Add(SearchQuery.StartsWith("SchemaId", attributeFilter.SchemaIssuerDid));
-                    }
-                    if (attributeFilter.SchemaVersion != null)
-                    {
-                        currentQueryList.Add(SearchQuery.EndsWith("SchemaId", attributeFilter.SchemaVersion));
-                    }
-                    if (attributeFilter.SchemaName != null)
-                    {
-                        currentQueryList.Add(SearchQuery.Contains("SchemaId", attributeFilter.SchemaName));
-                    }
-                    if (attributeFilter.CredentialDefinitionId != null)
-                    {
-                        currentQueryList.Add(SearchQuery.Equal("CredentialDefinitionId", attributeFilter.CredentialDefinitionId));
-                    }
-                    if (attributeFilter.IssuerDid != null)
-                    {
-                        currentQueryList.Add(SearchQuery.StartsWith("CredentialDefinitionId", attributeFilter.IssuerDid));
-                    }
-
-                    queryList.Add(SearchQuery.And(currentQueryList.ToArray()));
+                    result.Add(ConvertCredential(cred));
                 }
             }
 
-            foreach (ProofPredicateInfo predicateInfo in proofRequest.RequestedPredicates.Select(x => x.Value))
+            return result;
+        }
+
+        private async Task<List<ISearchQuery>> CheckRestrictions(IEnumerable<AttributeFilter> restrictions)
+        {
+            List<ISearchQuery> queryList = new List<ISearchQuery>();
+
+            if(restrictions == null)
             {
-                foreach (AttributeFilter attributeFilter in predicateInfo.Restrictions)
+                queryList.Add(SearchQuery.Equal("State", "Issued"));
+            }
+            else
+            {
+                foreach (AttributeFilter attributeFilter in restrictions)
                 {
                     List<ISearchQuery> currentQueryList = new List<ISearchQuery>();
 
@@ -1067,18 +1138,54 @@ namespace Hyperledger.Aries.Features.PresentProof
                 }
             }
 
-            ISearchQuery finalQuery = SearchQuery.Or(queryList.ToArray());
+            return queryList;
+        }
 
-            var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
-            foreach(var cred in credRecs)
+        private bool CheckAttributes(IssueCredential.Credential credential, ProofAttributeInfo attributeInfo)
+        {
+            if(attributeInfo.Name != null)
             {
-                if (!string.IsNullOrEmpty(cred.CredentialJson))
+                if (credential.CredentialInfo.Attributes.ContainsKey(attributeInfo.Name))
                 {
-                    result.Add(JsonConvert.DeserializeObject<IssueCredential.Credential>(cred.CredentialJson));
+                    return true;
                 }
             }
+            else if(attributeInfo.Names != null && attributeInfo.Names.Any())
+            {
+                foreach(string name in attributeInfo.Names)
+                {
+                    if (!credential.CredentialInfo.Attributes.ContainsKey(name))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
 
-            return result;
+            return false;
+        }
+
+        private IssueCredential.Credential ConvertCredential(CredentialRecord credentialRecord)
+        {
+            indy_shared_rs_dotnet.Models.Credential sharedRsCredential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
+            IssueCredential.Credential issueCredential = new IssueCredential.Credential
+            {
+                CredentialInfo = new CredentialInfo
+                {
+                    Referent = credentialRecord.Id,
+                    CredentialDefinitionId = sharedRsCredential.CredentialDefinitionId,
+                    SchemaId = sharedRsCredential.SchemaId,
+                    RevocationRegistryId = sharedRsCredential.RevocationRegistryId,
+                    Attributes = new Dictionary<string, string>()
+                } 
+            };
+
+            foreach(var keyValuePair in sharedRsCredential.Values)
+            {
+                issueCredential.CredentialInfo.Attributes.Add(keyValuePair.Key, keyValuePair.Value.Raw);
+            }
+
+            return issueCredential;
         }
 
         /*private async Task<string> GetRecordJson(IAgentContext agentContext, string recordId)
