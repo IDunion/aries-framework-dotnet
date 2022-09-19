@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
@@ -7,7 +8,6 @@ using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Payments;
-using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Utils;
 using indy_vdr_dotnet;
 using indy_vdr_dotnet.libindy_vdr;
@@ -18,7 +18,7 @@ namespace Hyperledger.Aries.Ledger
     /// <inheritdoc />
     public class DefaultLedgerServiceV2 : ILedgerService
     {
-        private readonly ISigningService _signingService;
+        private readonly ILedgerSigningService _signingService;
         private readonly IPoolService _poolService;
         private readonly IProvisioningService _provisioningService;
 
@@ -28,7 +28,7 @@ namespace Hyperledger.Aries.Ledger
         /// <param name="signingService"><see cref="ISigningService"/></param>
         /// <param name="poolService"><see cref="IPoolService"/></param>
         /// <param name="provisioningService"><see cref="IProvisioningService"/></param>
-        public DefaultLedgerServiceV2(ISigningService signingService, IPoolService poolService, IProvisioningService provisioningService)
+        public DefaultLedgerServiceV2(ILedgerSigningService signingService, IPoolService poolService, IProvisioningService provisioningService)
         {
             _signingService = signingService;
             _poolService = poolService;
@@ -222,8 +222,8 @@ namespace Hyperledger.Aries.Ledger
             }
 
             var unsignedRequest = await RequestApi.RequestGetSignatureInputAsync(requestHandle);
-            var signature = await _signingService.SignMessageAsync(context, signingDid, unsignedRequest);
-            await RequestApi.RequestSetSigantureAsync(requestHandle, signature);
+            var signature = await _signingService.SignRequestAsync(context, signingDid, unsignedRequest);
+            await RequestApi.RequestSetSigantureAsync(requestHandle, Convert.FromBase64String(signature));
 
             return await SubmitRequestAsync(context, requestHandle);
         }

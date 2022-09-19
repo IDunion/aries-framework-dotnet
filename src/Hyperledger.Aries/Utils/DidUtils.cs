@@ -463,9 +463,8 @@ namespace Hyperledger.Aries.Utils
         }
 
         /* TODO : ??? What is the difference to KeyForDidAsync?*/
-        public static async Task<string> KeyForLocalDidAsync(IAgentContext agentContext, IWalletRecordService recordService, string did)
+        public static async Task<string> KeyForLocalDidAsync(AriesStorage storage, IWalletRecordService recordService, string did)
         {
-            AriesStorage storage = agentContext.AriesStorage;
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
             return didRecord?.Verkey;
         }

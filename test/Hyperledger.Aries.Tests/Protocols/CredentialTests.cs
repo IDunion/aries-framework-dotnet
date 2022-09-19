@@ -17,7 +17,6 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Runtime;
-using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.TestHarness;
 using Hyperledger.Aries.Utils;
@@ -546,7 +545,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             var provisioning = ServiceUtils.GetDefaultMockProvisioningService();
 
             var ledgerService = new DefaultLedgerServiceV2(
-                new DefaultSigningServiceV2(_recordService),
+                new DefaultLedgerSigningServiceV2(_recordService),
                 _poolService,
                 provisioning);
 
