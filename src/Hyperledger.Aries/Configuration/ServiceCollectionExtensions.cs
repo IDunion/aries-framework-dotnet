@@ -12,7 +12,6 @@ using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Runtime;
-using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -103,7 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.AddSingleton<IWalletService, DefaultWalletServiceV2>();
             builder.AddSingleton<ILedgerService, DefaultLedgerServiceV2>();
             builder.AddSingleton<IPoolService, DefaultPoolServiceV2>();
-            builder.AddSingleton<ISigningService, DefaultSigningServiceV2>();
+            builder.AddSingleton<ILedgerSigningService, DefaultLedgerSigningServiceV2>();
 
             return builder;
         }

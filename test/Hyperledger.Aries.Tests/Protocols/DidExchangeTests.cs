@@ -5,7 +5,6 @@ using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Runtime;
-using Hyperledger.Aries.Signatures;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
@@ -190,7 +189,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             IProvisioningService provisioningService = ServiceUtils.GetDefaultMockProvisioningService();
 
-            ISigningService signingService = new DefaultSigningServiceV2(recordService);
+            ILedgerSigningService signingService = new DefaultLedgerSigningServiceV2(recordService);
             IPoolService poolService = new DefaultPoolServiceV2();
             ILedgerService ledgerService = new DefaultLedgerServiceV2(
                 signingService,
