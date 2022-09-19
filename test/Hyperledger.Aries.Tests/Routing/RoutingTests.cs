@@ -11,6 +11,7 @@ using Hyperledger.Aries.Routing.Edge;
 using Hyperledger.Aries.Routing.Mediator;
 using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Models;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Mock;
 using Hyperledger.TestHarness.Utils;
@@ -19,6 +20,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -137,7 +139,7 @@ namespace Hyperledger.Aries.Tests.Routing
             IEventAggregator eventAggregator = new EventAggregator();
             IPoolService poolService = new DefaultPoolServiceV2();
             IMessageService messageService = new Mock<IMessageService>().Object;
-            Mock<IEdgeClientService> mockEdgeClientService = new Mock<IEdgeClientService>();
+            Mock<IEdgeClientService> mockEdgeClientService = new();
             mockEdgeClientService.Setup(x => x.DiscoverConfigurationAsync(It.IsAny<string>())).Returns(Task.FromResult(new AgentPublicConfiguration
             {
                 ServiceEndpoint = TestConstants.DefaultMockUri,
@@ -145,6 +147,12 @@ namespace Hyperledger.Aries.Tests.Routing
                 Invitation = new Features.Handshakes.Connection.Models.ConnectionInvitationMessage()
             }
             )) ;
+
+            Mock<IProvisioningService> mockProvisioningService = new();
+            mockProvisioningService.Setup(x => x.GetProvisioningAsync(It.IsAny<AriesStorage>())).Returns(Task.FromResult(new ProvisioningRecord
+            {
+                Tags = new Dictionary<string, string>() { ["MediatorConnectionId"] = "connectionId" }
+            }));
 
             _recordService = new DefaultWalletRecordServiceV2();
             _walletService = new DefaultWalletServiceV2();
@@ -177,7 +185,7 @@ namespace Hyperledger.Aries.Tests.Routing
                 );
 
             _edgeProvisioningService = new EdgeProvisioningServiceV2(
-                _provisioningService,
+                mockProvisioningService.Object,
                 _connectionService,
                 messageService,
                 mockEdgeClientService.Object,
@@ -289,9 +297,10 @@ namespace Hyperledger.Aries.Tests.Routing
             // Arrange
 
             // Act
-            await _edgeProvisioningService.ProvisionAsync();
+            var act = async () => await _edgeProvisioningService.ProvisionAsync();
 
             // Assert
+            await act.Should().NotThrowAsync<Exception>();
         }
 
         public async Task DisposeAsync()
