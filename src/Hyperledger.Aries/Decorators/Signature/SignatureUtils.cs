@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;

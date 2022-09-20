@@ -11,7 +11,6 @@ using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Common.Dids;
 using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
-using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.TestHarness;
 using Hyperledger.Aries.Utils;
@@ -23,6 +22,7 @@ using Moq;
 using Xunit;
 using static Hyperledger.Aries.Tests.SchemaServiceTests;
 using Microsoft.Extensions.DependencyInjection;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {

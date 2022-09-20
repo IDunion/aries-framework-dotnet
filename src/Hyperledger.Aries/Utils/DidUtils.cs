@@ -1,5 +1,6 @@
 ﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Storage;

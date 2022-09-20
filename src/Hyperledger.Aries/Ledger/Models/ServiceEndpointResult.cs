@@ -9,7 +9,7 @@ namespace Hyperledger.Aries.Ledger.Models
     {
         [JsonProperty("endpoint")]
         public ServiceEndpoint Result { get; set; }
-        
+
         /// <summary>
         /// Service endpoint
         /// </summary>

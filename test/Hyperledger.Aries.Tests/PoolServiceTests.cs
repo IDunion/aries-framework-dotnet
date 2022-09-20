@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.TestHarness;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

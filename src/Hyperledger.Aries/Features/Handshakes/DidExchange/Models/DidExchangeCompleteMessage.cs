@@ -1,5 +1,5 @@
-using System;
 using Hyperledger.Aries.Agents;
+using System;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange.Models
 {

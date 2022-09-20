@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text.Json.Serialization;
 
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.Ledger.Models
 {
     /// <summary>
     /// Constraint metadata

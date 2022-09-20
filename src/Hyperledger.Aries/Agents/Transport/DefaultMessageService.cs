@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Decorators.Transport;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;

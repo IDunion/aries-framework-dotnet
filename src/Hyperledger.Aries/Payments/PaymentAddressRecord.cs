@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Hyperledger.Aries.Storage.Records;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hyperledger.Aries.Storage;
-using Newtonsoft.Json;
 // ReSharper disable VirtualMemberCallInConstructor
 
 namespace Hyperledger.Aries.Payments

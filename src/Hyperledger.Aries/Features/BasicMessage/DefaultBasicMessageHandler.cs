@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Storage;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Storage;
 
 namespace Hyperledger.Aries.Features.BasicMessage
 {
@@ -34,12 +34,12 @@ namespace Hyperledger.Aries.Features.BasicMessage
         /// <returns></returns>
         protected override async Task<AgentMessage> ProcessAsync(BasicMessage message, IAgentContext agentContext, UnpackedMessageContext messageContext)
         {
-            var record = new BasicMessageRecord
+            BasicMessageRecord record = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 ConnectionId = messageContext.Connection.Id,
                 Text = message.Content,
-                SentTime = DateTime.TryParse(message.SentTime, out var dateTime) ? dateTime : DateTime.UtcNow,
+                SentTime = DateTime.TryParse(message.SentTime, out DateTime dateTime) ? dateTime : DateTime.UtcNow,
                 Direction = MessageDirection.Incoming
             };
             await _recordService.AddAsync(agentContext.AriesStorage, record);

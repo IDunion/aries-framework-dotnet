@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Utils;
 

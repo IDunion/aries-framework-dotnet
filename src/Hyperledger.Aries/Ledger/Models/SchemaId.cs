@@ -5,9 +5,9 @@ namespace Hyperledger.Aries.Ledger.Models
         public string Did { get; }
 
         public int TxnId => 2;
-        
+
         public string Name { get; }
-        
+
         public string Version { get; }
 
         public override string ToString()
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Ledger.Models
 
         public SchemaId(string schemaId)
         {
-            var parts = schemaId.Split(':');
+            string[] parts = schemaId.Split(':');
             Did = parts[0];
             Name = parts[2];
             Version = parts[3];

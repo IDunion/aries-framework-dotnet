@@ -1,10 +1,11 @@
-using System;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger.Models;
 using indy_vdr_dotnet.libindy_vdr;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -12,26 +13,26 @@ namespace Hyperledger.Aries.Ledger
     {
         /// <summary>Collection of active pool handles.</summary>
         protected static readonly ConcurrentDictionary<string, AriesPool> Pools =
-            new ConcurrentDictionary<string, AriesPool>();
+            new();
 
         /// <summary>
         /// Concurrent collection of txn author agreements
         /// </summary>
         /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyTaa> Taas =
-            new ConcurrentDictionary<string, IndyTaa>();
+            new();
 
         /// <summary>
         /// Concurrent collection of acceptance mechanisms lists
         /// </summary>
         /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyAml> Amls =
-            new ConcurrentDictionary<string, IndyAml>();
+            new();
 
         /// <inheritdoc />
         public async Task<AriesPool> GetPoolAsync(string poolName, int protocolVersion)
         {
-            await ModApi.SetProtocolVersionAsync(protocolVersion);
+            _ = await ModApi.SetProtocolVersionAsync(protocolVersion);
 
             return await GetPoolAsync(poolName);
         }
@@ -39,38 +40,33 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public Task<AriesPool> GetPoolAsync(string poolName)
         {
-            if (Pools.TryGetValue(poolName, out var pool))
-            {
-                return Task.FromResult(pool);
-            }
-
-            throw new AriesFrameworkException(ErrorCode.PoolNotFound, $"Pool {poolName} not found");
+            return Pools.TryGetValue(poolName, out AriesPool pool)
+                ? Task.FromResult(pool)
+                : throw new AriesFrameworkException(ErrorCode.PoolNotFound, $"Pool {poolName} not found");
         }
 
         /// <inheritdoc />
         public async Task<IndyTaa> GetTaaAsync(string poolName)
         {
-            if (Taas.TryGetValue(poolName, out var taa))
+            if (Taas.TryGetValue(poolName, out IndyTaa taa))
             {
                 return taa;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
-            var req = await LedgerApi.BuildGetTxnAuthorAgreementRequestAsync();
-            var res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
+            AriesPool pool = await GetPoolAsync(poolName, 2);
+            IntPtr req = await LedgerApi.BuildGetTxnAuthorAgreementRequestAsync();
+            string res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
 
-            var jresponse = JObject.Parse(res);
-            if (jresponse["result"]["data"].HasValues)
-            {
-                taa = new IndyTaa
+            JObject jresponse = JObject.Parse(res);
+            taa = jresponse["result"]["data"].HasValues
+                ? new IndyTaa
                 {
                     Text = jresponse["result"]["data"]["text"].ToString(),
                     Version = jresponse["result"]["data"]["version"].ToString()
-                };
-            }
-            else taa = null;
+                }
+                : null;
 
-            Taas.TryAdd(poolName, taa);
+            _ = Taas.TryAdd(poolName, taa);
 
             return taa;
         }
@@ -78,24 +74,20 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<IndyAml> GetAmlAsync(string poolName, DateTimeOffset timestamp = default, string version = null)
         {
-            if (Amls.TryGetValue(poolName, out var aml))
+            if (Amls.TryGetValue(poolName, out IndyAml aml))
             {
                 return aml;
             }
 
-            var pool = await GetPoolAsync(poolName, 2);
-            var req = await LedgerApi.BuildGetAcceptanceMechanismsRequestAsync(
+            AriesPool pool = await GetPoolAsync(poolName, 2);
+            IntPtr req = await LedgerApi.BuildGetAcceptanceMechanismsRequestAsync(
                 timestamp: timestamp == DateTimeOffset.MinValue ? -1 : timestamp.ToUnixTimeSeconds(),
                 version: version);
-            var res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
+            string res = await SubmitRequestAsync(PoolAwaitable.FromPool(pool), req);
 
-            var jresponse = JObject.Parse(res);
-            if (jresponse["result"]["data"].HasValues)
-            {
-                aml = jresponse["result"]["data"].ToObject<IndyAml>();
-            }
-            else aml = null;
-            Amls.TryAdd(poolName, aml);
+            JObject jresponse = JObject.Parse(res);
+            aml = jresponse["result"]["data"].HasValues ? jresponse["result"]["data"].ToObject<IndyAml>() : null;
+            _ = Amls.TryAdd(poolName, aml);
 
             return aml;
         }
@@ -103,10 +95,10 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task CreatePoolAsync(string poolName, string genesisFile)
         {
-            await ModApi.SetProtocolVersionAsync(2);
-            var poolHandle = await PoolApi.CreatePoolAsync(transactionsPath: genesisFile);
+            _ = await ModApi.SetProtocolVersionAsync(2);
+            IntPtr poolHandle = await PoolApi.CreatePoolAsync(transactionsPath: genesisFile);
 
-            Pools.TryAdd(poolName, new AriesPool(poolHandle: poolHandle));
+            _ = Pools.TryAdd(poolName, new AriesPool(poolHandle: poolHandle));
         }
 
         /// <inheritdoc />
@@ -115,7 +107,7 @@ namespace Hyperledger.Aries.Ledger
 
             if ((await poolHandle).PoolHandle is IntPtr pHandle && requestHandle is IntPtr reqHandle)
             {
-                var response = await PoolApi.SubmitPoolRequestAsync(pHandle, reqHandle);
+                string response = await PoolApi.SubmitPoolRequestAsync(pHandle, reqHandle);
                 EnsureSuccessResponse(response);
                 return response;
             }
@@ -125,10 +117,12 @@ namespace Hyperledger.Aries.Ledger
 
         private void EnsureSuccessResponse(string res)
         {
-            var response = JObject.Parse(res);
+            JObject response = JObject.Parse(res);
 
             if (!response["op"]!.ToObject<string>()!.Equals("reply", StringComparison.OrdinalIgnoreCase))
+            {
                 throw new AriesFrameworkException(ErrorCode.LedgerOperationRejected, "Ledger operation rejected");
+            }
         }
     }
 }

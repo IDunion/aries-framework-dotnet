@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.Ledger.Models
 {
     /// <summary>
     /// Indy Transaction Author Agreement Model

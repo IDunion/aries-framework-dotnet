@@ -1,21 +1,22 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.IssueCredential;
-using Newtonsoft.Json.Linq;
-using Hyperledger.Indy.AnonCredsApi;
-using System.Security.Cryptography;
-using System;
-using System.Numerics;
-using System.Threading.Tasks;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.AnonCredsApi;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Utils
 {
     /// <summary>
     /// Credential utilities
     /// </summary>
-    public class CredentialUtils
+    public static class CredentialUtils
     {
         /// <summary>
         /// Formats the credential values into three string lists usable with the <see cref="indy_shared_rs_dotnet.IndyCredx.CredentialApi"/> API
@@ -25,13 +26,14 @@ namespace Hyperledger.Aries.Utils
         public static (List<string>, List<string>, List<string>) FormatCredentialValuesForIndySharedRs(IEnumerable<CredentialPreviewAttribute> credentialAttributes)
         {
             if (credentialAttributes == null)
+            {
                 return (null, null, null);
+            }
 
-            List<string> resultAttrNames = new List<string>();
-            List<string> resultAttrNamesRaw = new List<string>();
-            List<string> resultAttrNamesEnc = new List<string>();
+            List<string> resultAttrNames = new();
+            List<string> resultAttrNamesRaw = new();
 
-            foreach (var item in credentialAttributes)
+            foreach (CredentialPreviewAttribute item in credentialAttributes)
             {
                 switch (item.MimeType)
                 {
@@ -40,12 +42,12 @@ namespace Hyperledger.Aries.Utils
                     case CredentialMimeTypes.ImagePngMimeType:
                         resultAttrNames.Add(item.Name);
                         resultAttrNamesRaw.Add((string)item.Value);
-                        break; 
+                        break;
                     default:
                         throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"{item.Name} mime type of {item.MimeType} not supported");
                 }
             }
-            resultAttrNamesEnc = indy_shared_rs_dotnet.IndyCredx.CredentialApi.EncodeCredentialAttributesAsync(resultAttrNamesRaw).GetAwaiter().GetResult();
+            List<string> resultAttrNamesEnc = indy_shared_rs_dotnet.IndyCredx.CredentialApi.EncodeCredentialAttributesAsync(resultAttrNamesRaw).GetAwaiter().GetResult();
             return (resultAttrNames, resultAttrNamesRaw, resultAttrNamesEnc);
         }
 
@@ -57,10 +59,12 @@ namespace Hyperledger.Aries.Utils
         public static string FormatCredentialValues(IEnumerable<CredentialPreviewAttribute> credentialAttributes)
         {
             if (credentialAttributes == null)
+            {
                 return null;
+            }
 
-            var result = new Dictionary<string, Dictionary<string, string>>();
-            foreach (var item in credentialAttributes)
+            Dictionary<string, Dictionary<string, string>> result = new();
+            foreach (CredentialPreviewAttribute item in credentialAttributes)
             {
                 switch (item.MimeType)
                 {
@@ -76,7 +80,7 @@ namespace Hyperledger.Aries.Utils
             return result.ToJson();
         }
 
-        static SHA256 sha256 = SHA256.Create();
+        private static readonly SHA256 sha256 = SHA256.Create();
         private static Dictionary<string, string> FormatStringCredentialAttribute(CredentialPreviewAttribute attribute)
         {
             return new Dictionary<string, string>()
@@ -88,10 +92,17 @@ namespace Hyperledger.Aries.Utils
 
         internal static string GetEncoded(string value)
         {
-            if (string.IsNullOrWhiteSpace(value)) value = string.Empty;
-            if (int.TryParse(value, out var result)) return result.ToString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                value = string.Empty;
+            }
 
-            var data = new byte[] { 0 }
+            if (int.TryParse(value, out int result))
+            {
+                return result.ToString();
+            }
+
+            byte[] data = new byte[] { 0 }
                 .Concat(sha256.ComputeHash(value.GetUTF8Bytes()))
                 .ToArray();
 
@@ -118,9 +129,12 @@ namespace Hyperledger.Aries.Utils
         /// <returns></returns>
         public static bool CheckValidEncoding(string raw, string encoded)
         {
-            if (string.IsNullOrWhiteSpace(raw)) raw = string.Empty;
-            if (int.TryParse(raw, out var _)) return string.CompareOrdinal(raw, encoded) == 0;
-            return string.CompareOrdinal(encoded, GetEncoded(raw)) == 0;
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                raw = string.Empty;
+            }
+
+            return int.TryParse(raw, out int _) ? string.CompareOrdinal(raw, encoded) == 0 : string.CompareOrdinal(encoded, GetEncoded(raw)) == 0;
         }
 
         /// <summary>
@@ -147,9 +161,9 @@ namespace Hyperledger.Aries.Utils
         /// <param name="attributes">Credential preview attributes.</param>
         public static void ValidateCredentialPreviewAttributes(IEnumerable<CredentialPreviewAttribute> attributes)
         {
-            var validationErrors = new List<string>();
+            List<string> validationErrors = new();
 
-            foreach (var attribute in attributes)
+            foreach (CredentialPreviewAttribute attribute in attributes)
             {
                 try
                 {
@@ -162,7 +176,9 @@ namespace Hyperledger.Aries.Utils
             }
 
             if (validationErrors.Any())
+            {
                 throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, validationErrors.ToArray());
+            }
         }
 
         /// <summary>
@@ -173,15 +189,11 @@ namespace Hyperledger.Aries.Utils
         /// <returns></returns>
         public static object CastAttribute(object attributeValue, string mimeType)
         {
-            switch (mimeType)
+            return mimeType switch
             {
-                case CredentialMimeTypes.TextMimeType:
-                case CredentialMimeTypes.ApplicationJsonMimeType:
-                case CredentialMimeTypes.ImagePngMimeType:
-                    return (string)attributeValue;
-                default:
-                    throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Mime type of {mimeType} not supported");
-            }
+                CredentialMimeTypes.TextMimeType or CredentialMimeTypes.ApplicationJsonMimeType or CredentialMimeTypes.ImagePngMimeType => (string)attributeValue,
+                _ => throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Mime type of {mimeType} not supported"),
+            };
         }
 
         /// <summary>
@@ -192,17 +204,12 @@ namespace Hyperledger.Aries.Utils
         /// <returns></returns>
         public static object CastAttribute(JToken attributeValue, string mimeType)
         {
-            switch (mimeType)
+            return mimeType switch
             {
-                case null:
-                    return attributeValue.Value<string>();
-                case CredentialMimeTypes.TextMimeType:
-                case CredentialMimeTypes.ApplicationJsonMimeType:
-                case CredentialMimeTypes.ImagePngMimeType:
-                    return attributeValue.Value<string>();
-                default:
-                    throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Mime type of {mimeType} not supported");
-            }
+                null => attributeValue.Value<string>(),
+                CredentialMimeTypes.TextMimeType or CredentialMimeTypes.ApplicationJsonMimeType or CredentialMimeTypes.ImagePngMimeType => attributeValue.Value<string>(),
+                _ => throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Mime type of {mimeType} not supported"),
+            };
         }
 
         /// <summary>
@@ -213,13 +220,17 @@ namespace Hyperledger.Aries.Utils
         public static Dictionary<string, string> GetAttributes(string jsonAttributeValues)
         {
             if (string.IsNullOrEmpty(jsonAttributeValues))
+            {
                 return new Dictionary<string, string>();
+            }
 
-            var attributes = JObject.Parse(jsonAttributeValues);
+            JObject attributes = JObject.Parse(jsonAttributeValues);
 
-            var result = new Dictionary<string, string>();
-            foreach (var attribute in attributes)
+            Dictionary<string, string> result = new();
+            foreach (KeyValuePair<string, JToken> attribute in attributes)
+            {
                 result.Add(attribute.Key, attribute.Value["raw"].ToString());
+            }
 
             return result;
         }

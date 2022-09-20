@@ -1,3 +1,4 @@
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Newtonsoft.Json;

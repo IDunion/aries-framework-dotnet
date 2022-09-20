@@ -1,12 +1,14 @@
 ﻿using Flurl;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Features.IssueCredential.Records;
-using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.Payments.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using indy_shared_rs_dotnet.Models;

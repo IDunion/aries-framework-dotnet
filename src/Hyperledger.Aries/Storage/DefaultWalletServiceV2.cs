@@ -1,4 +1,5 @@
 ﻿using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Storage.Models;
 using System;
 using System.Collections.Concurrent;

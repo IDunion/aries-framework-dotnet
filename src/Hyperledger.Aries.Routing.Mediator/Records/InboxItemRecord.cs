@@ -1,4 +1,4 @@
-﻿using Hyperledger.Aries.Storage;
+﻿using Hyperledger.Aries.Storage.Records;
 using System;
 
 namespace Hyperledger.Aries.Routing

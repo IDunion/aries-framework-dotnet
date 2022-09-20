@@ -1,6 +1,6 @@
-﻿using System;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
 using Newtonsoft.Json;
+using System;
 
 namespace Hyperledger.Aries.Features.Discovery
 {
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Features.Discovery
         }
 
         /// <inheritdoc />
-        public DiscoveryQueryMessage(bool useMessageTypesHttps = false) : base(useMessageTypesHttps)
+        public DiscoveryQueryMessage(bool useMessageTypesHttps) : base(useMessageTypesHttps)
         {
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.DiscoveryQueryMessageType : MessageTypes.DiscoveryQueryMessageType;

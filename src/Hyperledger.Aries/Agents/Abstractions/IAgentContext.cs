@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using aries_askar_dotnet.Models;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;

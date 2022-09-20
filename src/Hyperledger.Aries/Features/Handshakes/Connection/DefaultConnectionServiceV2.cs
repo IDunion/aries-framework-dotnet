@@ -1,6 +1,6 @@
-﻿using aries_askar_dotnet.AriesAskar;
-using aries_askar_dotnet.Models;
+﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Decorators.Attachments;
@@ -16,14 +16,10 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.Logging;
-using Multiformats.Base;
-using Newtonsoft.Json;
-using Stateless.Graph;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -375,10 +371,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             connection.SetTag(TagConstants.LastThreadId, request.Id);
 
-            if (connection.Alias == null)
-            {
-                connection.Alias = new ConnectionAlias();
-            }
+            connection.Alias ??= new ConnectionAlias();
 
             if (!string.IsNullOrEmpty(request.Label) && string.IsNullOrEmpty(connection.Alias.Name))
             {

@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
+﻿using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Indy.PoolApi;
 using Newtonsoft.Json.Linq;
-using Hyperledger.Aries.Ledger.Models;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 
 namespace Hyperledger.Aries.Ledger
@@ -15,21 +16,21 @@ namespace Hyperledger.Aries.Ledger
     {
         /// <summary>Collection of active pool handles.</summary>
         protected static readonly ConcurrentDictionary<string, AriesPool> Pools =
-            new ConcurrentDictionary<string, AriesPool>();
+            new();
 
         /// <summary>
         /// Concurrent collection of txn author agreements
         /// </summary>
         /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyTaa> Taas =
-            new ConcurrentDictionary<string, IndyTaa>();
+            new();
 
         /// <summary>
         /// Concurrent collection of acceptance mechanisms lists
         /// </summary>
         /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyAml> Amls =
-            new ConcurrentDictionary<string, IndyAml>();
+            new();
 
         /// <inheritdoc />
         public virtual async Task<AriesPool> GetPoolAsync(string poolName, int protocolVersion)
@@ -46,8 +47,10 @@ namespace Hyperledger.Aries.Ledger
             {
                 return ariesPool;
             }
-            ariesPool = new AriesPool();
-            ariesPool.Pool = await Pool.OpenPoolLedgerAsync(poolName, null);
+            ariesPool = new AriesPool
+            {
+                Pool = await Pool.OpenPoolLedgerAsync(poolName, null)
+            };
 
             _ = Pools.TryAdd(poolName, ariesPool);
             return ariesPool;
@@ -56,7 +59,7 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public virtual async Task CreatePoolAsync(string poolName, string genesisFile)
         {
-            var poolConfig = new { genesis_txn = genesisFile }.ToJson();
+            string poolConfig = new { genesis_txn = genesisFile }.ToJson();
 
             await Pool.CreatePoolLedgerConfigAsync(poolName, poolConfig);
         }
@@ -70,73 +73,69 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<IndyTaa> GetTaaAsync(string poolName)
         {
-            IndyTaa ParseTaa(string response)
+            static IndyTaa ParseTaa(string response)
             {
-                var jresponse = JObject.Parse(response);
-                if (jresponse["result"]["data"].HasValues)
-                {
-                    return new IndyTaa
+                JObject jresponse = JObject.Parse(response);
+                return jresponse["result"]["data"].HasValues
+                    ? new IndyTaa
                     {
                         Text = jresponse["result"]["data"]["text"].ToString(),
                         Version = jresponse["result"]["data"]["version"].ToString()
-                    };
-                }
-                return null;
+                    }
+                    : null;
             };
 
-            if (Taas.TryGetValue(poolName, out var taa))
+            if (Taas.TryGetValue(poolName, out IndyTaa taa))
             {
                 return taa;
             }
 
-            var ariesPool = await GetPoolAsync(poolName, 2);
-            var req = await IndyLedger.BuildGetTxnAuthorAgreementRequestAsync(null, null);
-            var res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
+            AriesPool ariesPool = await GetPoolAsync(poolName, 2);
+            string req = await IndyLedger.BuildGetTxnAuthorAgreementRequestAsync(null, null);
+            string res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
             taa = ParseTaa(res);
-            Taas.TryAdd(poolName, taa);
+            _ = Taas.TryAdd(poolName, taa);
             return taa;
         }
 
-        void EnsureSuccessResponse(string res)
+        private void EnsureSuccessResponse(string res)
         {
-            var response = JObject.Parse(res);
+            JObject response = JObject.Parse(res);
 
             if (!response["op"].ToObject<string>().Equals("reply", StringComparison.OrdinalIgnoreCase))
+            {
                 throw new AriesFrameworkException(ErrorCode.LedgerOperationRejected, "Ledger operation rejected");
+            }
         }
 
         /// <inheritdoc />
         public async Task<IndyAml> GetAmlAsync(string poolName, DateTimeOffset timestamp = default, string version = null)
         {
-            IndyAml ParseAml(string response)
+            static IndyAml ParseAml(string response)
             {
-                var jresponse = JObject.Parse(response);
-                if (jresponse["result"]["data"].HasValues)
-                {
-                    return jresponse["result"]["data"].ToObject<IndyAml>();
-                }
-                return null;
+                JObject jresponse = JObject.Parse(response);
+                return jresponse["result"]["data"].HasValues ? jresponse["result"]["data"].ToObject<IndyAml>() : null;
             };
 
-            if (Amls.TryGetValue(poolName, out var aml))
+            if (Amls.TryGetValue(poolName, out IndyAml aml))
             {
                 return aml;
             }
 
-            var ariesPool = await GetPoolAsync(poolName, 2);
-            var req = await IndyLedger.BuildGetAcceptanceMechanismsRequestAsync(
+            AriesPool ariesPool = await GetPoolAsync(poolName, 2);
+            string req = await IndyLedger.BuildGetAcceptanceMechanismsRequestAsync(
                 submitter_did: null,
                 timestamp: timestamp == DateTimeOffset.MinValue ? -1 : timestamp.ToUnixTimeSeconds(),
                 version: version);
-            var res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
+            string res = await IndyLedger.SubmitRequestAsync(ariesPool.Pool, req);
 
             EnsureSuccessResponse(res);
 
             aml = ParseAml(res);
-            Amls.TryAdd(poolName, aml);
+            _ = Amls.TryAdd(poolName, aml);
             return aml;
         }
     }

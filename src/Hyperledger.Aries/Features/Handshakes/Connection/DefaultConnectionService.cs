@@ -318,10 +318,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             connection.SetTag(TagConstants.LastThreadId, request.Id);
 
-            if (connection.Alias == null)
-            {
-                connection.Alias = new ConnectionAlias();
-            }
+            connection.Alias ??= new ConnectionAlias();
 
             if (!string.IsNullOrEmpty(request.Label) && string.IsNullOrEmpty(connection.Alias.Name))
             {
@@ -442,7 +439,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             ConnectionRecord record = await RecordService.GetAsync<ConnectionRecord>(agentContext.AriesStorage, connectionId);
 
-            return record == null ? throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Connection record not found") : record;
+            return record ?? throw new AriesFrameworkException(ErrorCode.RecordNotFound, "Connection record not found");
         }
 
         /// <inheritdoc />

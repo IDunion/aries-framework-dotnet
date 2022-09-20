@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.Ledger.Models
 {
     /// <summary>
     /// Awaitable pool handle.

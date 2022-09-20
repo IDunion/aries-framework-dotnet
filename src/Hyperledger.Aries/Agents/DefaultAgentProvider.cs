@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;

@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Stateless;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.Common
 {
@@ -42,7 +42,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Common
         /// <returns></returns>
         public ConnectionRecord DeepCopy()
         {
-            var copy = (ConnectionRecord)MemberwiseClone();
+            ConnectionRecord copy = (ConnectionRecord)MemberwiseClone();
             copy.Alias = new ConnectionAlias(Alias);
             copy.Endpoint = new AgentEndpoint(Endpoint);
             copy.Tags = new Dictionary<string, string>(Tags);
@@ -168,21 +168,24 @@ namespace Hyperledger.Aries.Features.Handshakes.Common
         /// </summary>
         /// <returns>The async.</returns>
         /// <param name="trigger">Trigger.</param>
-        public Task TriggerAsync(ConnectionTrigger trigger) => GetStateMachine().FireAsync(trigger);
+        public Task TriggerAsync(ConnectionTrigger trigger)
+        {
+            return GetStateMachine().FireAsync(trigger);
+        }
 
         private StateMachine<ConnectionState, ConnectionTrigger> GetStateMachine()
         {
-            var state = new StateMachine<ConnectionState, ConnectionTrigger>(() => State, x => State = x);
+            StateMachine<ConnectionState, ConnectionTrigger> state = new(() => State, x => State = x);
 #pragma warning disable CS0618
-            state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.InvitationAccept, ConnectionState.Negotiating);
+            _ = state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.InvitationAccept, ConnectionState.Negotiating);
 #pragma warning restore CS0618
-            state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.Request, ConnectionState.Negotiating);
-            state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
-            state.Configure(ConnectionState.Negotiating).Permit(ConnectionTrigger.Response, ConnectionState.Connected);
-            state.Configure(ConnectionState.Negotiating).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
-            state.Configure(ConnectionState.Connected).Ignore(ConnectionTrigger.Complete);
-            state.Configure(ConnectionState.Connected).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
-            state.Configure(ConnectionState.Abandoned).Ignore(ConnectionTrigger.Abandon);
+            _ = state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.Request, ConnectionState.Negotiating);
+            _ = state.Configure(ConnectionState.Invited).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
+            _ = state.Configure(ConnectionState.Negotiating).Permit(ConnectionTrigger.Response, ConnectionState.Connected);
+            _ = state.Configure(ConnectionState.Negotiating).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
+            _ = state.Configure(ConnectionState.Connected).Ignore(ConnectionTrigger.Complete);
+            _ = state.Configure(ConnectionState.Connected).Permit(ConnectionTrigger.Abandon, ConnectionState.Abandoned);
+            _ = state.Configure(ConnectionState.Abandoned).Ignore(ConnectionTrigger.Abandon);
 
             return state;
         }

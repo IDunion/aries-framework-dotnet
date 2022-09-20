@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Ledger.Abstractions;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
@@ -11,7 +11,7 @@ namespace Hyperledger.Aries.Ledger
 {
     internal class DefaultLedgerSigningServiceV2 : ILedgerSigningService
     {
-        private IWalletRecordService _recordService;
+        private readonly IWalletRecordService _recordService;
 
         public DefaultLedgerSigningServiceV2(IWalletRecordService recordService)
         {
@@ -32,7 +32,7 @@ namespace Hyperledger.Aries.Ledger
 
         public async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
         {
-            var sig = await SignRequestAsync(context, submitterDid, Encoding.UTF8.GetBytes(requestJson));
+            byte[] sig = await SignRequestAsync(context, submitterDid, Encoding.UTF8.GetBytes(requestJson));
             return Convert.ToBase64String(sig);
         }
 

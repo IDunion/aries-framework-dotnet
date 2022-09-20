@@ -1,15 +1,17 @@
-﻿using System;
+﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.PresentProof;
+using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.Storage.Records;
+using Hyperledger.Aries.Storage.Records.Search;
+using Hyperledger.Indy.NonSecretsApi;
+using Hyperledger.Indy.WalletApi;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Features.PresentProof;
-using Hyperledger.Aries.Storage.Models;
-using Hyperledger.Indy.NonSecretsApi;
-using Hyperledger.Indy.WalletApi;
-using Newtonsoft.Json;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -51,26 +53,28 @@ namespace Hyperledger.Aries.Storage
         public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
             where T : RecordBase, new()
         {
-            using (var search = await NonSecrets.OpenSearchAsync(storage.Wallet, new T().TypeName,
+            using WalletSearch search = await NonSecrets.OpenSearchAsync(storage.Wallet, new T().TypeName,
                 (query ?? SearchQuery.Empty).ToJson(),
-                (options ?? new SearchOptions()).ToJson()))
+                (options ?? new SearchOptions()).ToJson());
+            if (skip > 0)
             {
-                if(skip > 0) {
-                    await search.NextAsync(storage.Wallet, skip);
-                }
-                var result = JsonConvert.DeserializeObject<SearchResult>(await search.NextAsync(storage.Wallet, count), _jsonSettings);
-
-                return result.Records?
-                           .Select(x =>
-                           {
-                               var record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
-                               foreach (var tag in x.Tags)
-                                   record.Tags[tag.Key] = tag.Value;
-                               return record;
-                           })
-                           .ToList()
-                       ?? new List<T>();
+                _ = await search.NextAsync(storage.Wallet, skip);
             }
+            SearchResult result = JsonConvert.DeserializeObject<SearchResult>(await search.NextAsync(storage.Wallet, count), _jsonSettings);
+
+            return result.Records?
+                       .Select(x =>
+                       {
+                           T record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
+                           foreach (KeyValuePair<string, string> tag in x.Tags)
+                           {
+                               record.Tags[tag.Key] = tag.Value;
+                           }
+
+                           return record;
+                       })
+                       .ToList()
+                   ?? new List<T>();
         }
 
         /// <inheritdoc />
@@ -94,19 +98,24 @@ namespace Hyperledger.Aries.Storage
         {
             try
             {
-                var recordJson = await NonSecrets.GetRecordAsync(storage.Wallet,
+                string recordJson = await NonSecrets.GetRecordAsync(storage.Wallet,
                     new T().TypeName,
                     id,
                     new SearchOptions().ToJson());
 
-                if (recordJson == null) return null;
+                if (recordJson == null)
+                {
+                    return null;
+                }
 
-                var item = JsonConvert.DeserializeObject<SearchItem>(recordJson, _jsonSettings);
+                SearchItem item = JsonConvert.DeserializeObject<SearchItem>(recordJson, _jsonSettings);
 
-                var record = JsonConvert.DeserializeObject<T>(item.Value, _jsonSettings);
+                T record = JsonConvert.DeserializeObject<T>(item.Value, _jsonSettings);
 
-                foreach (var tag in item.Tags)
+                foreach (KeyValuePair<string, string> tag in item.Tags)
+                {
                     record.Tags[tag.Key] = tag.Value;
+                }
 
                 return record;
             }
@@ -121,8 +130,8 @@ namespace Hyperledger.Aries.Storage
         {
             try
             {
-                var record = await GetAsync<T>(storage, id);
-                var typeName = new T().TypeName;
+                T record = await GetAsync<T>(storage, id);
+                string typeName = new T().TypeName;
 
                 await NonSecrets.DeleteRecordTagsAsync(
                     wallet: storage.Wallet,

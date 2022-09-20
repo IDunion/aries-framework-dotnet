@@ -1,4 +1,4 @@
-﻿using Hyperledger.Aries.Ledger;
+﻿using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage.Models;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -1,9 +1,9 @@
-﻿using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Extensions;
+﻿using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -14,12 +14,12 @@ namespace Hyperledger.Aries.Storage
         /// Dictionary of open wallets
         /// </summary>
         protected static readonly ConcurrentDictionary<string, AriesStorage> Storages =
-            new ConcurrentDictionary<string, AriesStorage>();
+            new();
 
         /// <summary>
         /// Mutex semaphore for opening a new (not cached) wallet
         /// </summary>
-        private static readonly SemaphoreSlim OpenWalletSemaphore = new SemaphoreSlim(1,1);
+        private static readonly SemaphoreSlim OpenWalletSemaphore = new(1, 1);
 
         /// <inheritdoc />
         public virtual async Task<AriesStorage> GetWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
@@ -46,12 +46,12 @@ namespace Hyperledger.Aries.Storage
                 if (ariesStorage.Wallet == null)
                 {
                     ariesStorage.Wallet = await Wallet.OpenWalletAsync(configuration.ToJson(), credentials.ToJson());
-                    Storages.TryAdd(configuration.Id, ariesStorage);
+                    _ = Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
             finally
             {
-                OpenWalletSemaphore.Release();
+                _ = OpenWalletSemaphore.Release();
             }
 
             return ariesStorage;
@@ -59,12 +59,14 @@ namespace Hyperledger.Aries.Storage
 
         private AriesStorage GetWalletFromCache(WalletConfiguration configuration)
         {
-            if (Storages.TryGetValue(configuration.Id, out var ariesStorage))
+            if (Storages.TryGetValue(configuration.Id, out AriesStorage ariesStorage))
             {
                 if (ariesStorage.Wallet.IsOpen)
+                {
                     return ariesStorage;
+                }
 
-                Storages.TryRemove(configuration.Id, out ariesStorage);
+                _ = Storages.TryRemove(configuration.Id, out _);
             }
             return new AriesStorage();
         }
@@ -78,10 +80,12 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            if (Storages.TryRemove(configuration.Id, out var ariesStorage))
+            if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
             {
                 if (ariesStorage.Wallet.IsOpen)
+                {
                     await ariesStorage.Wallet.CloseAsync();
+                }
 
                 ariesStorage.Wallet.Dispose();
             }

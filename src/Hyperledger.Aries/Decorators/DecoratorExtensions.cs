@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Aries;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;

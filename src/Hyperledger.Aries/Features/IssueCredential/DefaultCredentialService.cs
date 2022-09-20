@@ -14,7 +14,6 @@ using Hyperledger.Aries.Decorators.PleaseAck;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Payments;
@@ -30,6 +29,7 @@ using Hyperledger.Aries.Features.IssueCredential.Models.Messages;
 using Polly;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Features.IssueCredential.Records;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {

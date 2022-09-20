@@ -1,4 +1,5 @@
 ﻿using System;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Decorators.Threading;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Xunit;

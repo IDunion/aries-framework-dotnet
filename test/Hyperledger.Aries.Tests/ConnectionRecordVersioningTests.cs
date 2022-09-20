@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Features.Handshakes;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.TestHarness;
 using Newtonsoft.Json;
 using Xunit;

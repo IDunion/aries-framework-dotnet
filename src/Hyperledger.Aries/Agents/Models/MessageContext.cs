@@ -1,6 +1,6 @@
 ﻿using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
-using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json.Linq;
 
 namespace Hyperledger.Aries.Agents

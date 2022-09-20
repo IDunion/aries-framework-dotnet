@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Hyperledger.Aries.Payments.Models;
+using Newtonsoft.Json;
 using System;
 // ReSharper disable UseDeconstructionOnParameter
 

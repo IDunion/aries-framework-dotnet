@@ -1,4 +1,4 @@
-﻿using Hyperledger.Aries.Payments;
+﻿using Hyperledger.Aries.Payments.Models;
 using Newtonsoft.Json;
 using System.Text.Json.Serialization;
 

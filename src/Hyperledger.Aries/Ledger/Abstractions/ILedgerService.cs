@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Ledger;
+﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger.Models;
-using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.Payments.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Contracts
 {

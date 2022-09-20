@@ -1,7 +1,9 @@
 ﻿using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.TestHarness;
 using Xunit;
 

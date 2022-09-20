@@ -35,12 +35,12 @@ namespace Hyperledger.Aries.Utils
     /// </summary>
     public static class Base64UrlEncoder
     {
-        private static char base64PadCharacter = '=';
-        private static string doubleBase64PadCharacter = "==";
-        private static char base64Character62 = '+';
-        private static char base64Character63 = '/';
-        private static char base64UrlCharacter62 = '-';
-        private static char _base64UrlCharacter63 = '_';
+        private static readonly char base64PadCharacter = '=';
+        private static readonly string doubleBase64PadCharacter = "==";
+        private static readonly char base64Character62 = '+';
+        private static readonly char base64Character63 = '/';
+        private static readonly char base64UrlCharacter62 = '-';
+        private static readonly char _base64UrlCharacter63 = '_';
 
         /// <summary>
         /// The following functions perform base64url encoding which differs from regular base64 encoding as follows
@@ -52,10 +52,7 @@ namespace Hyperledger.Aries.Utils
         /// <returns>Base64Url encoding of the UTF8 bytes.</returns>
         public static string Encode(string arg)
         {
-            if (arg == null)
-                throw new ArgumentNullException(nameof(arg));
-
-            return Encode(Encoding.UTF8.GetBytes(arg));
+            return arg == null ? throw new ArgumentNullException(nameof(arg)) : Encode(Encoding.UTF8.GetBytes(arg));
         }
 
         /// <summary>
@@ -102,7 +99,7 @@ namespace Hyperledger.Aries.Utils
             s = s.Replace(base64Character62, base64UrlCharacter62);  // 62nd char of encoding
             s = s.Replace(base64Character63, _base64UrlCharacter63);  // 63rd char of encoding
 
-            s = s.PadRight(s.Length + (4 - s.Length % 4) % 4, '=');
+            s = s.PadRight(s.Length + ((4 - (s.Length % 4)) % 4), '=');
 
             return s;
         }

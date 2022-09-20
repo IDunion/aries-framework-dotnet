@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Hyperledger.Aries.Payments
+namespace Hyperledger.Aries.Payments.Models
 {
     /// <summary>
     /// Payment amount

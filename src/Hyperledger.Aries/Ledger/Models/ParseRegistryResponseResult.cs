@@ -22,9 +22,9 @@ namespace Hyperledger.Aries.Ledger.Models
         /// <param name="timestamp">Timestamp.</param>
         internal ParseRegistryResponseResult(string id, string objectJson, ulong timestamp)
         {
-            this.Id = id;
-            this.ObjectJson = objectJson;
-            this.Timestamp = timestamp;
+            Id = id;
+            ObjectJson = objectJson;
+            Timestamp = timestamp;
         }
     }
 }

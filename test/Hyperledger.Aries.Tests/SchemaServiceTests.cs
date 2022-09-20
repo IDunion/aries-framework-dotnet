@@ -5,6 +5,7 @@ using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.TestHarness;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

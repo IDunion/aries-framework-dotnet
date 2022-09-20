@@ -1,8 +1,9 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Utils;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -27,7 +28,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// </value>
         public IEnumerable<MessageType> SupportedMessageTypes => new MessageType[]
         {
-            MessageTypes.ConnectionAcknowledgement, 
+            MessageTypes.ConnectionAcknowledgement,
             MessageTypes.ConnectionInvitation,
             MessageTypes.ConnectionRequest,
             MessageTypes.ConnectionResponse,
@@ -51,30 +52,30 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 case MessageTypesHttps.ConnectionAcknowledgement:
                 case MessageTypes.ConnectionAcknowledgement:
                     {
-                        var acknowledgementMessage = messageContext.GetMessage<ConnectionAcknowledgeMessage>();
-                        await _connectionService.ProcessAcknowledgementMessageAsync(agentContext, acknowledgementMessage);
+                        ConnectionAcknowledgeMessage acknowledgementMessage = messageContext.GetMessage<ConnectionAcknowledgeMessage>();
+                        _ = await _connectionService.ProcessAcknowledgementMessageAsync(agentContext, acknowledgementMessage);
                         return null;
                     }
-                
+
                 case MessageTypesHttps.ConnectionInvitation:
                 case MessageTypes.ConnectionInvitation:
                     {
-                        var invitation = messageContext.GetMessage<ConnectionInvitationMessage>();
-                        await _connectionService.ProcessInvitationAsync(agentContext, invitation);
+                        ConnectionInvitationMessage invitation = messageContext.GetMessage<ConnectionInvitationMessage>();
+                        _ = await _connectionService.ProcessInvitationAsync(agentContext, invitation);
                         return null;
                     }
 
                 case MessageTypesHttps.ConnectionRequest:
                 case MessageTypes.ConnectionRequest:
                     {
-                        var request = messageContext.GetMessage<ConnectionRequestMessage>();
-                        var connectionId = await _connectionService.ProcessRequestAsync(agentContext, request, messageContext.Connection);
+                        ConnectionRequestMessage request = messageContext.GetMessage<ConnectionRequestMessage>();
+                        string connectionId = await _connectionService.ProcessRequestAsync(agentContext, request, messageContext.Connection);
                         messageContext.ContextRecord = messageContext.Connection;
 
                         // Auto accept connection if set during invitation
                         if (messageContext.Connection.GetTag(TagConstants.AutoAcceptConnection) == "true")
                         {
-                            var (message, record) = await _connectionService.CreateResponseAsync(agentContext, connectionId);
+                            (ConnectionResponseMessage message, Common.ConnectionRecord record) = await _connectionService.CreateResponseAsync(agentContext, connectionId);
                             messageContext.ContextRecord = record;
                             return message;
                         }
@@ -84,8 +85,8 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 case MessageTypesHttps.ConnectionResponse:
                 case MessageTypes.ConnectionResponse:
                     {
-                        var response = messageContext.GetMessage<ConnectionResponseMessage>();
-                        await _connectionService.ProcessResponseAsync(agentContext, response, messageContext.Connection);
+                        ConnectionResponseMessage response = messageContext.GetMessage<ConnectionResponseMessage>();
+                        _ = await _connectionService.ProcessResponseAsync(agentContext, response, messageContext.Connection);
                         messageContext.ContextRecord = messageContext.Connection;
                         return null;
                     }

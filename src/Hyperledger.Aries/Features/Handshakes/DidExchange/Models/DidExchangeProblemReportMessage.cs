@@ -1,8 +1,8 @@
-using System;
-using System.Runtime.Serialization;
 using Hyperledger.Aries.Agents;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System;
+using System.Runtime.Serialization;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange.Models
 {
@@ -12,20 +12,20 @@ namespace Hyperledger.Aries.Features.Handshakes.DidExchange.Models
         private const string RequestProcessingError = "request_processing_error";
         private const string ResponseNotAccepted = "response_not_accepted";
         private const string ResponseProcessingError = "response_processing_error";
-        
+
         public DidExchangeProblemReportMessage() : base(true)
         {
             Id = Guid.NewGuid().ToString();
             Type = MessageTypesHttps.DidExchange.ProblemReport;
         }
-        
+
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty("problem-code")]
         public Error ProblemCode { get; set; }
-        
+
         [JsonProperty("explain")]
         public string Explain { get; set; }
-        
+
         public enum Error
         {
             [EnumMember(Value = DidExchangeProblemReportMessage.RequestNotAccepted)]

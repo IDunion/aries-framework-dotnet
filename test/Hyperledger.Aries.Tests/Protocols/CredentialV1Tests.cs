@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -8,6 +7,8 @@ using Hyperledger.Aries.Features.IssueCredential;
 using System.Linq;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.TestHarness;
+using Hyperledger.TestHarness;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {

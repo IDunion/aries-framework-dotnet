@@ -1,9 +1,10 @@
 ﻿using Hyperledger.Indy.DidApi;
-using Hyperledger.TestHarness;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Extensions;
 using Xunit;
 using Hyperledger.Indy;
+using Hyperledger.Aries.TestHarness;
+using Hyperledger.TestHarness;
 
 namespace Hyperledger.Aries.Tests.Routing
 {

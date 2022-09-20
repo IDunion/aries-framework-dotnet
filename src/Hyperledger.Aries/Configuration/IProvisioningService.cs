@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Common;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 

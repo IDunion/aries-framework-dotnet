@@ -2,8 +2,9 @@
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;

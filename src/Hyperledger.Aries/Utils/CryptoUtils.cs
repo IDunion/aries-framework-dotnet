@@ -1,6 +1,7 @@
 ﻿using aries_askar_dotnet;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
@@ -307,13 +308,11 @@ namespace Hyperledger.Aries.Utils
             {
                 throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
             }
-            else if (storage?.Store != null)
-            {
-                return await CreateSignatureStore(storage, recordService, myVerkey, message);
-            }
             else
             {
-                return storage?.Wallet != null ? await CreateSignatureWallet(storage.Wallet, myVerkey, message) : null;
+                return storage?.Store != null
+                    ? await CreateSignatureStore(storage, recordService, myVerkey, message)
+                    : storage?.Wallet != null ? await CreateSignatureWallet(storage.Wallet, myVerkey, message) : null;
             }
         }
 
@@ -341,14 +340,9 @@ namespace Hyperledger.Aries.Utils
         /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<bool> VerifyAsync(AriesStorage storage, string key, byte[] message, byte[] signature)
         {
-            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
-            }
-            else
-            {
-                return storage?.Store != null ? await VerifyAsyncStore(key, message, signature) : await VerifyAsyncWallet(key, message, signature);
-            }
+            return (storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null)
+                ? throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}")
+                : storage?.Store != null ? await VerifyAsyncStore(key, message, signature) : await VerifyAsyncWallet(key, message, signature);
         }
 
         private static async Task<bool> VerifyAsyncStore(string theirVerkey, byte[] message, byte[] signature)

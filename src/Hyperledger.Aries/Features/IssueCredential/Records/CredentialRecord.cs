@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Stateless;

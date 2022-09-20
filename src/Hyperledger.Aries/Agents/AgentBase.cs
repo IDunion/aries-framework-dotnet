@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.BasicMessage;
 using Hyperledger.Aries.Features.Discovery;

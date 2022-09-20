@@ -10,6 +10,7 @@ using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Models.Events;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Mock;
