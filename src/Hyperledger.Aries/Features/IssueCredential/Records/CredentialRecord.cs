@@ -57,7 +57,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// Gets or sets the credential json.
         /// </summary>
         /// <value>Json of the credential.</value>
-        [JsonIgnore]
         public string CredentialJson
         {
             get;
