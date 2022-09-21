@@ -4,10 +4,11 @@
         <Description>.NET Core tools for building agent services</Description>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Aries.xml</DocumentationFile>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.12-alpha" />
-        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.3.8-alpha" />
+        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.4.2-alpha" />
         <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.5" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />

@@ -421,7 +421,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
-            definition.ObjectJson = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
+            (definition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
 
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
@@ -429,8 +429,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 masterSecretJson: await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
                 masterSecretId: provisioning.MasterSecretId,
                 credentialOfferJson: credential.OfferJson
-
                 );
+
+            credential.SchemaId = schemaId;
 
             // Update local credential record with new info
             credential.CredentialRequestMetadataJson = CredentialRequestMetadataJson;
@@ -498,12 +499,13 @@ namespace Hyperledger.Aries.Features.IssueCredential
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
-            credentialDefinition.ObjectJson = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
+            (credentialDefinition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
+            var masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
 
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
-                await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
+                masterSecretJson,
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
@@ -511,7 +513,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             /** TODO : ??? - need to update credentialJson information
              * we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential **/
-            credentialRecord.CredentialJson = credentialProcessedJson;
+            var credJObject = JObject.Parse(credentialProcessedJson);
+            try
+            {
+                var seqNo = (long)credJObject["schema_id"];
+                credJObject["schema_id"] = schemaId;
+            }
+            catch
+            {
+
+            }
+            credentialRecord.CredentialJson = JsonConvert.SerializeObject(credJObject);
+            credentialRecord.SchemaId = schemaId;
 
             credentialRecord.CredentialId = credentialProcessedId;
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
@@ -900,7 +913,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <param name="credDefJson"></param>
         /// <param name="credDefId"></param>
         /// <returns></returns>
-        private async Task<string> ReplaceSchemaIdSeqNoWithString(IAgentContext agentContext, string credDefJson, string credDefId)
+        private async Task<(string, string)> ReplaceSchemaIdSeqNoWithString(IAgentContext agentContext, string credDefJson, string credDefId)
         {
             string schemaJson = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefId);
             JObject jresponseSchema = JObject.Parse(schemaJson);
@@ -908,7 +921,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             JObject jresponseCredDef = JObject.Parse(credDefJson);
             jresponseCredDef["schemaId"].Replace(schemaId);
-            return jresponseCredDef.ToString();
+            return (jresponseCredDef.ToString(), schemaId);
         }
     }
 }
