@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Aries.Contracts;
+using indy_vdr_dotnet;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Configuration
 {
-    internal class PoolConfigurationServiceV2 : IHostedService
+    public class PoolConfigurationServiceV2 : IHostedService
     {
         private readonly AgentOptions _agentOptions;
         private readonly IPoolService _poolService;
@@ -35,11 +36,6 @@ namespace Hyperledger.Aries.Configuration
                 }
                 await _poolService.CreatePoolAsync(_agentOptions.PoolName, _agentOptions.GenesisFilename);
             }
-            /* TODO : ??? Which Wrapper Exception is thrown when ledger config already exists? */
-            //catch (PoolLedgerConfigExistsException)
-            //{
-            //    // Pool already exists, swallow exception
-            //}
             catch (Exception e)
             {
                 _logger.LogCritical(e, "Couldn't create ledger configuration");
