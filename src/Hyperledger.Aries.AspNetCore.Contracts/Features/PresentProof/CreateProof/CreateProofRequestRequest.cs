@@ -16,7 +16,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.PresentProofs
 
     public string? Comment { get; set; }
 
-    public bool Trace { get; set; } = false;
+    public bool Trace { get; set; }
 
     public ProofRequest ProofRequest { get; set; } = null!;
 

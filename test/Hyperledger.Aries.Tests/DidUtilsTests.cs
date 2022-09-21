@@ -5,6 +5,7 @@ using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.TestHarness;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;

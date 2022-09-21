@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.Storage.Records;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Storage.Models;
-using Hyperledger.Indy.WalletApi;
 
 namespace Hyperledger.Aries.Storage
 {

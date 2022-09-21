@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Hyperledger.Aries.Common;
+﻿using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
 {
@@ -25,7 +25,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
         /// <returns>DID Doc</returns>
         public static DidDoc MyDidDoc(this ConnectionRecord connection, ProvisioningRecord provisioningRecord)
         {
-            var doc = new DidDoc
+            DidDoc doc = new()
             {
                 Id = connection.MyDid,
                 Keys = new List<DidDocKey>
@@ -101,16 +101,18 @@ namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
         {
             string recipientKey = connection.MyVk ?? connection.GetTag(TagConstants.ConnectionKey);
             if (string.IsNullOrEmpty(recipientKey))
+            {
                 throw new ArgumentException("Recipient key is undefined.");
-            
-            var recipientKeys = new List<string>{ DidUtils.EnsureQualifiedDid(recipientKey) };
-            var routingKeys = provisioningRecord.Endpoint.Verkey.Select(DidUtils.EnsureQualifiedDid);
-            
+            }
+
+            List<string> recipientKeys = new() { DidUtils.EnsureQualifiedDid(recipientKey) };
+            IEnumerable<string> routingKeys = provisioningRecord.Endpoint.Verkey.Select(DidUtils.EnsureQualifiedDid);
+
             return new DidCommServiceEndpoint
             {
                 Id = connection.MyDid ?? recipientKeys.First(),
                 Priority = 0,
-                Accept = new List<string> {MediaTypes.EncryptionEnvelopeV1},
+                Accept = new List<string> { MediaTypes.EncryptionEnvelopeV1 },
                 RecipientKeys = recipientKeys,
                 RoutingKeys = routingKeys.ToList(),
                 ServiceEndpoint = provisioningRecord.Endpoint.Uri

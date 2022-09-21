@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Hyperledger.Indy.PoolApi;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Ledger.Models;
-using Hyperledger.Indy.PoolApi;
 
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.Ledger.Models
 {
     /// <summary>
     /// Awaitable pool handle.

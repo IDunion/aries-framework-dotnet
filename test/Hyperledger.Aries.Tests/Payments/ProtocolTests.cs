@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Mock;
 using Xunit;
 using System.Linq;
@@ -9,6 +8,9 @@ using Hyperledger.Aries.Features.BasicMessage;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.TestHarness;
+using Hyperledger.TestHarness;
+using Hyperledger.Aries.Payments.Models;
 
 namespace Hyperledger.Aries.Tests.Payments
 {

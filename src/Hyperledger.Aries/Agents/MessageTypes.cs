@@ -94,7 +94,7 @@
         /// <summary>
         /// Type names for Present Proof Protocol
         /// </summary>
-        public class PresentProofNames
+        public static class PresentProofNames
         {
             /// <summary>
             /// Acknowledge Presentation Message Type Name

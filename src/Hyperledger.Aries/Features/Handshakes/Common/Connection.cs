@@ -1,6 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using Hyperledger.Aries.Features.Handshakes.Common.Dids;
+﻿using Hyperledger.Aries.Features.Handshakes.Common.Dids;
 using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Hyperledger.Aries.Features.Handshakes.Common
 {

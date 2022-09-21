@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Hyperledger.Aries.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hyperledger.Aries.Extensions;
 
 namespace Hyperledger.Aries.Storage
 {

@@ -11,7 +11,7 @@ namespace Hyperledger.Aries.AspNetCore.Features.CredentialDefinitions
     /// <summary>
     /// Should these credentials be revocable
     /// </summary>
-    public bool EnableRevocation { get; set; } = false;
+    public bool EnableRevocation { get; set; }
 
     public bool RevocationRegistryAutoScale { get; set; }
 

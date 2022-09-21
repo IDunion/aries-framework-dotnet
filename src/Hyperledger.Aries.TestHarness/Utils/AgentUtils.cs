@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;

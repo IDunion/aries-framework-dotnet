@@ -1,5 +1,6 @@
 ﻿using System;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Decorators.Threading
 {

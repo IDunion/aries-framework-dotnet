@@ -1,8 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Storage;
+﻿using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json;
 using Stateless;
+using System;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Payments
 {
@@ -130,17 +130,20 @@ namespace Hyperledger.Aries.Payments
         /// </summary>
         /// <param name="trigger">The trigger.</param>
         /// <returns></returns>
-        public Task TriggerAsync(PaymentTrigger trigger) => GetStateMachine().FireAsync(trigger);
+        public Task TriggerAsync(PaymentTrigger trigger)
+        {
+            return GetStateMachine().FireAsync(trigger);
+        }
 
         private StateMachine<PaymentState, PaymentTrigger> GetStateMachine()
         {
-            var state = new StateMachine<PaymentState, PaymentTrigger>(() => State, x => State = x);
-            state.Configure(PaymentState.None).Permit(PaymentTrigger.RequestSent, PaymentState.Requested);
-            state.Configure(PaymentState.None).Permit(PaymentTrigger.RequestReceived, PaymentState.RequestReceived);
-            state.Configure(PaymentState.None).Permit(PaymentTrigger.ProcessPayment, PaymentState.Paid);
-            state.Configure(PaymentState.None).Permit(PaymentTrigger.ReceiptReceived, PaymentState.ReceiptReceived);
-            state.Configure(PaymentState.Requested).Permit(PaymentTrigger.ReceiptReceived, PaymentState.ReceiptReceived);
-            state.Configure(PaymentState.RequestReceived).Permit(PaymentTrigger.ProcessPayment, PaymentState.Paid);
+            StateMachine<PaymentState, PaymentTrigger> state = new(() => State, x => State = x);
+            _ = state.Configure(PaymentState.None).Permit(PaymentTrigger.RequestSent, PaymentState.Requested);
+            _ = state.Configure(PaymentState.None).Permit(PaymentTrigger.RequestReceived, PaymentState.RequestReceived);
+            _ = state.Configure(PaymentState.None).Permit(PaymentTrigger.ProcessPayment, PaymentState.Paid);
+            _ = state.Configure(PaymentState.None).Permit(PaymentTrigger.ReceiptReceived, PaymentState.ReceiptReceived);
+            _ = state.Configure(PaymentState.Requested).Permit(PaymentTrigger.ReceiptReceived, PaymentState.ReceiptReceived);
+            _ = state.Configure(PaymentState.RequestReceived).Permit(PaymentTrigger.ProcessPayment, PaymentState.Paid);
             return state;
         }
     }

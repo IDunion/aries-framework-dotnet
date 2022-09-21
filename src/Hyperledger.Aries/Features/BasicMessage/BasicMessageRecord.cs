@@ -1,6 +1,6 @@
-﻿using System;
-using Hyperledger.Aries.Storage;
+﻿using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json;
+using System;
 // ReSharper disable VirtualMemberCallInConstructor
 
 namespace Hyperledger.Aries.Features.BasicMessage
@@ -8,7 +8,7 @@ namespace Hyperledger.Aries.Features.BasicMessage
     /// <summary>
     /// Represents a private message record in the user's wallet
     /// </summary>
-    /// <seealso cref="Storage.RecordBase" />
+    /// <seealso cref="Storage.Records.RecordBase" />
     public class BasicMessageRecord : RecordBase
     {
         /// <summary>

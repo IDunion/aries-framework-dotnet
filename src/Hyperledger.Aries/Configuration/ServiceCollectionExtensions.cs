@@ -1,5 +1,6 @@
 ﻿using System;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Discovery;
@@ -10,8 +11,8 @@ using Hyperledger.Aries.Features.OutOfBand;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Abstractions;
 using Hyperledger.Aries.Payments;
-using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

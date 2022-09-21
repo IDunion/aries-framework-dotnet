@@ -1,6 +1,7 @@
 using System;
 using FluentAssertions;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Utils;
 using Xunit;

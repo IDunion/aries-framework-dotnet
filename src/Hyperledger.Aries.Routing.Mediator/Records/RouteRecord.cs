@@ -1,4 +1,4 @@
-﻿using Hyperledger.Aries.Storage;
+﻿using Hyperledger.Aries.Storage.Records;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Ledger;
+﻿using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
-using Hyperledger.Indy.PoolApi;
+using System;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Contracts
 {
@@ -55,7 +54,7 @@ namespace Hyperledger.Aries.Contracts
         /// <returns>
         /// </returns>
         Task CreatePoolAsync(string poolName, string genesisFile);
-        
+
         /// <summary>
         /// Submit a ledger request for a given pool.
         /// </summary>

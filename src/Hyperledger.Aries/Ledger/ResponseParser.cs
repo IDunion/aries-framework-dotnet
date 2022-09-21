@@ -1,8 +1,8 @@
-using System;
-using System.Linq;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Ledger.Models;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Linq;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -23,8 +23,8 @@ namespace Hyperledger.Aries.Ledger
         /// <param name="getSchemaResponse">response of GET_SCHEMA request.</param>
         internal static AriesResponse ParseGetSchemaResponse(string getSchemaResponse)
         {
-            var schema = JObject.Parse(getSchemaResponse)["result"]!;
-            var schemaId = $"{schema["dest"]}:2:{schema["data"]!["name"]}:{schema["data"]!["version"]}";
+            JToken schema = JObject.Parse(getSchemaResponse)["result"]!;
+            string schemaId = $"{schema["dest"]}:2:{schema["data"]!["name"]}:{schema["data"]!["version"]}";
             var objectJson = new
             {
                 ver = "1.0",
@@ -57,8 +57,8 @@ namespace Hyperledger.Aries.Ledger
         /// </returns>
         internal static AriesResponse ParseGetCredDefResponse(string credDefId, string getCredDefResponse)
         {
-            CredDefId id = new CredDefId(credDefId);
-            var credDef = JObject.Parse(getCredDefResponse)["result"]!;
+            CredDefId id = new(credDefId);
+            JToken credDef = JObject.Parse(getCredDefResponse)["result"]!;
             var objectJson = new
             {
                 ver = "1.0",
@@ -96,7 +96,7 @@ namespace Hyperledger.Aries.Ledger
         /// </returns>
         internal static AriesResponse ParseRegistryDefinitionResponse(string registryDefinitionId, string getRegistryDefinitionResponse)
         {
-            var objectJson = JObject.Parse(getRegistryDefinitionResponse)["result"]!["data"];
+            JToken objectJson = JObject.Parse(getRegistryDefinitionResponse)["result"]!["data"];
 
             return new AriesResponse(registryDefinitionId, objectJson.ToJson());
         }
@@ -108,10 +108,10 @@ namespace Hyperledger.Aries.Ledger
         /// <returns><see cref="ParseRegistryResponseResult"/></returns>
         internal static AriesRegistryResponse ParseRevocRegResponse(string revocRegResponse)
         {
-            var jobj = JObject.Parse(revocRegResponse)["result"]!;
-            var revocRegDefId = jobj["revocRegDefId"]!.ToString();
-            var data = jobj["data"]!.ToString();
-            var timestamp = jobj["txnTime"]!.ToString();
+            JToken jobj = JObject.Parse(revocRegResponse)["result"]!;
+            string revocRegDefId = jobj["revocRegDefId"]!.ToString();
+            string data = jobj["data"]!.ToString();
+            string timestamp = jobj["txnTime"]!.ToString();
 
             return new AriesRegistryResponse(revocRegDefId, data, Convert.ToUInt64(timestamp));
         }

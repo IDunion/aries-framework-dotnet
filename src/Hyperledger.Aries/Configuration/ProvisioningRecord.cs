@@ -1,6 +1,6 @@
 ﻿using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Ledger;
-using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Aries.Storage.Records;
 
 namespace Hyperledger.Aries.Configuration
 {

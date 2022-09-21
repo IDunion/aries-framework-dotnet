@@ -1,6 +1,6 @@
 namespace Hyperledger.Aries.Ledger.Models
 {
-    
+
     /// <summary>Parse response result.</summary>
     public class ParseResponseResult
     {
@@ -19,8 +19,8 @@ namespace Hyperledger.Aries.Ledger.Models
         /// <param name="objectJson">Object json.</param>
         internal ParseResponseResult(string id, string objectJson)
         {
-            this.Id = id;
-            this.ObjectJson = objectJson;
+            Id = id;
+            ObjectJson = objectJson;
         }
     }
 }

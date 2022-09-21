@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 
 namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
 {
     internal class DidDocServiceEndpointsConverter : JsonConverter
     {
         /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) =>
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
             writer.WriteRawValue(JsonConvert.SerializeObject(value));
+        }
 
         /// <inheritdoc />
         public override bool CanWrite => false;
@@ -18,24 +20,22 @@ namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
             JsonSerializer serializer)
         {
-            var items = JArray.Load(reader);
+            JArray items = JArray.Load(reader);
 
             IList<IDidDocServiceEndpoint> serviceEndpoints = new List<IDidDocServiceEndpoint>();
 
             if (items == null)
-                return serviceEndpoints;
-
-            foreach (var item in items)
             {
-                IDidDocServiceEndpoint serviceEndpoint;
-                switch (item["type"].ToObject<string>())
-                {
-                    case DidDocServiceEndpointTypes.IndyAgent:
-                        serviceEndpoint = new IndyAgentDidDocService();
-                        break;
-                    default: throw new TypeLoadException("Unsupported serialization type.");
-                }
+                return serviceEndpoints;
+            }
 
+            foreach (JToken item in items)
+            {
+                IDidDocServiceEndpoint serviceEndpoint = item["type"].ToObject<string>() switch
+                {
+                    DidDocServiceEndpointTypes.IndyAgent => new IndyAgentDidDocService(),
+                    _ => throw new TypeLoadException("Unsupported serialization type."),
+                };
                 serializer.Populate(item.CreateReader(), serviceEndpoint);
                 serviceEndpoints.Add(serviceEndpoint);
             }
@@ -43,6 +43,9 @@ namespace Hyperledger.Aries.Features.Handshakes.Common.Dids
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type objectType) => true;
+        public override bool CanConvert(Type objectType)
+        {
+            return true;
+        }
     }
 }

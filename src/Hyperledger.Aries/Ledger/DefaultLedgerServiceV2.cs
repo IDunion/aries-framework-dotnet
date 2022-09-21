@@ -1,17 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Ledger.Abstractions;
 using Hyperledger.Aries.Ledger.Models;
-using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.Payments.Models;
 using Hyperledger.Aries.Utils;
 using indy_vdr_dotnet;
 using indy_vdr_dotnet.libindy_vdr;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Ledger
 {
@@ -25,9 +25,9 @@ namespace Hyperledger.Aries.Ledger
         /// <summary>
         /// DefaultLedgerService using Indy-VDR to connect with indy ledgers
         /// </summary>
-        /// <param name="signingService"><see cref="ISigningService"/></param>
-        /// <param name="poolService"><see cref="IPoolService"/></param>
-        /// <param name="provisioningService"><see cref="IProvisioningService"/></param>
+        /// <param name="signingService">Instance of <see cref="ILedgerSigningService"/>.</param>
+        /// <param name="poolService">Instance of <see cref="IPoolService"/>.</param>
+        /// <param name="provisioningService">Instance of <see cref="IProvisioningService"/>.</param>
         public DefaultLedgerServiceV2(ILedgerSigningService signingService, IPoolService poolService, IProvisioningService provisioningService)
         {
             _signingService = signingService;
@@ -44,14 +44,14 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<string> LookupAttributeAsync(IAgentContext agentContext, string targetDid, string attributeName)
         {
-            var req = await LedgerApi.BuildGetAttributeRequest(targetDid, null, attributeName, null, null);
+            IntPtr req = await LedgerApi.BuildGetAttributeRequest(targetDid, null, attributeName, null, null);
 
-            var res = await SubmitRequestAsync(agentContext, req);
+            string res = await SubmitRequestAsync(agentContext, req);
 
-            var jobj = JObject.Parse(res);
-            var data = jobj["result"]?["data"]?.ToString() ?? throw new ArgumentNullException(attributeName);
+            JObject jobj = JObject.Parse(res);
+            string data = jobj["result"]?["data"]?.ToString() ?? throw new ArgumentNullException(attributeName);
 
-            var result = JObject.Parse(data)[attributeName]?.ToString();
+            string result = JObject.Parse(data)[attributeName]?.ToString();
 
             return result;
         }
@@ -60,19 +60,19 @@ namespace Hyperledger.Aries.Ledger
         public async Task RegisterAttributeAsync(IAgentContext context, string submittedDid, string targetDid, string attributeName,
             object value, TransactionCost paymentInfo = null)
         {
-            var data = $"{{\"{attributeName}\": {value.ToJson()}}}";
+            string data = $"{{\"{attributeName}\": {value.ToJson()}}}";
 
-            var req = await LedgerApi.BuildAttributeRequest(targetDid, submittedDid, null, data);
+            IntPtr req = await LedgerApi.BuildAttributeRequest(targetDid, submittedDid, null, data);
 
-            await SignAndSubmitRequestAsync(context, submittedDid, req);
+            _ = await SignAndSubmitRequestAsync(context, submittedDid, req);
         }
 
         /// <inheritdoc />
         public async Task<AriesResponse> LookupSchemaAsync(IAgentContext agentContext, string schemaId)
         {
-            var req = await LedgerApi.BuildGetSchemaRequestAsync(schemaId);
+            IntPtr req = await LedgerApi.BuildGetSchemaRequestAsync(schemaId);
 
-            var response = await SubmitRequestAsync(agentContext, req);
+            string response = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseGetSchemaResponse(response);
         }
@@ -80,7 +80,7 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
         {
-            var req = await LedgerApi.BuildGetNymRequest(did);
+            IntPtr req = await LedgerApi.BuildGetNymRequest(did);
 
             return await SubmitRequestAsync(agentContext, req);
         }
@@ -92,8 +92,12 @@ namespace Hyperledger.Aries.Ledger
             {
                 // Success
             }
-            else ledgerTypeParsed = 1; //Default Domain
-            var req = await LedgerApi.BuildGetTxnRequestAsync(ledgerTypeParsed, sequenceId);
+            else
+            {
+                ledgerTypeParsed = 1; //Default Domain
+            }
+
+            IntPtr req = await LedgerApi.BuildGetTxnRequestAsync(ledgerTypeParsed, sequenceId);
 
             return await SubmitRequestAsync(agentContext, req);
         }
@@ -101,8 +105,8 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<AriesResponse> LookupDefinitionAsync(IAgentContext agentContext, string definitionId)
         {
-            var req = await LedgerApi.BuildGetCredDefRequest(definitionId);
-            var res = await SubmitRequestAsync(agentContext, req);
+            IntPtr req = await LedgerApi.BuildGetCredDefRequest(definitionId);
+            string res = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseGetCredDefResponse(definitionId, res);
         }
@@ -110,8 +114,8 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<AriesResponse> LookupRevocationRegistryDefinitionAsync(IAgentContext agentContext, string registryId)
         {
-            var req = await LedgerApi.BuildGetRevocRegDefRequest(registryId);
-            var res = await SubmitRequestAsync(agentContext, req);
+            IntPtr req = await LedgerApi.BuildGetRevocRegDefRequest(registryId);
+            string res = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseRegistryDefinitionResponse(registryId, res);
         }
@@ -119,9 +123,9 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<AriesRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId, long from, long to)
         {
-            var req = await LedgerApi.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
+            IntPtr req = await LedgerApi.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
 
-            var res = await SubmitRequestAsync(agentContext, req);
+            string res = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseRevocRegResponse(res);
         }
@@ -129,8 +133,8 @@ namespace Hyperledger.Aries.Ledger
         /// <inheritdoc />
         public async Task<AriesRegistryResponse> LookupRevocationRegistryAsync(IAgentContext agentContext, string revocationRegistryId, long timestamp)
         {
-            var req = await LedgerApi.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
-            var res = await SubmitRequestAsync(agentContext, req);
+            IntPtr req = await LedgerApi.BuildGetRevocRegRequest(revocationRegistryId, timestamp);
+            string res = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseRevocRegResponse(res);
         }
@@ -139,53 +143,53 @@ namespace Hyperledger.Aries.Ledger
         public async Task RegisterNymAsync(IAgentContext context, string submitterDid, string theirDid, string theirVerkey, string role,
             TransactionCost paymentInfo = null)
         {
-            var req = await LedgerApi.BuildNymRequestAsync(submitterDid, theirDid, theirVerkey, role: role);
+            IntPtr req = await LedgerApi.BuildNymRequestAsync(submitterDid, theirDid, theirVerkey, role: role);
 
-            await SignAndSubmitRequestAsync(context, submitterDid, req);
+            _ = await SignAndSubmitRequestAsync(context, submitterDid, req);
         }
 
         /// <inheritdoc />
         public async Task RegisterCredentialDefinitionAsync(IAgentContext context, string submitterDid, string data,
             TransactionCost paymentInfo = null)
         {
-            var req = await LedgerApi.BuildCredDefRequest(submitterDid, data);
+            IntPtr req = await LedgerApi.BuildCredDefRequest(submitterDid, data);
 
-            await SignAndSubmitRequestAsync(context, submitterDid, req);
+            _ = await SignAndSubmitRequestAsync(context, submitterDid, req);
         }
 
         public async Task RegisterRevocationRegistryDefinitionAsync(IAgentContext context, string submitterDid, string data,
             TransactionCost paymentInfo = null)
         {
-            var req = await LedgerApi.BuildRevocRegDefRequestAsync(submitterDid, data);
+            IntPtr req = await LedgerApi.BuildRevocRegDefRequestAsync(submitterDid, data);
 
-            await SignAndSubmitRequestAsync(context, submitterDid, req);
+            _ = await SignAndSubmitRequestAsync(context, submitterDid, req);
         }
 
         /// <inheritdoc />
         public async Task SendRevocationRegistryEntryAsync(IAgentContext context, string issuerDid, string revocationRegistryDefinitionId,
             string revocationDefinitionType, string value, TransactionCost paymentInfo = null)
         {
-            var req = await LedgerApi.BuildRevocRegEntryRequestAsync(issuerDid, revocationRegistryDefinitionId,
+            IntPtr req = await LedgerApi.BuildRevocRegEntryRequestAsync(issuerDid, revocationRegistryDefinitionId,
                 revocationDefinitionType, value);
 
-            await SignAndSubmitRequestAsync(context, issuerDid, req);
+            _ = await SignAndSubmitRequestAsync(context, issuerDid, req);
         }
 
         /// <inheritdoc />
         public async Task RegisterSchemaAsync(IAgentContext context, string issuerDid, string schemaJson,
             TransactionCost paymentInfo = null)
         {
-            var req = await LedgerApi.BuildSchemaRequestAsync(issuerDid, schemaJson);
+            IntPtr req = await LedgerApi.BuildSchemaRequestAsync(issuerDid, schemaJson);
 
-            await SignAndSubmitRequestAsync(context, issuerDid, req);
+            _ = await SignAndSubmitRequestAsync(context, issuerDid, req);
         }
 
         /// <inheritdoc />
         public async Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did)
         {
-            var response = await LookupAttributeAsync(context, did, "endpoint");
+            string response = await LookupAttributeAsync(context, did, "endpoint");
 
-            var endpoint = JObject.Parse(response)["endpoint"]?.ToString();
+            string endpoint = JObject.Parse(response)["endpoint"]?.ToString();
 
             return new ServiceEndpointResult { Result = new ServiceEndpointResult.ServiceEndpoint { Endpoint = endpoint } };
         }
@@ -205,13 +209,13 @@ namespace Hyperledger.Aries.Ledger
         /// <param name="context">The agent context.</param>
         /// <param name="signingDid">The signing did.</param>
         /// <param name="requestHandle">The request handle.</param>
-        /// <returns></returns>
+        /// <returns>The result of the <see cref="SubmitRequestAsync"/> method of the given request.</returns>
         protected async Task<string> SignAndSubmitRequestAsync(IAgentContext context, string signingDid, IntPtr requestHandle)
         {
-            var provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
+            ProvisioningRecord provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
             if (provisioning?.TaaAcceptance != null)
             {
-                var agreementAcceptance = await RequestApi.PrepareTxnAuthorAgreementAcceptanceAsync(
+                string agreementAcceptance = await RequestApi.PrepareTxnAuthorAgreementAcceptanceAsync(
                     provisioning.TaaAcceptance.AcceptanceMechanism,
                     (ulong)DateTimeOffset.Now.ToUnixTimeSeconds(),
                     provisioning.TaaAcceptance.Text,
@@ -221,8 +225,8 @@ namespace Hyperledger.Aries.Ledger
                 await RequestApi.RequestSetTxnAuthorAgreementAcceptanceAsync(requestHandle, agreementAcceptance);
             }
 
-            var unsignedRequest = await RequestApi.RequestGetSignatureInputAsync(requestHandle);
-            var signature = await _signingService.SignRequestAsync(context, signingDid, unsignedRequest);
+            string unsignedRequest = await RequestApi.RequestGetSignatureInputAsync(requestHandle);
+            string signature = await _signingService.SignRequestAsync(context, signingDid, unsignedRequest);
             await RequestApi.RequestSetSigantureAsync(requestHandle, Convert.FromBase64String(signature));
 
             return await SubmitRequestAsync(context, requestHandle);
@@ -233,7 +237,7 @@ namespace Hyperledger.Aries.Ledger
         /// </summary>
         /// <param name="context">The agent context.</param>
         /// <param name="requestHandle">The ledger request.</param>
-        /// <returns></returns>
+        /// <returns>Result of the <see cref="IPoolService.SubmitRequestAsync"/> method for the given request.</returns>
         protected async Task<string> SubmitRequestAsync(IAgentContext context, IntPtr requestHandle)
         {
             async Task<string> SubmitAsync()

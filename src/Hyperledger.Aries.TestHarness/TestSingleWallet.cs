@@ -24,6 +24,7 @@ using IndyVdrMod = indy_vdr_dotnet.libindy_vdr.ModApi;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using System.Security.Cryptography.X509Certificates;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.TestHarness
 {

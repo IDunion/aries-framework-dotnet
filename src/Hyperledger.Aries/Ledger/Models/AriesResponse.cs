@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Hyperledger.Aries.Ledger.Models
+﻿namespace Hyperledger.Aries.Ledger.Models
 {
     public class AriesResponse
     {

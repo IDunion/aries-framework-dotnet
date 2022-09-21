@@ -1,6 +1,6 @@
-﻿using System;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
 using Newtonsoft.Json;
+using System;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
 {
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
         }
 
         /// <inheritdoc />
-        public ConnectionRequestMessage(bool useMessageTypesHttps = false) : base(useMessageTypesHttps)
+        public ConnectionRequestMessage(bool useMessageTypesHttps) : base(useMessageTypesHttps)
         {
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.ConnectionRequest : MessageTypes.ConnectionRequest;
@@ -51,12 +51,14 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
         public Common.Connection Connection { get; set; }
 
         /// <inheritdoc />
-        public override string ToString() =>
-            $"{GetType().Name}: " +
+        public override string ToString()
+        {
+            return $"{GetType().Name}: " +
             $"Id={Id}, " +
             $"Type={Type}, " +
             $"Did={Connection?.Did}, " +
             $"Name={Label}, " +
             $"ImageUrl={ImageUrl}, ";
+        }
     }
 }

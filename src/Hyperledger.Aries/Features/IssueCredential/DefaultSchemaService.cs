@@ -11,7 +11,6 @@ using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Configuration;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
@@ -19,6 +18,8 @@ using Flurl;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Features.IssueCredential.Records;
+using Hyperledger.Aries.Common;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {

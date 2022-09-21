@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Hyperledger.Aries.Features.Handshakes.Common;
+﻿using Hyperledger.Aries.Features.Handshakes.Common;
+using System.Collections.Generic;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
 {

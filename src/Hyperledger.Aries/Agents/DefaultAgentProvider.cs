@@ -1,10 +1,10 @@
-﻿using System.Threading.Tasks;
-using Hyperledger.Aries.Configuration;
+﻿using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Agents
 {
@@ -19,7 +19,7 @@ namespace Hyperledger.Aries.Agents
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultAgentProvider"/> class.
         /// </summary>
-        /// <param name="agentOptions"></param>
+        /// <param name="agentOptions">Agent options.</param>
         /// <param name="defaultAgent">Default agent.</param>
         /// <param name="walletService">Wallet service.</param>
         /// <param name="poolService">Pool service.</param>
@@ -44,13 +44,13 @@ namespace Hyperledger.Aries.Agents
         /// <inheritdoc />
         public async Task<IAgentContext> GetContextAsync(params object[] args)
         {
-            var agent = await GetAgentAsync(args);
+            IAgent agent = await GetAgentAsync(args);
             return new DefaultAgentContext
             {
                 AriesStorage = await _walletService.GetWalletAsync(
                     configuration: _agentOptions.WalletConfiguration,
                     credentials: _agentOptions.WalletCredentials),
-                Pool  = new PoolAwaitable(
+                Pool = new PoolAwaitable(
                         () => _poolService.GetPoolAsync(
                         poolName: _agentOptions.PoolName,
                         protocolVersion: _agentOptions.ProtocolVersion)

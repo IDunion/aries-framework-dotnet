@@ -1,13 +1,12 @@
-﻿using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Ledger.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Hyperledger.Aries.Ledger;
-using Hyperledger.Aries.Storage;
+using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Configuration
 {
@@ -19,7 +18,6 @@ namespace Hyperledger.Aries.Configuration
     public class TxnAuthorAcceptanceService : IHostedService
     {
         private readonly IProvisioningService _provisioningService;
-        private readonly IWalletRecordService _recordService;
         private readonly IPoolService _poolService;
         private readonly IAgentProvider _agentProvider;
         private readonly AgentOptions _agentOptions;
@@ -29,21 +27,18 @@ namespace Hyperledger.Aries.Configuration
         /// </summary>
         /// <param name="hostApplicationLifetime"></param>
         /// <param name="provisioningService"></param>
-        /// <param name="recordService"></param>
         /// <param name="poolService"></param>
         /// <param name="agentProvider"></param>
         /// <param name="agentOptions"></param>
         public TxnAuthorAcceptanceService(
             IHostApplicationLifetime hostApplicationLifetime,
             IProvisioningService provisioningService,
-            IWalletRecordService recordService,
             IPoolService poolService,
             IAgentProvider agentProvider,
             IOptions<AgentOptions> agentOptions)
         {
-            hostApplicationLifetime.ApplicationStarted.Register(AcceptTxnAuthorAgreement);
+            _ = hostApplicationLifetime.ApplicationStarted.Register(AcceptTxnAuthorAgreement);
             _provisioningService = provisioningService;
-            _recordService = recordService;
             _poolService = poolService;
             _agentProvider = agentProvider;
             _agentOptions = agentOptions.Value;
@@ -51,12 +46,12 @@ namespace Hyperledger.Aries.Configuration
 
         private async void AcceptTxnAuthorAgreement()
         {
-            var context = await _agentProvider.GetContextAsync(nameof(TxnAuthorAcceptanceService));
-            var taa = await _poolService.GetTaaAsync(_agentOptions.PoolName);
+            IAgentContext context = await _agentProvider.GetContextAsync(nameof(TxnAuthorAcceptanceService));
+            IndyTaa taa = await _poolService.GetTaaAsync(_agentOptions.PoolName);
             if (taa != null)
             {
-                var digest = GetDigest(taa);
-                var provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
+                string digest = GetDigest(taa);
+                ProvisioningRecord provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
 
                 if (provisioning.TaaAcceptance == null || provisioning.TaaAcceptance.Digest != digest)
                 {
@@ -79,7 +74,7 @@ namespace Hyperledger.Aries.Configuration
 
         private string GetDigest(IndyTaa taa)
         {
-            using var shaAlgorithm = SHA256.Create();
+            using SHA256 shaAlgorithm = SHA256.Create();
             return shaAlgorithm.ComputeHash(
                 $"{taa.Version}{taa.Text}"
                 .GetUTF8Bytes())

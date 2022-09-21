@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hyperledger.Aries.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 

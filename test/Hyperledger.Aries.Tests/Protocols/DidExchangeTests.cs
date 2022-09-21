@@ -1,10 +1,11 @@
 ﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Ledger;
-using Hyperledger.Aries.Runtime;
+using Hyperledger.Aries.Ledger.Abstractions;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;

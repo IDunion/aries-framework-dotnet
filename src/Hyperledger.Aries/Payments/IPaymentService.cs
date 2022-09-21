@@ -1,5 +1,6 @@
-﻿using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Payments.Models;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Payments
 {

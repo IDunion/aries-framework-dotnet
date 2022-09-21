@@ -35,9 +35,11 @@
         public string ImageUrl { get; set; }
 
         /// <inheritdoc />
-        public override string ToString() =>
-            $"{GetType().Name}: " +
+        public override string ToString()
+        {
+            return $"{GetType().Name}: " +
             $"Name={Name}, " +
             $"ImageUrl={ImageUrl}";
+        }
     }
 }

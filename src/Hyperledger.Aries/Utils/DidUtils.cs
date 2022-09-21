@@ -1,9 +1,13 @@
 ﻿using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.DidExchange;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.CryptoApi;
+using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.WalletApi;
 using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,12 +16,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
-using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using IndyVdrRequest = indy_vdr_dotnet.libindy_vdr.RequestApi;
-using IndyVdrLedger = indy_vdr_dotnet.libindy_vdr.LedgerApi;
-using Hyperledger.Indy.DidApi;
-using Hyperledger.Indy.WalletApi;
-using System.Text;
 
 namespace Hyperledger.Aries.Utils
 {
@@ -135,7 +133,7 @@ namespace Hyperledger.Aries.Utils
         /// <returns>The did:key representation of a verkey as string</returns>
         public static string ConvertVerkeyToDidKey(string verkey)
         {
-            if (IsFullVerkey(verkey) == false)
+            if (!IsFullVerkey(verkey))
             {
                 throw new ArgumentException($"Value {verkey} is no verkey", nameof(verkey));
             }
@@ -154,12 +152,12 @@ namespace Hyperledger.Aries.Utils
         /// <returns>A plain base58 representation of that public key</returns>
         public static string ConvertDidKeyToVerkey(string didKey)
         {
-            if (IsDidKey(didKey) == false)
+            if (!IsDidKey(didKey))
             {
                 throw new ArgumentException($"Value {didKey} is no did:key", nameof(didKey));
             }
 
-            string base58EncodedKey = didKey.Substring($"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length);
+            string base58EncodedKey = didKey[$"{DIDKEY_PREFIX}:{BASE58_PREFIX}".Length..];
             byte[] bytes = Multibase.Base58.Decode(base58EncodedKey);
             byte[] codec = bytes.Take(MULTICODEC_PREFIX_ED25519.Length).ToArray();
             if (codec.SequenceEqual(MULTICODEC_PREFIX_ED25519))
@@ -211,7 +209,8 @@ namespace Hyperledger.Aries.Utils
         /// <para>The <c>cid</c> member indicates whether the DID should be used in creating the DID.
         /// If not provided then the value defaults to false.</para>
         /// </remarks>
-        /// <param name="wallet">The wallet.</param>
+        /// <param name="storage">The storage</param>
+        /// <param name="recordService"></param>
         /// <param name="did">The did as string; default null.</param>
         /// <param name="seed">The seed as string;default null.</param>
         /// <param name="cryptoType">The cryptoType as string; default "ed25519".</param>
@@ -236,13 +235,15 @@ namespace Hyperledger.Aries.Utils
             }
             else
             {
-                JsonSerializerSettings settings = new JsonSerializerSettings();
-                settings.NullValueHandling = NullValueHandling.Ignore;
+                JsonSerializerSettings settings = new()
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                };
                 cryptoType = cryptoType != null ? cryptoType == "ed25519" ? cryptoType : null : null;
                 return await CreateAndStoreMyDidWallet(
-                    storage.Wallet, 
+                    storage.Wallet,
                     JsonConvert.SerializeObject(
-                        new {did, seed, crypto_type = cryptoType, cid},
+                        new { did, seed, crypto_type = cryptoType, cid },
                         settings
                         )
                     );
@@ -265,11 +266,11 @@ namespace Hyperledger.Aries.Utils
 
             IntPtr keyHandle = await CryptoUtils.CreateKeyPair(keyAlg, seed);
 
-            var verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
+            byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
 
             if (string.IsNullOrEmpty(did))
             {
-                did = cid? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey.Take(16).ToArray());
+                did = cid ? Multibase.Base58.Encode(verKey) : Multibase.Base58.Encode(verKey.Take(16).ToArray());
             }
             else
             {
@@ -278,18 +279,20 @@ namespace Hyperledger.Aries.Utils
 
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
+            {
                 verKeyBase58 = verKeyBase58 + ":" + cryptoType;
+            }
 
-            DidRecord didRecord = new DidRecord
+            DidRecord didRecord = new()
             {
                 Id = did,
                 Did = did,
                 Verkey = verKeyBase58
             };
 
-            var signKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
-            var signKeyBase58 = Multibase.Base58.Encode(signKey);
-            KeyRecord keyRecord = new KeyRecord
+            byte[] signKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+            string signKeyBase58 = Multibase.Base58.Encode(signKey);
+            KeyRecord keyRecord = new()
             {
                 Id = verKeyBase58,
                 Verkey = verKeyBase58,
@@ -308,8 +311,6 @@ namespace Hyperledger.Aries.Utils
             CreateAndStoreMyDidResult did = await Did.CreateAndStoreMyDidAsync(wallet, didJson);
             return (did.Did, did.VerKey);
         }
-
-        //TODO : ??? - add missing functions?
 
         /// <summary>
         /// Stores a remote party's DID for a pairwise connection in the specified wallet.
@@ -334,7 +335,8 @@ namespace Hyperledger.Aries.Utils
         /// <note type="note">The only value currently supported for this member is 'ed25519'.</note>
         /// </para>
         /// </remarks>
-        /// <param name="wallet">The wallet to store the DID in.</param>
+        /// <param name="recordService"></param>
+        /// <param name="storage">The wallet to store the DID in.</param>
         /// <param name="identityJson">The identity JSON.</param>
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
@@ -366,7 +368,7 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task Upsert(IWalletRecordService recordService, AriesStorage storage, DidRecord didRecord)
         {
-            DidRecord existingRecord =  await recordService.GetAsync<DidRecord>(storage, didRecord.Did);
+            DidRecord existingRecord = await recordService.GetAsync<DidRecord>(storage, didRecord.Did);
             if (existingRecord != null)
             {
                 await recordService.UpdateAsync(storage, didRecord);
@@ -374,25 +376,27 @@ namespace Hyperledger.Aries.Utils
             else
             {
                 await recordService.AddAsync(storage, didRecord);
-            }            
+            }
         }
 
         /// <summary>
         /// Gets the verification key for the specified DID.
         /// </summary>
         /// <remarks>
-        /// If the provided <paramref name="wallet"/> of the agent context does not contain the verification key associated with the specified DID then 
-        /// an attempt will be made to look up the key from the provided agent context <paramref name="pool"/>. If resolved from the agent context <paramref name="pool"/>
-        /// then the DID and key will be automatically cached in the <paramref name="wallet"/>.
+        /// If the provided agent context <cref name="storage"/> of the agent context does not contain the verification key associated with the specified DID then 
+        /// an attempt will be made to look up the key from the provided agent context <cref name="Pool"/>. If resolved from the agent context <cref name="pool"/>
+        /// then the DID and key will be automatically cached in the <cref name="wallet"/>.
         /// <note type="note">
-        /// The <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
+        /// The <see cref="CreateAndStoreMyDidAsync(AriesStorage,IWalletRecordService, string, string,string,bool)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
         /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
         /// </note>
         /// </remarks>
         /// <param name="agentContext"></param>
+        /// <param name="recordService"></param>
+        /// <param name="ledgerService"></param>
         /// <param name="did">The DID to get the verification key for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
-        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <cref name="wallet"/> and <cref name="pool"/>.</exception>
         public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, ILedgerService ledgerService, string did)
         {
             string result;
@@ -400,7 +404,7 @@ namespace Hyperledger.Aries.Utils
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
             result = didRecord?.Verkey;
 
-            if(string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(result))
             {
                 string nymJson = await ledgerService.LookupNymAsync(agentContext, did);
                 string data = JObject.Parse(nymJson)["result"]?["data"]?.ToString();
@@ -417,27 +421,20 @@ namespace Hyperledger.Aries.Utils
         /// <returns>The verkey async.</returns>
         /// <param name="did">Did.</param>
         /// <param name="verKey">Full verkey.</param>
-        public static async Task<string> AbbreviateVerkeyAsync(string did, string verKey)
+        public static Task<string> AbbreviateVerkeyAsync(string did, string verKey)
         {
             string decodedDid = Multibase.Base58.Decode(did).ToString();
             string decodedVerKey = Multibase.Base58.Decode(verKey).ToString();
-            string firstPart = decodedVerKey.Substring(0, 16);
-            string secondPart = decodedVerKey.Substring(17, decodedVerKey.Length - 1);
+            string firstPart = decodedVerKey[..16];
+            string secondPart = decodedVerKey[17..^(-16)];
 
-            if (decodedDid.Equals(firstPart))
-            {
-                return $"~{secondPart}";
-            }
-            else
-            {
-                return verKey;
-            };
+            return decodedDid.Equals(firstPart) ? Task.FromResult($"~{secondPart}") : Task.FromResult(verKey);
         }
 
-        private static async Task<string> BuildFullVerkey(string dest, string str)
+        private static Task<string> BuildFullVerkey(string dest, string str)
         {
-            string verkey = "";
             string cryptoType = "";
+            string verkey;
             if (str.Contains(':'))
             {
                 string[] splits = str.Split(':');
@@ -451,18 +448,17 @@ namespace Hyperledger.Aries.Utils
 
             if (verkey.StartsWith("~"))
             {
-                Multibase.Base58.Decode(dest).ToList<byte>().AddRange(Multibase.Base58.Decode(verkey.Substring(1, verkey.Length - 1)).ToList<byte>());
+                Multibase.Base58.Decode(dest).ToList<byte>().AddRange(Multibase.Base58.Decode(verkey[1..]).ToList<byte>());
             }
 
-            if (!String.IsNullOrEmpty(cryptoType))
+            if (!string.IsNullOrEmpty(cryptoType))
             {
                 verkey = $"{verkey}:{cryptoType}";
             }
 
-            return verkey;
+            return Task.FromResult(verkey);
         }
 
-        /* TODO : ??? What is the difference to KeyForDidAsync?*/
         public static async Task<string> KeyForLocalDidAsync(AriesStorage storage, IWalletRecordService recordService, string did)
         {
             DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);

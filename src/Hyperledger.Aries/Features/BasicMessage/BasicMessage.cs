@@ -1,7 +1,7 @@
-﻿using System;
-using System.Text.Json.Serialization;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
 using Newtonsoft.Json;
+using System;
+using System.Text.Json.Serialization;
 
 namespace Hyperledger.Aries.Features.BasicMessage
 {
@@ -22,7 +22,7 @@ namespace Hyperledger.Aries.Features.BasicMessage
         /// <summary>
         /// Initializes a new instance of the <see cref="T:AgentFramework.Core.Messages.Common.BasicMessage"/> class.
         /// </summary>
-        public BasicMessage(bool useMessageTypesHttps = false) : base (useMessageTypesHttps)
+        public BasicMessage(bool useMessageTypesHttps) : base(useMessageTypesHttps)
         {
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.BasicMessageType : MessageTypes.BasicMessageType;

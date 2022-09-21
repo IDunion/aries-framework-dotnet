@@ -1,8 +1,8 @@
-﻿using System;
-using System.Text.Json.Serialization;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Decorators.Signature;
 using Newtonsoft.Json;
+using System;
+using System.Text.Json.Serialization;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
 {
@@ -24,7 +24,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Models
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.ConnectionResponse : MessageTypes.ConnectionResponse;
         }
-        
+
         /// <summary>
         /// Gets or sets the connection object.
         /// </summary>

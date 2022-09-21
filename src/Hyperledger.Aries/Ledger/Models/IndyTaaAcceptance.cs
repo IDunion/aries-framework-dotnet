@@ -1,4 +1,4 @@
-namespace Hyperledger.Aries.Ledger
+namespace Hyperledger.Aries.Ledger.Models
 {
     /// <summary>
     /// Transaction Author Agreement Acceptance Model

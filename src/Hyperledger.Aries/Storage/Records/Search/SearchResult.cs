@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
-namespace Hyperledger.Aries.Storage
+namespace Hyperledger.Aries.Storage.Records.Search
 {
     /// <summary>
     /// Search record result.

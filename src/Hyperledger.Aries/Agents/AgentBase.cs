@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.BasicMessage;
 using Hyperledger.Aries.Features.Discovery;
@@ -108,7 +109,7 @@ namespace Hyperledger.Aries.Agents
         /// </summary>
         /// <param name="context">The agent context.</param>
         /// <param name="messageContext">The message context.</param>
-        /// <returns></returns>
+        /// <returns>Processed message context.</returns>
         /// <exception cref="Exception">Expected inner message to be of type 'ForwardMessage'</exception>
         /// <exception cref="AriesFrameworkException">Couldn't locate a message handler for type {messageType}</exception>
         /// TODO should receive a message context and return a message context.
@@ -128,7 +129,7 @@ namespace Hyperledger.Aries.Agents
                 }
                 return outgoingMessageContext;
             }
-            throw new Exception("Unsupported agent context. When using custom context, please inherit from 'DefaultAgentContext'");
+            throw new ArgumentException("Unsupported agent context. When using custom context, please inherit from 'DefaultAgentContext'");
         }
 
         private async Task<MessageContext> ProcessMessage(IAgentContext agentContext, MessageContext messageContext)
@@ -178,7 +179,7 @@ namespace Hyperledger.Aries.Agents
 
                         var result = inboundMessageContext.Connection != null
                             ? await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
-                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked.SenderVerkey, response.ToByteArray());
+                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked?.SenderVerkey, response.ToByteArray());
                         return new PackedMessageContext(result);
                     }
                     if (inboundMessageContext.Connection != null)

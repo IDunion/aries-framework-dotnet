@@ -12,7 +12,6 @@ namespace Hyperledger.Aries.Agents
         /// </summary>
         /// <param name="agentContext">The agent context.</param>
         /// <param name="messageContext">The message context.</param>
-        /// <returns></returns>
         Task OnMessageAsync(IAgentContext agentContext, UnpackedMessageContext messageContext);
     }
 }

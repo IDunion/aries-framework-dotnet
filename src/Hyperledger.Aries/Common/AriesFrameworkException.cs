@@ -1,13 +1,13 @@
-﻿using System;
-using Hyperledger.Aries.Features.Handshakes.Common;
-using Hyperledger.Aries.Storage;
+﻿using Hyperledger.Aries.Features.Handshakes.Common;
+using Hyperledger.Aries.Storage.Records;
+using System;
 
-namespace Hyperledger.Aries
+namespace Hyperledger.Aries.Common
 {
     /// <summary>
     /// Agent Framework exception
     /// </summary>
-    /// <seealso cref="System.Exception" />
+    /// <seealso cref="Exception" />    
     public class AriesFrameworkException : Exception
     {
         /// <summary>
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries
         /// The error code.
         /// </value>
         public ErrorCode ErrorCode { get; }
-   
+
         /// <summary>
         /// Gets the message context record.
         /// May be <code>null</code>.
@@ -34,7 +34,7 @@ namespace Hyperledger.Aries
         /// The context record ID. 
         /// </value>
         public string ContextRecordId { get; }
-        
+
         /// <summary>
         /// Gets the connection record.
         /// May be <code>null</code>.
@@ -43,7 +43,7 @@ namespace Hyperledger.Aries
         /// The connection record. 
         /// </value>
         public ConnectionRecord ConnectionRecord { get; }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AriesFrameworkException"/> class.
         /// </summary>

@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Features.OutOfBand;
 using Hyperledger.Aries.Storage;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection
 {
@@ -76,7 +76,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
         /// <param name="connectionRecord">The existing ConnectionRecord.</param>
         /// <returns>The ConnectionRequestMessage and the updated ConnectionRecord.</returns>
         Task<(ConnectionRequestMessage, ConnectionRecord)> CreateRequestAsync(IAgentContext agentContext, ConnectionRecord connectionRecord);
-        
+
         /// <summary>
         /// Accepts a connection invitation without existing ConnectionRecord.
         /// </summary>

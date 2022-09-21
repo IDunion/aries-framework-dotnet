@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -37,11 +37,13 @@ namespace Hyperledger.Aries.Storage
         public Dictionary<string, string> Tags { get; set; }
 
         /// <inheritdoc />
-        public override string ToString() =>
-            $"{GetType().Name}: " +
+        public override string ToString()
+        {
+            return $"{GetType().Name}: " +
             $"Id={Id}, " +
             $"Type={Type}, " +
             $"Value={Value}, " +
             $"Tags={string.Join(",", Tags ?? new Dictionary<string, string>())}";
+        }
     }
 }

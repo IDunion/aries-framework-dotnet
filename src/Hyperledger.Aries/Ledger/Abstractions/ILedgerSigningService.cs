@@ -1,9 +1,8 @@
-using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Storage.Models;
-using Hyperledger.Indy.WalletApi;
+using System.Threading.Tasks;
 
-namespace Hyperledger.Aries.Contracts
+namespace Hyperledger.Aries.Ledger.Abstractions
 {
     /// <summary>
     /// Ledger Signing Service

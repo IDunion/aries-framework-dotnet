@@ -7,13 +7,15 @@ using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Decorators.Payments;
 using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Indy.PoolApi;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
+using Hyperledger.Aries.Common;
+using Hyperledger.Aries.Payments.Models;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Payments.SovrinToken
 {

@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Agents.Edge;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.Common;
@@ -9,7 +10,6 @@ using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Routing;
 using Hyperledger.Aries.Routing.Edge;
 using Hyperledger.Aries.Routing.Mediator;
-using Hyperledger.Aries.Runtime;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.TestHarness;

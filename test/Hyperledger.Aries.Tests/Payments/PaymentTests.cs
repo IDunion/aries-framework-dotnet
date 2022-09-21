@@ -4,16 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
-using Hyperledger.TestHarness;
 using IndyLedger = Hyperledger.Indy.LedgerApi.Ledger;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using IndyPayments = Hyperledger.Indy.PaymentsApi.Payments;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Payments.SovrinToken;
+using Hyperledger.Aries.TestHarness;
+using Hyperledger.TestHarness;
+using Hyperledger.Aries.Ledger.Models;
 
 namespace Hyperledger.Aries.Tests.Payments
 {

@@ -11,6 +11,7 @@ using Hyperledger.Aries.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Options;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {

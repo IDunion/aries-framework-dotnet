@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {

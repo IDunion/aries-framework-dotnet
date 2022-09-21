@@ -1,5 +1,6 @@
 ﻿using System;
 using Hyperledger.Aries.Storage;
+using Hyperledger.Aries.Storage.Records;
 
 namespace Hyperledger.Aries.Routing
 {

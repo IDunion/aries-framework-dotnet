@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reactive.Linq;
-using Hyperledger.Aries.Runtime;
+using Hyperledger.Aries.Common;
 using Xunit;
 
 namespace Hyperledger.Aries.Tests

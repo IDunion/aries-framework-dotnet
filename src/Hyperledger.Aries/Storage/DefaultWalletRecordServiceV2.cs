@@ -1,19 +1,22 @@
 ﻿using aries_askar_dotnet;
+using aries_askar_dotnet.AriesAskar;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Aries.Storage.Records;
+using Hyperledger.Aries.Storage.Records.Search;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
 using AriesAskarResults = aries_askar_dotnet.AriesAskar.ResultListApi;
 using AriesAskarStore = aries_askar_dotnet.AriesAskar.StoreApi;
-using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
-using aries_askar_dotnet.AriesAskar;
 
 namespace Hyperledger.Aries.Storage
 {
@@ -57,16 +60,20 @@ namespace Hyperledger.Aries.Storage
             catch (AriesAskarException e)
             {
                 if (e.errorCode == AriesAskarErrorCode.Duplicate)
+                {
                     Debug.WriteLine($"Record of type '{record.TypeName}' already exists in store for id: {record.Id}");
+                }
                 else
+                {
                     throw new AriesAskarException(e.Message, e.errorCode);
+                }
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
-        
+
         /// <inheritdoc />
         public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
             where T : RecordBase, new()
@@ -114,7 +121,10 @@ namespace Hyperledger.Aries.Storage
                                {
                                    T record = JsonConvert.DeserializeObject<T>(x.Value, _jsonSettings);
                                    foreach (KeyValuePair<string, string> tag in x.Tags)
+                                   {
                                        record.Tags[tag.Key] = tag.Value;
+                                   }
+
                                    return record;
                                })
                                .ToList()
@@ -126,7 +136,7 @@ namespace Hyperledger.Aries.Storage
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -152,7 +162,7 @@ namespace Hyperledger.Aries.Storage
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -188,8 +198,10 @@ namespace Hyperledger.Aries.Storage
                 T record = JsonConvert.DeserializeObject<T>(item.Value, _jsonSettings);
 
                 foreach (KeyValuePair<string, string> tag in item.Tags)
+                {
                     record.Tags[tag.Key] = tag.Value;
-               
+                }
+
                 return record;
             }
             catch (AriesAskarException e)
@@ -200,11 +212,13 @@ namespace Hyperledger.Aries.Storage
                     return null;
                 }
                 else
+                {
                     throw new AriesAskarException(e.Message, e.errorCode);
+                }
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -228,7 +242,7 @@ namespace Hyperledger.Aries.Storage
             {
                 try
                 {
-                    await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                    _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
                 }
                 catch
                 {
@@ -253,13 +267,17 @@ namespace Hyperledger.Aries.Storage
             catch (AriesAskarException e)
             {
                 if (e.errorCode == AriesAskarErrorCode.Duplicate)
+                {
                     Debug.WriteLine($"Keypair already exists in store for verkey: {myVerkey}");
+                }
                 else
+                {
                     throw new AriesAskarException(e.Message, e.errorCode);
+                }
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -275,18 +293,20 @@ namespace Hyperledger.Aries.Storage
                 return await AriesAskarResults.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
             }
             catch (AriesAskarException e)
-            { 
-                if(e.errorCode == AriesAskarErrorCode.Input) 
-                { 
+            {
+                if (e.errorCode == AriesAskarErrorCode.Input)
+                {
                     Debug.WriteLine($"Keypair doesn't exist in store for verkey: {myVerkey}");
-                    return new IntPtr(); 
+                    return new IntPtr();
                 }
                 else
+                {
                     throw new AriesAskarException(e.Message, e.errorCode);
+                }
             }
             finally
             {
-                await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
+                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -298,7 +318,9 @@ namespace Hyperledger.Aries.Storage
             }
 
             if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
+            {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
+            }
         }
     }
 }

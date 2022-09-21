@@ -93,7 +93,7 @@ namespace Hyperledger.Aries.Tests
             await _walletService.DeleteWalletAsync(_config, _creds);
         }
 
-        public async Task InitializeAsync()
+        public Task InitializeAsync()
         {
             _config = new WalletConfiguration { Id = Guid.NewGuid().ToString() };
             _creds = new WalletCredentials { Key = "1" };
@@ -106,6 +106,7 @@ namespace Hyperledger.Aries.Tests
                     WalletConfiguration = _config,
                     WalletCredentials = _creds
                 }));
+            return Task.CompletedTask;
         }
     }
 
@@ -130,6 +131,7 @@ namespace Hyperledger.Aries.Tests
                     WalletConfiguration = _config,
                     WalletCredentials = _creds
                 }));
+            await Task.FromResult(0);
         }
     }
 }

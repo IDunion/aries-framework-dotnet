@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Hyperledger.Aries.Agents;
+﻿using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
 {
@@ -23,8 +24,10 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
         /// <param name="count">Count.</param>
         public static Task<List<ConnectionRecord>> ListNegotiatingConnectionsAsync(
             this IConnectionService connectionService, IAgentContext agentContext, int count = 100)
-            => connectionService.ListAsync(agentContext,
-                SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Negotiating.ToString("G")), count);
+        {
+            return connectionService.ListAsync(agentContext,
+                        SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Negotiating.ToString("G")), count);
+        }
 
         /// <summary>
         /// Retrieves a list of <see cref="ConnectionRecord"/> that are in <see cref="ConnectionState.Connected"/> state.
@@ -35,8 +38,10 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
         /// <param name="count">Count.</param>
         public static Task<List<ConnectionRecord>> ListConnectedConnectionsAsync(
             this IConnectionService connectionService, IAgentContext agentContext, int count = 100)
-            => connectionService.ListAsync(agentContext,
-                SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Connected.ToString("G")), count);
+        {
+            return connectionService.ListAsync(agentContext,
+                        SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Connected.ToString("G")), count);
+        }
 
         /// <summary>
         /// Retrieves a list of <see cref="ConnectionRecord"/> that are in <see cref="ConnectionState.Invited"/> state.
@@ -47,9 +52,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
         /// <param name="count">Count.</param>
         public static Task<List<ConnectionRecord>> ListInvitedConnectionsAsync(
             this IConnectionService connectionService, IAgentContext agentContext, int count = 100)
-            => connectionService.ListAsync(agentContext,
-                SearchQuery.And(SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Invited.ToString("G")),
-                                SearchQuery.Equal(nameof(ConnectionRecord.MultiPartyInvitation), false.ToString())), count);
+        {
+            return connectionService.ListAsync(agentContext,
+                        SearchQuery.And(SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Invited.ToString("G")),
+                                        SearchQuery.Equal(nameof(ConnectionRecord.MultiPartyInvitation), false.ToString())), count);
+        }
 
         /// <summary>
         /// Retrieves a list of <see cref="ConnectionRecord"/> that are multi-party invitations.
@@ -60,9 +67,11 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
         /// <param name="count">Count.</param>
         public static Task<List<ConnectionRecord>> ListMultiPartyInvitationsAsync(
             this IConnectionService connectionService, IAgentContext agentContext, int count = 100)
-            => connectionService.ListAsync(agentContext,
-                SearchQuery.And(SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Invited.ToString("G")),
-                    SearchQuery.Equal(nameof(ConnectionRecord.MultiPartyInvitation), true.ToString())), count);
+        {
+            return connectionService.ListAsync(agentContext,
+                        SearchQuery.And(SearchQuery.Equal(nameof(ConnectionRecord.State), ConnectionState.Invited.ToString("G")),
+                            SearchQuery.Equal(nameof(ConnectionRecord.MultiPartyInvitation), true.ToString())), count);
+        }
 
         /// <summary>
         /// Retrieves a connection record by its thread id.
@@ -74,15 +83,16 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection.Extensions
         public static async Task<ConnectionRecord> GetByThreadIdAsync(
             this IConnectionService connectionService, IAgentContext context, string threadId)
         {
-            var search = await connectionService.ListAsync(context, SearchQuery.Equal(TagConstants.LastThreadId, threadId), 1);
+            List<ConnectionRecord> search = await connectionService.ListAsync(context, SearchQuery.Equal(TagConstants.LastThreadId, threadId), 1);
 
             if (search.Count == 0)
+            {
                 throw new AriesFrameworkException(ErrorCode.RecordNotFound, $"Connection record not found by thread id : {threadId}");
+            }
 
-            if (search.Count > 1)
-                throw new AriesFrameworkException(ErrorCode.RecordInInvalidState, $"Multiple connection records found by thread id : {threadId}");
-
-            return search.Single();
+            return search.Count > 1
+                ? throw new AriesFrameworkException(ErrorCode.RecordInInvalidState, $"Multiple connection records found by thread id : {threadId}")
+                : search.Single();
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 
-namespace Hyperledger.Aries.Storage
+namespace Hyperledger.Aries.Storage.Records
 {
     /// <summary>
     /// Wallet record.
@@ -49,7 +49,7 @@ namespace Hyperledger.Aries.Storage
         /// <value>The tags.</value>
         [JsonIgnore]
         protected internal Dictionary<string, string> Tags { get; set; } = new Dictionary<string, string>();
-        
+
         /// <summary>
         /// Get and set the schema version of a wallet record
         /// </summary>
@@ -60,7 +60,10 @@ namespace Hyperledger.Aries.Storage
         /// Gets the attribute.
         /// </summary>
         /// <param name="name">Name.</param>
-        public string GetTag(string name) => Get(name: name);
+        public string GetTag(string name)
+        {
+            return Get(name: name);
+        }
 
         /// <summary>
         /// Sets the attribute.
@@ -68,14 +71,20 @@ namespace Hyperledger.Aries.Storage
         /// <param name="name">Name.</param>
         /// <param name="value">Value.</param>
         /// <param name="encrypted">Controls if the tag is encrypted.</param>
-        public void SetTag(string name, string value, bool encrypted = true) => Set(value, encrypted, name);
+        public void SetTag(string name, string value, bool encrypted = true)
+        {
+            Set(value, encrypted, name);
+        }
 
         /// <summary>
         /// Removes a user attribute.
         /// </summary>
         /// <returns>The attribute.</returns>
         /// <param name="name">Name.</param>
-        public void RemoveTag(string name) => Set(null, name: name);
+        public void RemoveTag(string name)
+        {
+            Set(null, name: name);
+        }
 
         /// <summary>
         /// Set the specified value, field and name.
@@ -83,13 +92,17 @@ namespace Hyperledger.Aries.Storage
         /// <param name="value">Value.</param>
         /// <param name="encrypted">Controls whether the stored attribute should be encrypted at rest</param>
         /// <param name="name">Name.</param>
-        protected void Set(string value, bool encrypted = true, [CallerMemberName]string name = "")
+        protected void Set(string value, bool encrypted = true, [CallerMemberName] string name = "")
         {
             if (string.IsNullOrWhiteSpace(name))
+            {
                 throw new ArgumentNullException(nameof(name), "Attribute name must be specified.");
+            }
 
             if (!encrypted)
+            {
                 name = $"~{name}";
+            }
 
             if (value != null)
             {
@@ -97,7 +110,7 @@ namespace Hyperledger.Aries.Storage
             }
             else if (Tags.ContainsKey(name))
             {
-                Tags.Remove(name);
+                _ = Tags.Remove(name);
             }
         }
 
@@ -109,7 +122,7 @@ namespace Hyperledger.Aries.Storage
         /// <param name="encrypted">Controls whether the stored attribute should be encrypted at rest</param>
         /// <param name="name">Name.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-        protected void Set<T>(T value, ref T field, bool encrypted = true, [CallerMemberName]string name = "") where T : struct
+        protected void Set<T>(T value, ref T field, bool encrypted = true, [CallerMemberName] string name = "") where T : struct
         {
             Set(value, encrypted, name);
             field = value;
@@ -123,7 +136,7 @@ namespace Hyperledger.Aries.Storage
         /// <param name="encrypted">Controls whether the stored attribute should be encrypted at rest</param>
         /// <param name="name">Name.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-        protected void Set<T>(T? value, ref T? field, bool encrypted = true, [CallerMemberName]string name = "") where T : struct
+        protected void Set<T>(T? value, ref T? field, bool encrypted = true, [CallerMemberName] string name = "") where T : struct
         {
             Set(value, encrypted, name);
             field = value;
@@ -136,31 +149,37 @@ namespace Hyperledger.Aries.Storage
         /// <param name="encrypted">Controls whether the stored attribute should be encrypted at rest</param>
         /// <param name="name">Name.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-        protected void Set<T>(T? value, bool encrypted = true, [CallerMemberName]string name = "") where T : struct
+        protected void Set<T>(T? value, bool encrypted = true, [CallerMemberName] string name = "") where T : struct
         {
             if (typeof(T) == typeof(DateTime))
             {
-                var dateVal = value as DateTime?;
+                DateTime? dateVal = value as DateTime?;
 
                 if (dateVal != null)
                 {
-                    var strVal = dateVal.Value.Ticks.ToString();
+                    string strVal = dateVal.Value.Ticks.ToString();
                     Set(strVal, name: name, encrypted: encrypted);
                 }
                 else
+                {
                     Set(null, name: name, encrypted: encrypted);
+                }
             }
             else if (typeof(T).IsEnum)
             {
-                var enumVal = value as Enum;
-
-                if (enumVal != null)
+                if (value is Enum)
+                {
                     Set((value as Enum).ToString("G"), name: name, encrypted: encrypted);
+                }
                 else
+                {
                     Set(null, name: name, encrypted: encrypted);
+                }
             }
             else
+            {
                 Set(value.ToString(), name: name, encrypted: encrypted);
+            }
         }
 
         /// <summary>
@@ -170,31 +189,37 @@ namespace Hyperledger.Aries.Storage
         /// <param name="encrypted">Controls whether the stored attribute should be encrypted at rest</param>
         /// <param name="name">Name.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-        protected void Set<T>(T value, bool encrypted = true, [CallerMemberName]string name = "") where T : struct
+        protected void Set<T>(T value, bool encrypted = true, [CallerMemberName] string name = "") where T : struct
         {
             if (typeof(T) == typeof(DateTime))
             {
-                var dateVal = value as DateTime?;
+                DateTime? dateVal = value as DateTime?;
 
                 if (dateVal != null)
                 {
-                    var strVal = ((DateTimeOffset)dateVal.Value).ToUnixTimeMilliseconds().ToString();
+                    string strVal = ((DateTimeOffset)dateVal.Value).ToUnixTimeMilliseconds().ToString();
                     Set(strVal, name: name, encrypted: encrypted);
                 }
                 else
+                {
                     Set(null, name: name, encrypted: encrypted);
+                }
             }
             else if (typeof(T).IsEnum)
             {
-                var enumVal = value as Enum;
-
-                if (enumVal != null)
+                if (value is Enum)
+                {
                     Set((value as Enum).ToString("G"), name: name, encrypted: encrypted);
+                }
                 else
+                {
                     Set(null, name: name, encrypted: encrypted);
+                }
             }
             else
+            {
                 Set(value.ToString(), name: name, encrypted: encrypted);
+            }
         }
 
         /// <summary>
@@ -202,13 +227,14 @@ namespace Hyperledger.Aries.Storage
         /// </summary>
         /// <returns>The get.</returns>
         /// <param name="name">Name.</param>
-        protected string Get([CallerMemberName]string name = "")
+        protected string Get([CallerMemberName] string name = "")
         {
             if (Tags.ContainsKey(name))
+            {
                 return Tags[name];
-            if (Tags.ContainsKey($"~{name}"))
-                return Tags[$"~{name}"];
-            return null;
+            }
+
+            return Tags.ContainsKey($"~{name}") ? Tags[$"~{name}"] : null;
         }
 
         /// <summary>Gets the date time.</summary>
@@ -216,12 +242,9 @@ namespace Hyperledger.Aries.Storage
         /// <returns></returns>
         protected DateTime? GetDateTime([CallerMemberName] string name = "")
         {
-            var strVal = Get(name);
+            string strVal = Get(name);
 
-            if (strVal == null)
-                return null;
-
-            return new DateTime(Convert.ToInt64(strVal));
+            return strVal == null ? null : new DateTime(Convert.ToInt64(strVal));
         }
 
         /// <summary>Gets the bool.</summary>
@@ -229,20 +252,19 @@ namespace Hyperledger.Aries.Storage
         /// <returns></returns>
         protected bool GetBool([CallerMemberName] string name = "")
         {
-            var strVal = Get(name);
+            string strVal = Get(name);
 
-            if (strVal == null)
-                return false;
-
-            return Convert.ToBoolean(strVal);
+            return strVal != null && Convert.ToBoolean(strVal);
         }
 
         /// <inheritdoc />
-        public override string ToString() =>
-            $"{GetType().Name}: " +
+        public override string ToString()
+        {
+            return $"{GetType().Name}: " +
             $"Id={Id}, " +
             $"TypeName={TypeName}, " +
             $"CreatedAtUtc={CreatedAtUtc}, " +
             $"UpdatedAtUtc={UpdatedAtUtc}";
+        }
     }
 }

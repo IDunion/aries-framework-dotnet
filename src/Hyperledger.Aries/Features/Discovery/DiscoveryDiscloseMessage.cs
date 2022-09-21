@@ -11,7 +11,7 @@ namespace Hyperledger.Aries.Features.Discovery
     /// </summary>
     public class DiscoveryDiscloseMessage : AgentMessage
     {
-        public DiscoveryDiscloseMessage() : base ()
+        public DiscoveryDiscloseMessage() : base()
         {
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.DiscoveryDiscloseMessageType : MessageTypes.DiscoveryDiscloseMessageType;
@@ -19,7 +19,7 @@ namespace Hyperledger.Aries.Features.Discovery
         }
 
         /// <inheritdoc />
-        public DiscoveryDiscloseMessage(bool useMessageTypesHttps = false) : base(useMessageTypesHttps)
+        public DiscoveryDiscloseMessage(bool useMessageTypesHttps) : base(useMessageTypesHttps)
         {
             Id = Guid.NewGuid().ToString();
             Type = UseMessageTypesHttps ? MessageTypesHttps.DiscoveryDiscloseMessageType : MessageTypes.DiscoveryDiscloseMessageType;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
