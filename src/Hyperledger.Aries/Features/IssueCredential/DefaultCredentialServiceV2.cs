@@ -897,10 +897,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <summary>
         /// Converts the schemaId in CredDefJson from seqNo to id string. 
         /// </summary>
-        /// <param name="agentContext"></param>
-        /// <param name="credDefJson"></param>
-        /// <param name="credDefId"></param>
-        /// <returns></returns>
+        /// <param name="agentContext">Agent context.</param>
+        /// <param name="credDefJson">Json of credential definition.</param>
+        /// <param name="credDefId">Credential definition id of which we get the schema id.</param>
+        /// <returns>Credential defintion with replaced schema id.</returns>
         private async Task<string> ReplaceSchemaIdSeqNoWithString(IAgentContext agentContext, string credDefJson, string credDefId)
         {
             string schemaJson = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefId);

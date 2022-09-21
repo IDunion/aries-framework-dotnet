@@ -25,9 +25,9 @@ namespace Hyperledger.Aries.Ledger
         /// <summary>
         /// DefaultLedgerService using Indy-VDR to connect with indy ledgers
         /// </summary>
-        /// <param name="signingService"><see cref="ILedgerSigningService"/></param>
-        /// <param name="poolService"><see cref="IPoolService"/></param>
-        /// <param name="provisioningService"><see cref="IProvisioningService"/></param>
+        /// <param name="signingService">Instance of <see cref="ILedgerSigningService"/>.</param>
+        /// <param name="poolService">Instance of <see cref="IPoolService"/>.</param>
+        /// <param name="provisioningService">Instance of <see cref="IProvisioningService"/>.</param>
         public DefaultLedgerServiceV2(ILedgerSigningService signingService, IPoolService poolService, IProvisioningService provisioningService)
         {
             _signingService = signingService;
@@ -209,7 +209,7 @@ namespace Hyperledger.Aries.Ledger
         /// <param name="context">The agent context.</param>
         /// <param name="signingDid">The signing did.</param>
         /// <param name="requestHandle">The request handle.</param>
-        /// <returns></returns>
+        /// <returns>The result of the <see cref="SubmitRequestAsync"/> method of the given request.</returns>
         protected async Task<string> SignAndSubmitRequestAsync(IAgentContext context, string signingDid, IntPtr requestHandle)
         {
             ProvisioningRecord provisioning = await _provisioningService.GetProvisioningAsync(context.AriesStorage);
@@ -237,7 +237,7 @@ namespace Hyperledger.Aries.Ledger
         /// </summary>
         /// <param name="context">The agent context.</param>
         /// <param name="requestHandle">The ledger request.</param>
-        /// <returns></returns>
+        /// <returns>Result of the <see cref="IPoolService.SubmitRequestAsync"/> method for the given request.</returns>
         protected async Task<string> SubmitRequestAsync(IAgentContext context, IntPtr requestHandle)
         {
             async Task<string> SubmitAsync()

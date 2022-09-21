@@ -109,7 +109,7 @@ namespace Hyperledger.Aries.Agents
         /// </summary>
         /// <param name="context">The agent context.</param>
         /// <param name="messageContext">The message context.</param>
-        /// <returns></returns>
+        /// <returns>Processed message context.</returns>
         /// <exception cref="Exception">Expected inner message to be of type 'ForwardMessage'</exception>
         /// <exception cref="AriesFrameworkException">Couldn't locate a message handler for type {messageType}</exception>
         /// TODO should receive a message context and return a message context.

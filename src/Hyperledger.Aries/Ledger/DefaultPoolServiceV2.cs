@@ -18,14 +18,12 @@ namespace Hyperledger.Aries.Ledger
         /// <summary>
         /// Concurrent collection of txn author agreements
         /// </summary>
-        /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyTaa> Taas =
             new();
 
         /// <summary>
         /// Concurrent collection of acceptance mechanisms lists
         /// </summary>
-        /// <returns></returns>
         protected static readonly ConcurrentDictionary<string, IndyAml> Amls =
             new();
 

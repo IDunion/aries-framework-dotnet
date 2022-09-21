@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
-    <RunSettingsFilePath>C:\Users\HPfaff\Source\Repos\aries-framework-dotnet\test\Hyperledger.Aries.Tests\bin\Debug\netcoreapp3.1\fine-code-coverage\coverage-tool-output\Hyperledger.Aries.Tests-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">

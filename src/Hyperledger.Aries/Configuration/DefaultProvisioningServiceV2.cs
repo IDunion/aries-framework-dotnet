@@ -31,7 +31,7 @@ namespace Hyperledger.Aries.Configuration
         /// <summary>Initializes a new instance of the <see cref="DefaultProvisioningService"/> class.</summary>
         /// <param name="walletRecord">The wallet record.</param>
         /// <param name="walletService">The wallet service.</param>
-        /// <param name="agentOptions"></param>
+        /// <param name="agentOptions">Configured agent options.</param>
         public DefaultProvisioningServiceV2(
             IWalletRecordService walletRecord,
             IWalletService walletService,
