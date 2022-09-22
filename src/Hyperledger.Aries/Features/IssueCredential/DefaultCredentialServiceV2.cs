@@ -475,8 +475,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 );
             string credentialProcessedId = await IndySharedRsCred.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
 
-            /** TODO : ??? - need to update credentialJson information
-             * we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential **/
+            // TODO : ??? - need to update credentialJson information
+            // we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential 
             var credJObject = JObject.Parse(credentialProcessedJson);
             try
             {

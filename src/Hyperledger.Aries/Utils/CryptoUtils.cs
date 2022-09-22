@@ -94,7 +94,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                /* TODO: ??? Implement Unpacking for Store object. */
+                // TODO: ??? Implement Unpacking for Store object.
                 throw new NotImplementedException();
             }
             else

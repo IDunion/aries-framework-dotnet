@@ -12,7 +12,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
 {
     public static class AttachmentContentExtensions
     {
-        /*** TODO : ??? - Implement sign and verify for DefaultV2Services -> aries-askar KeyApi***/
+        // TODO : ??? - Implement sign and verify for DefaultV2Services -> aries-askar KeyApi
 
         /// <summary>
         /// Sign attachment content using json web signature
@@ -32,7 +32,7 @@ namespace Hyperledger.Aries.Decorators.Attachments
             string payload = content.Base64;
             if (payload == null)
             {
-                throw new ArgumentNullException("No data to sign");
+                throw new ArgumentNullException(nameof(content));
             }
 
             string did = DidUtils.ConvertVerkeyToDidKey(verkey);
