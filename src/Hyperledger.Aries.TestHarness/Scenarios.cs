@@ -124,7 +124,6 @@ namespace Hyperledger.Aries.TestHarness
 
             // Holder retrieves message from their cloud agent
             var credentialOffer = FindContentMessage<CredentialOfferMessage>(messages);
-            RemoveMessage(credentialOffer, messages);
 
             // Holder processes the credential offer by storing it
             var holderCredentialId =
@@ -153,8 +152,6 @@ namespace Hyperledger.Aries.TestHarness
 
             // Issuer retrieves credential request from cloud agent
             var credentialRequest = FindContentMessage<CredentialRequestMessage>(messages);
-            RemoveMessage(credentialRequest, messages);
-
             Assert.NotNull(credentialRequest);
 
             // Issuer processes the credential request by storing it
@@ -170,8 +167,6 @@ namespace Hyperledger.Aries.TestHarness
 
             // Holder retrieves the credential from their cloud agent
             var credential = FindContentMessage<CredentialIssueMessage>(messages);
-            RemoveMessage(credential, messages);
-
             Assert.NotNull(credential);
 
             // Holder processes the credential by storing it in their wallet
@@ -308,10 +303,5 @@ namespace Hyperledger.Aries.TestHarness
         private static T FindContentMessage<T>(IEnumerable<AgentMessage> collection)
             where T : AgentMessage
             => collection.OfType<T>().Single();
-
-        private static void RemoveMessage(AgentMessage agentMessage, IProducerConsumerCollection<AgentMessage> messages)
-        {
-            messages.TryTake(out agentMessage);
-        }
     }
 }

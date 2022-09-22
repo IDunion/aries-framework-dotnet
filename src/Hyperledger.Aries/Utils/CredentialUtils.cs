@@ -234,16 +234,5 @@ namespace Hyperledger.Aries.Utils
 
             return result;
         }
-
-        /// <summary>
-        /// Former Anoncreds method.
-        /// </summary>
-        /// <param name="storage"></param>
-        /// <param name="proofRequestJson"></param>
-        /// <returns></returns>
-        public static Task<CredentialSearchForProofRequest> ProverSearchCredentialsForProofRequestAsync(AriesStorage storage, string proofRequestJson)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

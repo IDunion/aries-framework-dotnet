@@ -148,7 +148,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var pred in requestedCredentials.RequestedPredicates)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
-                indy_shared_rs_dotnet.Models.Credential credential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
+                indy_shared_rs_dotnet.Models.Credential credential = await IndySharedRsCred.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
                 credentialObjects.Add(new CredentialInfo { SchemaId = credentialRecord.SchemaId, CredentialDefinitionId = credentialRecord.CredentialDefinitionId, RevocationRegistryId = credentialRecord.RevocationRegistryId });
 
                 RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
@@ -913,7 +913,6 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             foreach (var requestedCredential in allCredentials)
             {
-                // ReSharper disable once PossibleMultipleEnumeration
                 var credential = credentialObjects.First(x => x.Referent == requestedCredential.CredentialId);
                 if (credential.RevocationRegistryId == null)
                     continue;
@@ -1067,6 +1066,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             }
             return proofAttributeInfo;
         }
+
         private async Task<List<IssueCredential.Credential>> ProverSearchCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofAttributeInfo attributeInfo)
         {

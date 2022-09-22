@@ -1447,7 +1447,8 @@ namespace Hyperledger.Aries.Tests.Protocols
                 holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
                     new CredentialPreviewAttribute("first_name", "Test"),
-                    new CredentialPreviewAttribute("last_name", "Holder")
+                    new CredentialPreviewAttribute("last_name", "Holder"),
+                    new CredentialPreviewAttribute("age", "30")
                 });
 
             _messages.Clear();
@@ -1466,6 +1467,10 @@ namespace Hyperledger.Aries.Tests.Protocols
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
+                    },
+                    RequestedPredicates = new Dictionary<string, ProofPredicateInfo>
+                    {
+                        {"age-requirement", new ProofPredicateInfo{Name = "age", Names = null, PredicateType = ">", PredicateValue = 20} }
                     }
                 };
 
@@ -1547,7 +1552,219 @@ namespace Hyperledger.Aries.Tests.Protocols
             var (issuerConnection, holderConnection) = await Scenarios.EstablishConnectionAsync(
                 _connectionService, _messages, _issuerWallet, _holderWallet);
 
-            var (cred1, cred2) = await Scenarios.IssueCredentialAsync(
+            _ = await Scenarios.IssueCredentialAsync(
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
+                {
+                    new CredentialPreviewAttribute("first_name", "Test"),
+                    new CredentialPreviewAttribute("last_name", "Holder")
+                });
+
+            _messages.Clear();
+
+            _ = await Scenarios.IssueCredentialAsync(
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
+                {
+                    new CredentialPreviewAttribute("age", "30")
+                });
+
+            _messages.Clear();
+
+            //Requestor initialize a connection with the holder
+            var (_, requestorConnection) = await Scenarios.EstablishConnectionAsync(
+                _connectionService, _messages, _holderWallet, _requestorWallet);
+
+            // Verifier sends a proof request to prover
+            {
+                var proofRequestObject = new ProofRequest
+                {
+                    Name = "ProofReq",
+                    Version = "1.0",
+                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        {"name-requirement", new ProofAttributeInfo {Names = new string[]{"first_name", "last_name" } } },
+                        {"age-requirement", new ProofAttributeInfo {Name = "age"}}
+                    }
+                };
+
+                //Requestor sends a proof request
+                var (message, _) = await _proofService.CreateRequestAsync(_requestorWallet, proofRequestObject, requestorConnection.Id);
+                _messages.Add(message);
+            }
+
+            // Holder accepts the proof requests and builds a proof
+            //Holder retrives proof request message from their cloud agent
+            var proofRequest = FindContentMessage<RequestPresentationMessage>();
+            Assert.NotNull(proofRequest);
+
+            //Holder stores the proof request
+            var holderProofRequestId = await _proofService.ProcessRequestAsync(_holderWallet, proofRequest, holderConnection);
+            var holderProofRecord = await _proofService.GetAsync(_holderWallet, holderProofRequestId.Id);
+            var holderProofObject =
+                JsonConvert.DeserializeObject<ProofRequest>(holderProofRecord.RequestJson);
+
+            var requestedCredentials = new RequestedCredentials();
+            foreach (var requestedAttribute in holderProofObject.RequestedAttributes)
+            {
+                var credentials =
+                    await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
+                        requestedAttribute.Key);
+
+                requestedCredentials.RequestedAttributes.Add(requestedAttribute.Key,
+                    new RequestedAttribute
+                    {
+                        CredentialId = credentials.First().CredentialInfo.Referent,
+                        Revealed = true
+                    });
+            }
+
+            foreach (var requestedAttribute in holderProofObject.RequestedPredicates)
+            {
+                var credentials =
+                    await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
+                        requestedAttribute.Key);
+
+                requestedCredentials.RequestedPredicates.Add(requestedAttribute.Key,
+                    new RequestedAttribute
+                    {
+                        CredentialId = credentials.First().CredentialInfo.Referent,
+                        Revealed = true
+                    });
+            }
+
+            //Holder accepts the proof request and sends a proof
+            await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id, requestedCredentials);
+            var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+                requestedCredentials));
+
+            Assert.True(ex.ErrorCode == ErrorCode.RecordInInvalidState);
+        }
+
+        [Fact]
+        public async Task AcceptProofRequestNoMatchingCredentials()
+        {
+            //Setup a connection and issue the credentials to the holder
+            var (issuerConnection, holderConnection) = await Scenarios.EstablishConnectionAsync(
+                _connectionService, _messages, _issuerWallet, _holderWallet);
+
+            _ = await Scenarios.IssueCredentialAsync(
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
+                {
+                    new CredentialPreviewAttribute("first_name", "Test"),
+                    new CredentialPreviewAttribute("last_name", "Holder")
+                });
+
+            _messages.Clear();
+
+            _ = await Scenarios.IssueCredentialAsync(
+                _recordService, _schemaService, _credentialService, _messages, issuerConnection,
+                holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
+                {
+                    new CredentialPreviewAttribute("age", "30")
+                });
+
+            _messages.Clear();
+
+            //Requestor initialize a connection with the holder
+            var (_, requestorConnection) = await Scenarios.EstablishConnectionAsync(
+                _connectionService, _messages, _holderWallet, _requestorWallet);
+
+            // Verifier sends a proof request to prover
+            {
+                var proofRequestObject = new ProofRequest
+                {
+                    Name = "ProofReq",
+                    Version = "1.0",
+                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        {
+                            "name-requirement", 
+                            new ProofAttributeInfo 
+                            {
+                                Names = new string[]{ "first_name", "last_name" },
+                                Restrictions = new List<AttributeFilter>
+                                {
+                                    new AttributeFilter
+                                    {
+                                        SchemaId = "testSchemaId",
+                                        SchemaIssuerDid = "testSchemaIssuerDid",
+                                        SchemaName = "testSchemaName",
+                                        CredentialDefinitionId = "testCredentialDefinitionId",
+                                        AttributeValue = new AttributeValue { Name = "testName", Value = "testValue"},
+                                        IssuerDid = "testIssuerDid",
+                                        SchemaVersion = "testSchemaVersion"
+                                    }
+                                }
+                            } 
+                        }
+                    }
+                };
+
+                //Requestor sends a proof request
+                var (message, _) = await _proofService.CreateRequestAsync(_requestorWallet, proofRequestObject, requestorConnection.Id);
+                _messages.Add(message);
+            }
+
+            // Holder accepts the proof requests and builds a proof
+            //Holder retrives proof request message from their cloud agent
+            var proofRequest = FindContentMessage<RequestPresentationMessage>();
+            Assert.NotNull(proofRequest);
+
+            //Holder stores the proof request
+            var holderProofRequestId = await _proofService.ProcessRequestAsync(_holderWallet, proofRequest, holderConnection);
+            var holderProofRecord = await _proofService.GetAsync(_holderWallet, holderProofRequestId.Id);
+            var holderProofObject =
+                JsonConvert.DeserializeObject<ProofRequest>(holderProofRecord.RequestJson);
+
+            var requestedCredentials = new RequestedCredentials();
+            foreach (var requestedAttribute in holderProofObject.RequestedAttributes)
+            {
+                var credentials =
+                    await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
+                        requestedAttribute.Key);
+
+                requestedCredentials.RequestedAttributes.Add(requestedAttribute.Key,
+                    new RequestedAttribute
+                    {
+                        CredentialId = credentials.First().CredentialInfo.Referent,
+                        Revealed = true
+                    });
+            }
+
+            foreach (var requestedAttribute in holderProofObject.RequestedPredicates)
+            {
+                var credentials =
+                    await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
+                        requestedAttribute.Key);
+
+                requestedCredentials.RequestedPredicates.Add(requestedAttribute.Key,
+                    new RequestedAttribute
+                    {
+                        CredentialId = credentials.First().CredentialInfo.Referent,
+                        Revealed = true
+                    });
+            }
+
+            //Holder accepts the proof request and sends a proof
+            await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id, requestedCredentials);
+            var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+                requestedCredentials));
+
+            Assert.True(ex.ErrorCode == ErrorCode.RecordInInvalidState);
+        }
+
+        [Fact]
+        public async Task AcceptProofRequestWrongProofRequest()
+        {
+            //Setup a connection and issue the credentials to the holder
+            var (issuerConnection, holderConnection) = await Scenarios.EstablishConnectionAsync(
+                _connectionService, _messages, _issuerWallet, _holderWallet);
+
+            _ = await Scenarios.IssueCredentialAsync(
                 _recordService, _schemaService, _credentialService, _messages, issuerConnection,
                 holderConnection, _issuerWallet, _holderWallet, TestConstants.DefaultMasterSecret, new List<CredentialPreviewAttribute>
                 {
@@ -1570,7 +1787,12 @@ namespace Hyperledger.Aries.Tests.Protocols
                     Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
-                        {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
+                        {
+                            "name-requirement",
+                            new ProofAttributeInfo
+                            {
+                            }
+                        }
                     }
                 };
 
@@ -1664,7 +1886,18 @@ namespace Hyperledger.Aries.Tests.Protocols
                     Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
-                        {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
+                        {
+                            "first-name-requirement", 
+                            new ProofAttributeInfo 
+                            {
+                                Name = "first_name",
+                                Restrictions = new List<AttributeFilter>
+                                {
+                                    new AttributeFilter{ IssuerDid = "NcYxiDXkpYi6ov5FcYDi1e" },
+                                    new AttributeFilter{ IssuerDid = "Th7MpTaRZVRYnPiabds81Y" }
+                                }
+                            }
+                        }
                     }
                 };
 
