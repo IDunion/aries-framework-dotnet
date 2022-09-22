@@ -110,7 +110,7 @@ namespace Hyperledger.Aries.Ledger
                 return response;
             }
 
-            throw new NotImplementedException("Unsupported request handle");
+            throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "Unsupported request handle");
         }
 
         private void EnsureSuccessResponse(string res)

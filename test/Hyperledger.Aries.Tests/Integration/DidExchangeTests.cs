@@ -131,7 +131,7 @@ namespace Hyperledger.Aries.Tests.Integration
         }
     }
 
-    /* TODO: ??? - Create V2 integration tests */
+    // TODO: ??? - Create V2 integration tests
     [Trait("Category", "DefaultV2")]
     public class DidExchangeTestsV2 : IAsyncLifetime
     {

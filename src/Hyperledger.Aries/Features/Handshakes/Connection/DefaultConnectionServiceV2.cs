@@ -268,7 +268,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
                 MyVk = myVerKey,
                 Role = ConnectionRole.Invitee
             };
-            connection.SetTag(TagConstants.InvitationKey, invitation.RecipientKeys.First());
+            connection.SetTag(TagConstants.InvitationKey, invitation.RecipientKeys?.FirstOrDefault());
 
             if (!string.IsNullOrEmpty(invitation.Label) || !string.IsNullOrEmpty(invitation.ImageUrl))
             {
