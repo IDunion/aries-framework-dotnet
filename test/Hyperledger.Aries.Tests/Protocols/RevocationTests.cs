@@ -21,7 +21,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 {
     public class RevocationTestsFixture : TestSingleWallet
     {
-        public InProcAgent.PairedAgents PairedAgents;
+        public InProcAgentV1.PairedAgents PairedAgents;
         
         public IAgentContext IssuerAgentContext;
         public IAgentContext HolderAgentContext;
@@ -48,7 +48,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         {
             await base.InitializeAsync();
             
-            PairedAgents = await InProcAgent.CreatePairedAsync(true);
+            PairedAgents = await InProcAgentV1.CreatePairedAsync(true);
 
             IssuerAgentContext = PairedAgents.Agent1.Context;
             HolderAgentContext = PairedAgents.Agent2.Context;

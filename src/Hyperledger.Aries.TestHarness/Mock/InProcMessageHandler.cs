@@ -18,14 +18,56 @@ using Microsoft.Extensions.Options;
 
 namespace Hyperledger.TestHarness.Mock
 {
-    public class InProcMessageHandler : HttpMessageHandler
+    public class InProcMessageHandlerV1 : HttpMessageHandler
     {
-        public InProcAgent TargetAgent { get; set; }
+        public InProcAgentV1 TargetAgent { get; set; }
 
         /// <inheritdoc />
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (TargetAgent is InProcMediatorAgent mediatorAgent && request.Method == HttpMethod.Get)
+            if (TargetAgent is InProcMediatorAgentV1 mediatorAgent && request.Method == HttpMethod.Get)
+            {
+                var discoveryConfiguration = await mediatorAgent.HandleDiscoveryAsync();
+
+                var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+                responseMessage.Content = new StringContent(discoveryConfiguration.ToJson());
+                responseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                return responseMessage;
+            }
+            else if (request.RequestUri.AbsolutePath.Contains("/tails"))
+            {
+                var options = TargetAgent.Provider.GetRequiredService<IOptions<AgentOptions>>();
+                var file = request.RequestUri.Segments.Last();
+
+                var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+                responseMessage.Content = new ByteArrayContent(File.ReadAllBytes(Path.Combine(options.Value.RevocationRegistryDirectory, file)));
+
+                return responseMessage;
+            }
+            else
+            {
+                var response = await TargetAgent.HandleAsync(await request.Content?.ReadAsByteArrayAsync());
+                var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+
+                if (response != null)
+                {
+                    responseMessage.Content = new ByteArrayContent(response.Payload);
+                    responseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(DefaultMessageService.AgentWireMessageMimeType);
+                }
+
+                return responseMessage;
+            }
+        }
+    }
+
+    public class InProcMessageHandlerV2 : HttpMessageHandler
+    {
+        public InProcAgentV2 TargetAgent { get; set; }
+
+        /// <inheritdoc />
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (TargetAgent is InProcMediatorAgentV2 mediatorAgent && request.Method == HttpMethod.Get)
             {
                 var discoveryConfiguration = await mediatorAgent.HandleDiscoveryAsync();
 

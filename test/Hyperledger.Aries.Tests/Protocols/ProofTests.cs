@@ -25,11 +25,14 @@ using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
+using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using AttributeFilter = Hyperledger.Aries.Features.PresentProof.AttributeFilter;
+using AttributeValue = Hyperledger.Aries.Features.PresentProof.AttributeValue;
 using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
 
 namespace Hyperledger.Aries.Tests.Protocols
@@ -1727,12 +1730,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
                         requestedAttribute.Key);
 
-                requestedCredentials.RequestedAttributes.Add(requestedAttribute.Key,
-                    new RequestedAttribute
-                    {
-                        CredentialId = credentials.First().CredentialInfo.Referent,
-                        Revealed = true
-                    });
+                Assert.Empty(credentials);
             }
 
             foreach (var requestedAttribute in holderProofObject.RequestedPredicates)
@@ -1750,11 +1748,8 @@ namespace Hyperledger.Aries.Tests.Protocols
             }
 
             //Holder accepts the proof request and sends a proof
-            await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id, requestedCredentials);
-            var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+            var ex = await Assert.ThrowsAsync<SharedRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
                 requestedCredentials));
-
-            Assert.True(ex.ErrorCode == ErrorCode.RecordInInvalidState);
         }
 
         [Fact]
@@ -1819,12 +1814,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     await _proofService.ListCredentialsForProofRequestAsync(_holderWallet, holderProofObject,
                         requestedAttribute.Key);
 
-                requestedCredentials.RequestedAttributes.Add(requestedAttribute.Key,
-                    new RequestedAttribute
-                    {
-                        CredentialId = credentials.First().CredentialInfo.Referent,
-                        Revealed = true
-                    });
+                Assert.Empty(credentials);
             }
 
             foreach (var requestedAttribute in holderProofObject.RequestedPredicates)
@@ -1842,11 +1832,8 @@ namespace Hyperledger.Aries.Tests.Protocols
             }
 
             //Holder accepts the proof request and sends a proof
-            await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id, requestedCredentials);
-            var ex = await Assert.ThrowsAsync<AriesFrameworkException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+            var ex = await Assert.ThrowsAsync<SharedRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
                 requestedCredentials));
-
-            Assert.True(ex.ErrorCode == ErrorCode.RecordInInvalidState);
         }
 
         [Fact]

@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Tests.Routing
 {
     public class BackupTests : IAsyncLifetime
     {
-        public InProcAgent.PairedAgents Pair { get; private set; }
+        public InProcAgentV1.PairedAgents Pair { get; private set; }
         
         public IEdgeClientService EdgeClient { get; private set; }
         public IAgentContext EdgeContext { get; private set; }
@@ -35,7 +35,7 @@ namespace Hyperledger.Aries.Tests.Routing
         {
             // Agent1 - Mediator
             // Agent2 - Edge
-            Pair = await InProcAgent.CreatePairedWithRoutingAsync();
+            Pair = await InProcAgentV1.CreatePairedWithRoutingAsync();
 
             // WalletService = Pair.Agent2.Host.Services.GetRequiredService<IWalletService>();
             EdgeClient = Pair.Agent2.Host.Services.GetRequiredService<IEdgeClientService>();

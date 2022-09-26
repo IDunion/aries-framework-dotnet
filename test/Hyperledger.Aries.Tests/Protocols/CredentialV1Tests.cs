@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         [Fact(DisplayName = "Test Credential Issuance Protocol v1.0")]
         public async Task TestCredentialIssuanceV1()
         {
-            var pair = await InProcAgent.CreatePairedAsync(true);
+            var pair = await InProcAgentV1.CreatePairedAsync(true);
 
             // Configure agent1 as issuer
             var issuerConfiguration = await pair.Agent1.Provider.GetRequiredService<IProvisioningService>()

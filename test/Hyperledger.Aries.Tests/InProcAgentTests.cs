@@ -10,7 +10,7 @@ namespace Hyperledger.Aries.Tests
         [Fact(DisplayName = "Create two InProc agents and establish connection")]
         public async Task CreateInProcAgentsAndConnect()
         {
-            var agents = await InProcAgent.CreatePairedAsync(true);
+            var agents = await InProcAgentV1.CreatePairedAsync(true);
 
             Assert.NotNull(agents.Agent1);
             Assert.NotNull(agents.Agent2);

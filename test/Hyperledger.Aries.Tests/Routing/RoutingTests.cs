@@ -40,7 +40,7 @@ namespace Hyperledger.Aries.Tests.Routing
         [Fact(DisplayName = "Provision and connect a mediator and edge agent")]
         public async Task CreatePairedAgentsWithRouting()
         {
-            var pair = await InProcAgent.CreatePairedWithRoutingAsync();
+            var pair = await InProcAgentV1.CreatePairedWithRoutingAsync();
 
             var connections1 = await pair.Agent1.Connections.ListAsync(pair.Agent1.Context);
             var invitation1 = connections1.FirstOrDefault(x => x.State == ConnectionState.Invited);
@@ -79,7 +79,7 @@ namespace Hyperledger.Aries.Tests.Routing
             {
                 { "tag", "value" }
             };
-            var pair = await InProcAgent.CreatePairedWithRoutingAsync(metaData);
+            var pair = await InProcAgentV1.CreatePairedWithRoutingAsync(metaData);
 
             var connections1 = await pair.Agent1.Connections.ListAsync(pair.Agent1.Context);
             var invitation1 = connections1.FirstOrDefault(x => x.State == ConnectionState.Invited);
@@ -198,7 +198,7 @@ namespace Hyperledger.Aries.Tests.Routing
         [Fact(DisplayName = "Provision and connect a mediator and edge agent")]
         public async Task CreatePairedAgentsWithRouting()
         {
-            var pair = await InProcAgent.CreatePairedWithRoutingAsync();
+            var pair = await InProcAgentV1.CreatePairedWithRoutingAsync();
 
             var connections1 = await pair.Agent1.Connections.ListAsync(pair.Agent1.Context);
             var invitation1 = connections1.FirstOrDefault(x => x.State == ConnectionState.Invited);
@@ -237,7 +237,7 @@ namespace Hyperledger.Aries.Tests.Routing
             {
                 { "tag", "value" }
             };
-            var pair = await InProcAgent.CreatePairedWithRoutingAsync(metaData);
+            var pair = await InProcAgentV1.CreatePairedWithRoutingAsync(metaData);
 
             var connections1 = await pair.Agent1.Connections.ListAsync(pair.Agent1.Context);
             var invitation1 = connections1.FirstOrDefault(x => x.State == ConnectionState.Invited);

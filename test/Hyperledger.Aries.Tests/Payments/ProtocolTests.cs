@@ -20,7 +20,7 @@ namespace Hyperledger.Aries.Tests.Payments
         public async Task SendPaymentRequest()
         {
             // Create two agent hosts and establish pairwise connection between them
-            var agents = await InProcAgent.CreatePairedAsync(true);
+            var agents = await InProcAgentV1.CreatePairedAsync(true);
 
             // Get each agent payment address records
             var paymentAddress1 = await agents.Agent1.Payments.GetDefaultPaymentAddressAsync(agents.Agent1.Context);

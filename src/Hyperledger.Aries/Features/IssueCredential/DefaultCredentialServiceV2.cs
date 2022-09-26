@@ -860,7 +860,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         ),
                     revocationRecord);
             }
-            catch (SharedRsException)
+            catch
             {
                 if (!definitionRecord.RevocationAutoScale)
                 {

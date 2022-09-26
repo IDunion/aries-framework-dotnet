@@ -19,7 +19,7 @@ namespace Hyperledger.TestHarness.Mock
             services.AddDefaultMessageHandlers();
             services.AddLogging();
             services.AddSingleton<MockAgentMessageProcessor>();
-            services.AddSingleton<IHttpClientFactory>(new InProcAgent.InProcFactory(handler));
+            services.AddSingleton<IHttpClientFactory>(new InProcAgentV1.InProcFactory(handler));
 
             return await CreateAsync(agentName, configuration, credentials, services, issuerSeed, useMessageTypesHttps);
         }
