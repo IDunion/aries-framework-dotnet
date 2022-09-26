@@ -155,6 +155,8 @@ namespace Hyperledger.Aries.Tests.Routing
         }
     }
 
+    // Export and Import Backup not yet supported for V2 services with Store
+    /**
     [Trait("Category", "DefaultV2")]
     public class BackupTestsV2 : BackupTests, IAsyncLifetime
     {
@@ -179,4 +181,5 @@ namespace Hyperledger.Aries.Tests.Routing
             MediatorContext = PairV2.Agent1.Context;
         }
     }
+    **/
 }
