@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
@@ -454,8 +455,8 @@ namespace Hyperledger.TestHarness.Mock
                 {
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
-                    services.AddAriesFramework(builder => builder
-                        .RegisterEdgeAgent(options =>
+                    services.AddAriesFrameworkV2(builder => builder
+                        .RegisterEdgeAgentV2(options =>
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";

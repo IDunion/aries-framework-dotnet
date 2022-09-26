@@ -178,8 +178,8 @@ namespace Hyperledger.Aries.Agents
                         }
 
                         var result = inboundMessageContext.Connection != null
-                            ? await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
-                            : await CryptoUtils.PackAsync(agentContext.AriesStorage.Wallet, unpacked?.SenderVerkey, response.ToByteArray());
+                            ? await CryptoUtils.PackAsync(agentContext.AriesStorage, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
+                            : await CryptoUtils.PackAsync(agentContext.AriesStorage, unpacked?.SenderVerkey, response.ToByteArray());
                         return new PackedMessageContext(result);
                     }
                     if (inboundMessageContext.Connection != null)
@@ -202,14 +202,9 @@ namespace Hyperledger.Aries.Agents
         {
             UnpackResult unpacked;
 
-            if (agentContext.AriesStorage.Wallet is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
-            }
-
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync(agentContext.AriesStorage.Wallet, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync<UnpackResult>(agentContext.AriesStorage, message.Payload);
             }
             catch (Exception e)
             {
