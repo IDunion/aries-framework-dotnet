@@ -14,6 +14,7 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -103,13 +104,28 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task<byte[]> PackMessageAsync(Store store, string recipientVk, string senderVk, byte[] unencryptedMessage)
         {
-            byte[] recipientBytes = Multibase.Base58.Decode(recipientVk);
-            IntPtr recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
+            IntPtr recipientHandle;
+            IntPtr senderHandle = new IntPtr();
 
-            byte[] senderBytes = Multibase.Base58.Decode(senderVk);
-            IntPtr senderHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, senderBytes);
+            if (!string.IsNullOrEmpty(recipientVk))
+            {
+                string recipientKey = JsonConvert.DeserializeObject<string[]>(recipientVk).FirstOrDefault();
+                byte[] recipientBytes = Multibase.Base58.Decode(recipientKey);
+                recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(recipientVk));
+            }
 
-            byte[] nonce = null;
+            // Sender key can be null when anonymous packing.
+            if (!string.IsNullOrEmpty(senderVk))
+            {
+                byte[] senderBytes = Multibase.Base58.Decode(senderVk);
+                senderHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, senderBytes);
+            }
+
+            byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
             return await AriesAskarKey.CryptoBoxAsync(recipientHandle, senderHandle, unencryptedMessage.ToString(), nonce);
         }
         #endregion
