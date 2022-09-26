@@ -41,7 +41,7 @@ namespace Hyperledger.Aries.Agents
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync<UnpackResult>(storage, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(storage, message.Payload);
             }
             catch (Exception e)
             {
@@ -94,11 +94,6 @@ namespace Hyperledger.Aries.Agents
 
             if (string.IsNullOrEmpty(endpointUri))
                 throw new ArgumentNullException(nameof(endpointUri));
-
-            //if (agentContext.AriesStorage.Wallet is null)
-            //{
-            //    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type Wallet which must not be null.");
-            //}
 
             var uri = new Uri(endpointUri);
 

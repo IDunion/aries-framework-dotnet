@@ -204,7 +204,7 @@ namespace Hyperledger.Aries.Agents
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync<UnpackResult>(agentContext.AriesStorage, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, message.Payload);
             }
             catch (Exception e)
             {
