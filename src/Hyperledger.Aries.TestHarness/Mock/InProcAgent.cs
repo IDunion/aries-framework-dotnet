@@ -433,7 +433,7 @@ namespace Hyperledger.TestHarness.Mock
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
                     services.AddAriesFrameworkV2(builder => builder
-                        .RegisterAgent(options =>
+                        .RegisterAgentV2(options =>
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";
@@ -454,8 +454,8 @@ namespace Hyperledger.TestHarness.Mock
                 {
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
-                    services.AddAriesFramework(builder => builder
-                        .RegisterEdgeAgent(options =>
+                    services.AddAriesFrameworkV2(builder => builder
+                        .RegisterEdgeAgentV2(options =>
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";

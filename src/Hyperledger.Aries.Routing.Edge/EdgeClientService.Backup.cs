@@ -27,10 +27,10 @@ namespace Hyperledger.Aries.Routing.Edge
         /// <inheritdoc />
         public async Task<string> CreateBackupAsync(IAgentContext agentContext, string seed)
         {
-            if (agentContext.AriesStorage.Wallet is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
-            }
+            //if (agentContext.AriesStorage.Wallet is null)
+            //{
+            //    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+            //}
 
             if (seed.Length != 32)
             {

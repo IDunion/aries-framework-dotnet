@@ -12,38 +12,25 @@ using Hyperledger.Aries.Storage;
 using Hyperledger.Indy.DidApi;
 using Microsoft.Extensions.Options;
 using Xunit;
+using Hyperledger.Aries.Utils;
+using Hyperledger.Indy.PoolApi;
+using Microsoft.Extensions.Hosting;
 
 namespace Hyperledger.Aries.Tests.Routing
 {
-    public class BackupTests : IAsyncLifetime
+    public abstract class BackupTests
     {
-        public InProcAgentV1.PairedAgents Pair { get; private set; }
-        
-        public IEdgeClientService EdgeClient { get; private set; }
-        public IAgentContext EdgeContext { get; private set; }
-        public AgentOptions AgentOptions { get; private set; }
-        public IAgentContext MediatorContext { get; private set; }
-        public IWalletService WalletService { get; private set; }
+        public InProcAgentV1.PairedAgents PairV1 { get; protected set; }
+        public InProcAgentV2.PairedAgentsV2 PairV2 { get; protected set; }
 
-        public async Task DisposeAsync()
-        {
-            await Pair.Agent1.DisposeAsync();
-            await Pair.Agent2.DisposeAsync();
-        }
+        public IEdgeClientService EdgeClient { get; protected set; }
+        public IAgentContext EdgeContext { get; protected set; }
+        public AgentOptions AgentOptions { get; protected set; }
+        public IAgentContext MediatorContext { get; protected set; }
+        public IWalletService WalletService { get; protected set; }
+        public IWalletRecordService RecordService { get; protected set; }
 
-        public async Task InitializeAsync()
-        {
-            // Agent1 - Mediator
-            // Agent2 - Edge
-            Pair = await InProcAgentV1.CreatePairedWithRoutingAsync();
 
-            // WalletService = Pair.Agent2.Host.Services.GetRequiredService<IWalletService>();
-            EdgeClient = Pair.Agent2.Host.Services.GetRequiredService<IEdgeClientService>();
-            WalletService = Pair.Agent2.Host.Services.GetRequiredService<IWalletService>();
-            AgentOptions = Pair.Agent2.Host.Services.GetRequiredService<IOptions<AgentOptions>>().Value;
-            EdgeContext = Pair.Agent2.Context;
-            MediatorContext = Pair.Agent1.Context;
-        }
 
         [Fact(DisplayName = "Create backup with default seed")]
         public async Task CreateBackup()
@@ -108,7 +95,7 @@ namespace Hyperledger.Aries.Tests.Routing
         {
             var seed = "00000000000000000000000000000000";
             var path = SetupDirectoriesAndReturnPath(seed);
-            var myDid = await Did.CreateAndStoreMyDidAsync(EdgeContext.AriesStorage.Wallet, "{}");
+            var (myDid, myVerkey) = await DidUtils.CreateAndStoreMyDidAsync(EdgeContext.AriesStorage, RecordService);
             await EdgeClient.CreateBackupAsync(EdgeContext, seed);
             // Create a DID that we will retrieve and compare from imported wallet
             
@@ -117,8 +104,8 @@ namespace Hyperledger.Aries.Tests.Routing
 
             var newWallet = await WalletService.GetWalletAsync(AgentOptions.WalletConfiguration, AgentOptions.WalletCredentials);
             
-            var myKey = await Did.KeyForLocalDidAsync(newWallet.Wallet, myDid.Did);
-            Assert.Equal(myKey, myDid.VerKey);
+            var myKey = await DidUtils.KeyForLocalDidAsync(newWallet, RecordService, myDid);
+            Assert.Equal(myKey, myVerkey);
         }
 
         private string SetupDirectoriesAndReturnPath(string seed)
@@ -140,6 +127,56 @@ namespace Hyperledger.Aries.Tests.Routing
             }
 
             return path;
+        }
+    }
+
+    [Trait("Category", "DefaultV1")]
+    public class BackupTestsV1 : BackupTests, IAsyncLifetime
+    {
+        public async Task DisposeAsync()
+        {
+            await PairV1.Agent1.DisposeAsync();
+            await PairV1.Agent2.DisposeAsync();
+        }
+
+        public async Task InitializeAsync()
+        {
+            // Agent1 - Mediator
+            // Agent2 - Edge
+            PairV1 = await InProcAgentV1.CreatePairedWithRoutingAsync();
+
+            // WalletService = Pair.Agent2.Host.Services.GetRequiredService<IWalletService>();
+            EdgeClient = PairV1.Agent2.Host.Services.GetRequiredService<IEdgeClientService>();
+            WalletService = PairV1.Agent2.Host.Services.GetRequiredService<IWalletService>();
+            AgentOptions = PairV1.Agent2.Host.Services.GetRequiredService<IOptions<AgentOptions>>().Value;
+            RecordService = PairV1.Agent2.Host.Services.GetRequiredService<IWalletRecordService>();
+            EdgeContext = PairV1.Agent2.Context;
+            MediatorContext = PairV1.Agent1.Context;
+        }
+    }
+
+    [Trait("Category", "DefaultV2")]
+    public class BackupTestsV2 : BackupTests, IAsyncLifetime
+    {
+        public async Task DisposeAsync()
+        {
+            await PairV2.Agent1.DisposeAsync();
+            await PairV2.Agent2.DisposeAsync();
+        }
+
+        public async Task InitializeAsync()
+        {
+            // Agent1 - Mediator
+            // Agent2 - Edge
+            PairV2 = await InProcAgentV2.CreatePairedWithRoutingAsync();
+
+            // WalletService = Pair.Agent2.Host.Services.GetRequiredService<IWalletService>();
+            EdgeClient = PairV2.Agent2.Host.Services.GetRequiredService<IEdgeClientService>();
+            WalletService = PairV2.Agent2.Host.Services.GetRequiredService<IWalletService>();
+            AgentOptions = PairV2.Agent2.Host.Services.GetRequiredService<IOptions<AgentOptions>>().Value;
+            RecordService = PairV2.Agent2.Host.Services.GetRequiredService<IWalletRecordService>();
+            EdgeContext = PairV2.Agent2.Context;
+            MediatorContext = PairV2.Agent1.Context;
         }
     }
 }

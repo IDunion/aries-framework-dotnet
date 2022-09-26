@@ -42,6 +42,38 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Registers and provisions an agent.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static AriesFrameworkBuilder RegisterAgentV2(
+            this AriesFrameworkBuilder builder,
+            Action<AgentOptions> options)
+            => RegisterAgentV2<DefaultAgent>(builder, options);
+
+        /// <summary>
+        /// Registers and provisions an agent with custom implementation
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static AriesFrameworkBuilder RegisterAgentV2<T>(
+            this AriesFrameworkBuilder builder,
+            Action<AgentOptions> options)
+            where T : class, IAgent
+        {
+            builder.AddAgentProvider();
+            builder.Services.AddDefaultMessageHandlers();
+            builder.Services.AddSingleton<IAgent, T>();
+            builder.Services.Configure(options);
+            builder.Services.AddHostedService<DefaultProvisioningHostedServiceV2>();
+            builder.Services.AddHostedService<PoolConfigurationServiceV2>();
+
+            return builder;
+        }
+
+        /// <summary>
         /// Accepts the latest transaction author agreement on service startup
         /// and stores the configuration in the <see cref="ProvisioningRecord" />.
         /// </summary>
