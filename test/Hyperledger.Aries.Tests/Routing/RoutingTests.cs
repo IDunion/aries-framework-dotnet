@@ -129,6 +129,8 @@ namespace Hyperledger.Aries.Tests.Routing
         private IAgentContext _agentContext;
         private IConnectionService _connectionService;
 
+        private Mock<IProvisioningService> _mockProvisioningService;
+
         public async Task InitializeAsync()
         {
             IOptions<AgentOptions> agentOptions = Options.Create<AgentOptions>(new AgentOptions {
@@ -148,11 +150,8 @@ namespace Hyperledger.Aries.Tests.Routing
             }
             )) ;
 
-            Mock<IProvisioningService> mockProvisioningService = new();
-            mockProvisioningService.Setup(x => x.GetProvisioningAsync(It.IsAny<AriesStorage>())).Returns(Task.FromResult(new ProvisioningRecord
-            {
-                Tags = new Dictionary<string, string>() { ["MediatorConnectionId"] = "connectionId" }
-            }));
+            _mockProvisioningService = new();
+            
 
             _recordService = new DefaultWalletRecordServiceV2();
             _walletService = new DefaultWalletServiceV2();
@@ -185,7 +184,7 @@ namespace Hyperledger.Aries.Tests.Routing
                 );
 
             _edgeProvisioningService = new EdgeProvisioningServiceV2(
-                mockProvisioningService.Object,
+                _mockProvisioningService.Object,
                 _connectionService,
                 _messageService,
                 mockEdgeClientService.Object,
@@ -290,10 +289,14 @@ namespace Hyperledger.Aries.Tests.Routing
             createdInvitationRecord.Should().NotBe(null);
         }
 
-        [Fact(DisplayName = "EdgeProvisioningService creates Inbox")]
-        public async Task ProvisioningWorks()
+        [Fact(DisplayName = "EdgeProvisioningService creates Inbox when ConnectionIdTag is set")]
+        public async Task ProvisioningWorksWithConnectionIdTag()
         {
             // Arrange
+            _mockProvisioningService.Setup(x => x.GetProvisioningAsync(It.IsAny<AriesStorage>())).Returns(Task.FromResult(new ProvisioningRecord
+            {
+                Tags = new Dictionary<string, string>() { ["MediatorConnectionId"] = "connectionId" }
+            }));
 
             // Act
             var act = async () => await _edgeProvisioningService.ProvisionAsync();
