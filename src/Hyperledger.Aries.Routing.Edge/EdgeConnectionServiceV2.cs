@@ -9,7 +9,7 @@ using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace Hyperledger.Aries.Routing
+namespace Hyperledger.Aries.Routing.Edge
 {
     internal class EdgeConnectionServiceV2 : DefaultConnectionServiceV2
     {
