@@ -13,6 +13,7 @@ using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -299,12 +300,23 @@ namespace Hyperledger.Aries.Features.IssueCredential
             long maxCredNum = definitionRecord.MaxCredentialCount;
 
             string credentialDefinitionJson = await LookupCredentialDefinitionAsync(context, definitionRecord.Id);
+            var credDefJObject = JObject.Parse(credentialDefinitionJson);
+            try
+            {
+                _ = (long)credDefJObject["schemaId"];
+                credDefJObject["schemaId"] = definitionRecord.SchemaId;
+            }
+            catch
+            {
+                //schema id is already a string
+            }
+
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
              string revocationRegistryDeltaJson) = await IndySharedRsRevoc.CreateRevocationRegistryJsonAsync(
                  originDid: definitionRecord.IssuerDid,
-                 credentialDefinitionJson,
+                 JsonConvert.SerializeObject(credDefJObject),
                  tag: tag,
                  revRegType: RegistryType.CL_ACCUM,
                  issuanceType: issuanceType,
