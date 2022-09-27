@@ -14,6 +14,7 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -26,60 +27,111 @@ namespace Hyperledger.Aries.Utils
 {
     public static class CryptoUtils
     {
-        /// <summary>Packs a message</summary>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="recipientKey">The recipient key.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="senderKey">The sender key.</param>
-        /// <returns>Encrypted message formatted as JWE using UTF8 byte order</returns>
+        #region PackAsync
+        [Obsolete("Deprecated in V2")]
         public static Task<byte[]> PackAsync(
-            Wallet wallet, string recipientKey, byte[] message, string senderKey = null)
+           Wallet wallet, string recipientKey, byte[] message, string senderKey = null)
         {
             return PackAsync(wallet, new[] { recipientKey }, message, senderKey);
         }
 
-        /// <summary>Packs the asynchronous.</summary>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="recipientKeys">The recipient keys.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="senderKey">The sender key.</param>
-        /// <returns>Encrypted message formatted as JWE using UTF8 byte order</returns>
+        public static Task<byte[]> PackAsync(
+           AriesStorage storage, string recipientKey, byte[] message, string senderKey = null)
+        {
+            return PackAsync(storage, new[] { recipientKey }, message, senderKey);
+        }
+
+        [Obsolete("Deprecated in V2")]
         public static Task<byte[]> PackAsync(
             Wallet wallet, string[] recipientKeys, byte[] message, string senderKey = null)
         {
             return Crypto.PackMessageAsync(wallet, recipientKeys.ToJson(), senderKey, message);
         }
 
-        /// <summary>Packs the asynchronous.</summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="recipientKey">The recipient key.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="senderKey">The sender key.</param>
-        /// <returns>Encrypted message formatted as JWE using UTF8 byte order</returns>
+        public static async Task<byte[]> PackAsync(
+            AriesStorage storage, string[] recipientKeys, byte[] message, string senderKey = null)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                return await PackMessageAsync(storage.Store, recipientKeys.ToJson(), senderKey, message.ToByteArray());
+            }
+            else
+            {
+                return await Crypto.PackMessageAsync(storage.Wallet, recipientKeys.ToJson(), senderKey, message);
+            }
+        }
+
+        [Obsolete("Deprecated in V2")]
         public static Task<byte[]> PackAsync<T>(
             Wallet wallet, string recipientKey, T message, string senderKey = null)
         {
             return PackAsync(wallet, new[] { recipientKey }, message.ToByteArray(), senderKey);
         }
 
-        /// <summary>Packs the asynchronous.</summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="recipientKeys">The recipient keys.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="senderKey">The sender key.</param>
-        /// <returns>Encrypted message formatted as JWE using UTF8 byte order</returns>
+        public static Task<byte[]> PackAsync<T>(
+            AriesStorage storage, string recipientKey, T message, string senderKey = null)
+        {
+            return PackAsync(storage, new[] { recipientKey }, message.ToByteArray(), senderKey);
+        }
+
+        [Obsolete("Deprecated in V2")]
         public static Task<byte[]> PackAsync<T>(
             Wallet wallet, string[] recipientKeys, T message, string senderKey = null)
         {
             return Crypto.PackMessageAsync(wallet, recipientKeys.ToJson(), senderKey, message.ToByteArray());
         }
 
-        /// <summary>Unpacks the asynchronous.</summary>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="message">The message.</param>
-        /// <returns>Decrypted message as UTF8 string and sender/recipient key information</returns>
+        public static async Task<byte[]> PackAsync<T>(
+            AriesStorage storage, string[] recipientKeys, T message, string senderKey = null)
+        {
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                return await PackMessageAsync(storage.Store, recipientKeys.ToJson(), senderKey, message.ToByteArray());
+            }
+            else
+            {
+                return await Crypto.PackMessageAsync(storage.Wallet, recipientKeys.ToJson(), senderKey, message.ToByteArray());
+            }
+        }
+
+        private static async Task<byte[]> PackMessageAsync(Store store, string recipientVk, string senderVk, byte[] unencryptedMessage)
+        {
+            IntPtr recipientHandle;
+            IntPtr senderHandle = new IntPtr();
+
+            if (!string.IsNullOrEmpty(recipientVk))
+            {
+                string recipientKey = JsonConvert.DeserializeObject<string[]>(recipientVk).FirstOrDefault();
+                byte[] recipientBytes = Multibase.Base58.Decode(recipientKey);
+                recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(recipientVk));
+            }
+
+            // Sender key can be null when anonymous packing.
+            if (!string.IsNullOrEmpty(senderVk))
+            {
+                byte[] senderBytes = Multibase.Base58.Decode(senderVk);
+                senderHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, senderBytes);
+            }
+
+            byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
+            return await AriesAskarKey.CryptoBoxAsync(recipientHandle, senderHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce);
+        }
+        #endregion
+
+        #region UnpackAsync
+        [Obsolete("Deprecated in V2")]
         public static async Task<UnpackResult> UnpackAsync(Wallet wallet, byte[] message)
         {
             byte[] result = await Crypto.UnpackMessageAsync(wallet, message);
@@ -88,33 +140,64 @@ namespace Hyperledger.Aries.Utils
 
         public static async Task<UnpackResult> UnpackAsync(AriesStorage storage, byte[] message)
         {
+            byte[] result;
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
                 throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
             }
             else if (storage?.Store != null)
             {
-                // TODO: ??? Implement Unpacking for Store object.
-                throw new NotImplementedException();
+                result = await UnpackMessageAsync(storage.Store, message);
             }
             else
             {
-                byte[] result = await Crypto.UnpackMessageAsync(storage.Wallet, message);
-                return result.ToObject<UnpackResult>();
+                result = await Crypto.UnpackMessageAsync(storage.Wallet, message);
             }
+
+            return result.ToObject<UnpackResult>();
         }
 
-        /// <summary>Unpacks the asynchronous.</summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="wallet">The wallet.</param>
-        /// <param name="message">The message.</param>
-        /// <returns>Decrypted message as UTF8 string and sender/recipient key information</returns>
+        [Obsolete("Deprecated in V2")]
         public static async Task<T> UnpackAsync<T>(Wallet wallet, byte[] message)
         {
             byte[] result = await Crypto.UnpackMessageAsync(wallet, message);
             UnpackResult unpacked = result.ToObject<UnpackResult>();
             return unpacked.Message.ToObject<T>();
         }
+
+        public static async Task<T> UnpackAsync<T>(AriesStorage storage, byte[] message)
+        {
+            byte[] result = null;
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                result = await UnpackMessageAsync(storage.Store, message);
+            }
+            else
+            {
+                result = await Crypto.UnpackMessageAsync(storage.Wallet, message);
+            }
+
+            UnpackResult unpacked = result.ToObject<UnpackResult>();
+            return unpacked.Message.ToObject<T>();
+        }
+
+        private static async Task<byte[]> UnpackMessageAsync(Store store, byte[] encryptedMessage)
+        {
+            byte[] recipientBytes = Multibase.Base58.Decode("");
+            IntPtr recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
+
+            byte[] senderBytes = Multibase.Base58.Decode("");
+            IntPtr senderHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, senderBytes);
+
+            byte[] nonce = null;
+            var result = await AriesAskarKey.OpenCryptoBoxAsync(recipientHandle, senderHandle, encryptedMessage, nonce);
+            return result.ToByteArray();
+        }
+        #endregion
 
         /// <summary>
         /// Generate unique random alpha-numeric key
@@ -152,10 +235,6 @@ namespace Hyperledger.Aries.Utils
         /// <returns>The response async.</returns>
         public static async Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, string recipientKey, string[] routingKeys = null, string senderKey = null)
         {
-            if (agentContext.AriesStorage.Wallet is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Wallet)} which must not be null.");
-            }
             if (message == null)
             {
                 throw new ArgumentNullException(nameof(message));
@@ -169,7 +248,7 @@ namespace Hyperledger.Aries.Utils
             recipientKey = DidUtils.IsDidKey(recipientKey) ? DidUtils.ConvertDidKeyToVerkey(recipientKey) : recipientKey;
 
             // Pack application level message
-            byte[] msg = await PackAsync(agentContext.AriesStorage.Wallet, recipientKey, message.ToByteArray(), senderKey);
+            byte[] msg = await PackAsync(agentContext.AriesStorage, recipientKey, message.ToByteArray(), senderKey);
 
             string previousKey = recipientKey;
 
@@ -181,7 +260,7 @@ namespace Hyperledger.Aries.Utils
                 {
                     string verkey = DidUtils.IsDidKey(routingKey) ? DidUtils.ConvertDidKeyToVerkey(routingKey) : routingKey;
                     // Anonpack
-                    msg = await PackAsync(agentContext.AriesStorage.Wallet, verkey, new ForwardMessage(agentContext.UseMessageTypesHttps) { Message = JObject.Parse(msg.GetUTF8String()), To = previousKey });
+                    msg = await PackAsync(agentContext.AriesStorage, verkey, new ForwardMessage(agentContext.UseMessageTypesHttps) { Message = JObject.Parse(msg.GetUTF8String()), To = previousKey }.ToByteArray());
                     previousKey = verkey;
                 }
             }
@@ -329,6 +408,7 @@ namespace Hyperledger.Aries.Utils
             return await Crypto.SignAsync(wallet, myVerkey, message);
         }
 
+        #region VerifyAsync
         /// <summary>
         /// 
         /// </summary>
@@ -356,6 +436,8 @@ namespace Hyperledger.Aries.Utils
         {
             return await Crypto.VerifyAsync(theirVerkey, message, signature);
         }
+        #endregion
+
 
         public static async Task<IntPtr> CreateKeyPair(KeyAlg keyAlg, string seed = null)
         {

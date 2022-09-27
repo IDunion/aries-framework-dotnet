@@ -185,7 +185,7 @@ namespace Hyperledger.TestHarness
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
                     services.AddAriesFrameworkV2(builder => builder
-                        .RegisterAgent(options =>
+                        .RegisterAgentV2(options =>
                         {
                             options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
                             options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;

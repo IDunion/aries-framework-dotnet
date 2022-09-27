@@ -95,11 +95,6 @@ namespace Hyperledger.Aries.Agents
             if (string.IsNullOrEmpty(endpointUri))
                 throw new ArgumentNullException(nameof(endpointUri));
 
-            if (agentContext.AriesStorage.Wallet is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type Wallet which must not be null.");
-            }
-
             var uri = new Uri(endpointUri);
 
             var dispatcher = GetDispatcher(uri.Scheme);
