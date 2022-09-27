@@ -126,7 +126,7 @@ namespace Hyperledger.Aries.Utils
             }
 
             byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
-            return await AriesAskarKey.CryptoBoxAsync(recipientHandle, senderHandle, unencryptedMessage.ToString(), nonce);
+            return await AriesAskarKey.CryptoBoxAsync(recipientHandle, senderHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce);
         }
         #endregion
 
