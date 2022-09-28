@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using aries_askar_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage.Models;
@@ -158,6 +159,11 @@ namespace Hyperledger.Aries.Storage
         }
 
         public Task<IntPtr> GetKeyAsync(AriesStorage storage, string verkey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IntPtr> GetKeyAsync(Store store, string verkey)
         {
             throw new NotImplementedException();
         }

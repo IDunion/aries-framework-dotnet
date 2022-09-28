@@ -14,9 +14,12 @@ using Multiformats.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AriesAskarErrorCode = aries_askar_dotnet.ErrorCode;
@@ -36,9 +39,9 @@ namespace Hyperledger.Aries.Utils
         }
 
         public static Task<byte[]> PackAsync(
-           AriesStorage storage, string recipientKey, byte[] message, string senderKey = null)
+           AriesStorage storage, string recipientKey, byte[] message, string senderKey = null, IWalletRecordService recordService = null)
         {
-            return PackAsync(storage, new[] { recipientKey }, message, senderKey);
+            return PackAsync(storage, new[] { recipientKey }, message, senderKey, recordService);
         }
 
         [Obsolete("Deprecated in V2")]
@@ -49,7 +52,7 @@ namespace Hyperledger.Aries.Utils
         }
 
         public static async Task<byte[]> PackAsync(
-            AriesStorage storage, string[] recipientKeys, byte[] message, string senderKey = null)
+            AriesStorage storage, string[] recipientKeys, byte[] message, string senderKey = null, IWalletRecordService recordService = null)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -57,7 +60,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await PackMessageAsync(storage.Store, recipientKeys.ToJson(), senderKey, message.ToByteArray());
+                return await PackMessageAsync(storage.Store, recipientKeys, senderKey, message.ToByteArray(), recordService);
             }
             else
             {
@@ -73,9 +76,9 @@ namespace Hyperledger.Aries.Utils
         }
 
         public static Task<byte[]> PackAsync<T>(
-            AriesStorage storage, string recipientKey, T message, string senderKey = null)
+            AriesStorage storage, string recipientKey, T message, string senderKey = null, IWalletRecordService recordService = null)
         {
-            return PackAsync(storage, new[] { recipientKey }, message.ToByteArray(), senderKey);
+            return PackAsync(storage, new[] { recipientKey }, message.ToByteArray(), senderKey, recordService);
         }
 
         [Obsolete("Deprecated in V2")]
@@ -86,7 +89,7 @@ namespace Hyperledger.Aries.Utils
         }
 
         public static async Task<byte[]> PackAsync<T>(
-            AriesStorage storage, string[] recipientKeys, T message, string senderKey = null)
+            AriesStorage storage, string[] recipientKeys, T message, string senderKey = null, IWalletRecordService recordService = null)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -94,7 +97,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await PackMessageAsync(storage.Store, recipientKeys.ToJson(), senderKey, message.ToByteArray());
+                return await PackMessageAsync(storage.Store, recipientKeys, senderKey, message.ToByteArray(), recordService);
             }
             else
             {
@@ -102,32 +105,99 @@ namespace Hyperledger.Aries.Utils
             }
         }
 
-        private static async Task<byte[]> PackMessageAsync(Store store, string recipientVk, string senderVk, byte[] unencryptedMessage)
+        private static async Task<byte[]> PackMessageAsync(Store store, string[] recipientVerKeys, string senderVerKey, byte[] unencryptedMessage, IWalletRecordService recordService)
         {
-            IntPtr recipientHandle;
-            IntPtr senderHandle = new IntPtr();
-
-            if (!string.IsNullOrEmpty(recipientVk))
+            if (recipientVerKeys == null || recipientVerKeys.Length <= 0)
             {
-                string recipientKey = JsonConvert.DeserializeObject<string[]>(recipientVk).FirstOrDefault();
-                byte[] recipientBytes = Multibase.Base58.Decode(recipientKey);
-                recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
+                throw new ArgumentNullException(nameof(recipientVerKeys));
+            }
+                       
+            IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.XC20P, false);
+            byte[] contentEncryptionKeyBytes = await AriesAskarKey.GetSecretBytesFromKeyAsync(contentEncryptionKeyHandle);
+            var contentEncryptionKey = Multibase.Base58.Encode(contentEncryptionKeyBytes);
+
+            string preparedInfo;
+
+            if (!string.IsNullOrEmpty(senderVerKey))
+            {
+                // TODO: validate senderVerKey
+
+                // AuthCrypt
+                preparedInfo = await PrepareAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
             }
             else
             {
-                throw new ArgumentNullException(nameof(recipientVk));
+                // AnonCrypt
+                preparedInfo = await PrepareAnonCrypt(contentEncryptionKey, recipientVerKeys);
             }
 
-            // Sender key can be null when anonymous packing.
-            if (!string.IsNullOrEmpty(senderVk))
-            {
-                byte[] senderBytes = Multibase.Base58.Decode(senderVk);
-                senderHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, senderBytes);
-            }
 
             byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
-            return await AriesAskarKey.CryptoBoxAsync(recipientHandle, senderHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce);
+            (byte[] encryptedMessage, byte[] tag, _) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce, preparedInfo);
+
+            return JsonConvert.SerializeObject(new { 
+                @proteced = preparedInfo, 
+                iv = nonce, 
+                ciphertext = encryptedMessage, 
+                tag = tag  
+            }).ToByteArray();
         }
+
+        private static async Task<string> PrepareAuthCrypt(Store store, IWalletRecordService recordService, string contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
+        {
+
+            IntPtr keyHandle = await recordService.GetKeyAsync(store, senderVerkey);
+            byte[] secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
+            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.ED25519, secretKey);
+
+            List<Recipient> recipients = new();
+
+            foreach (string verKey in recipientVerKeys)
+            {
+                IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, verKey.ToByteArray());
+                byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
+                // Encrypting the recipient verKey.
+                byte[] encryptedCek = await AriesAskarKey.CryptoBoxAsync(recipientKeyHandle, senderKeyHandle,contentEncryptionKey,nonce);
+                byte[] encryptedSender = await AriesAskarKey.SealCryptoBoxAsync(recipientKeyHandle, senderVerkey);
+
+                recipients.Add(new Recipient {
+                    EncryptedKey = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedCek),
+                    Header = new RecipientHeader
+                    {
+                        Kid = verKey,
+                        Sender = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedSender),
+                        Iv = Multibase.Encode(MultibaseEncoding.Base64Url, nonce),
+                    }
+                });
+            }
+
+            return JsonConvert.SerializeObject(recipients);
+        }
+
+        private static async Task<string> PrepareAnonCrypt(string contentEncryptionKey, string[] recipientVerKeys)
+        {
+            List<Recipient> recipients = new();
+
+            foreach(string verKey in recipientVerKeys)
+            {
+                IntPtr verKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, verKey.ToByteArray());
+                byte[] encryptedCek = await AriesAskarKey.SealCryptoBoxAsync(verKeyHandle, contentEncryptionKey);
+
+                recipients.Add(new Recipient
+                {
+                    EncryptedKey = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedCek),
+                    Header = new RecipientHeader
+                    {
+                        Kid = verKey,
+                        Sender = null,
+                        Iv = null
+                    }
+                });
+            }
+
+            return JsonConvert.SerializeObject(recipients);
+        }
+
         #endregion
 
         #region UnpackAsync
@@ -187,6 +257,10 @@ namespace Hyperledger.Aries.Utils
 
         private static async Task<byte[]> UnpackMessageAsync(Store store, byte[] encryptedMessage)
         {
+            var tmp = Encoding.UTF8.GetString(encryptedMessage);
+
+            //var tmp2 = Multibase.Base64.Decode(tmp);
+
             byte[] recipientBytes = Multibase.Base58.Decode("");
             IntPtr recipientHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, recipientBytes);
 
@@ -517,5 +591,20 @@ namespace Hyperledger.Aries.Utils
         [JsonProperty("recipient_verkey")]
         [JsonPropertyName("recipient_verkey")]
         public string RecipientVerkey { get; set; }
+    }
+
+    /// <summary>
+    /// Used as data container in encryption process,
+    /// </summary>
+    public struct Recipient
+    {
+        public string EncryptedKey;
+        public RecipientHeader Header;        
+    }
+    public struct RecipientHeader
+    {
+        public string Kid;
+        public string Sender;
+        public string Iv;
     }
 }
