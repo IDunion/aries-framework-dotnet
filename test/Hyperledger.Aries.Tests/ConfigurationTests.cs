@@ -359,7 +359,7 @@ namespace Hyperledger.Aries.Tests
                 {
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
-                    services.AddAriesFrameworkV2(b => b.RegisterAgent(c =>
+                    services.AddAriesFrameworkV2(b => b.RegisterAgentV2(c =>
                     {
                         c.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                         c.ProtocolVersion = 2;
@@ -397,7 +397,7 @@ namespace Hyperledger.Aries.Tests
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
                     services.AddAriesFrameworkV2(b => b
-                        .RegisterAgent(options =>
+                        .RegisterAgentV2(options =>
                         {
                             options.WalletCredentials = walletCredentials;
                             options.WalletConfiguration = walletConfiguration;

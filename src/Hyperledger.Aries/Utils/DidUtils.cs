@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AriesAskarKey = aries_askar_dotnet.AriesAskar.KeyApi;
@@ -461,8 +462,19 @@ namespace Hyperledger.Aries.Utils
 
         public static async Task<string> KeyForLocalDidAsync(AriesStorage storage, IWalletRecordService recordService, string did)
         {
-            DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
-            return didRecord?.Verkey;
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
+            {
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
+            }
+            else if (storage?.Store != null)
+            {
+                DidRecord didRecord = await recordService.GetAsync<DidRecord>(storage, did);
+                return didRecord?.Verkey;
+            }
+            else
+            {
+                return await Did.KeyForLocalDidAsync(storage.Wallet, did);
+            }
         }
     }
 }

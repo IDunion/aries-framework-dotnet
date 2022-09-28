@@ -480,12 +480,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var credJObject = JObject.Parse(credentialProcessedJson);
             try
             {
-                var seqNo = (long)credJObject["schema_id"];
+                _ = (long)credJObject["schema_id"];
                 credJObject["schema_id"] = schemaId;
             }
             catch
             {
-
+                //schema id is already a string
             }
             credentialRecord.CredentialJson = JsonConvert.SerializeObject(credJObject);
             credentialRecord.SchemaId = schemaId;

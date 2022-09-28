@@ -1,4 +1,6 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Features.Handshakes.Common;
@@ -6,8 +8,6 @@ using Hyperledger.Aries.Features.Handshakes.Connection;
 using Hyperledger.Aries.Features.Handshakes.Connection.Models;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.Logging;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Routing.Edge
 {

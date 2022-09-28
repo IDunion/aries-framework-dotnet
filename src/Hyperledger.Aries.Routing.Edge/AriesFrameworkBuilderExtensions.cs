@@ -24,14 +24,6 @@ namespace Microsoft.Extensions.DependencyInjection
             => RegisterEdgeAgent<DefaultAgent>(builder, options, delayProvisioning
         );
 
-        public static AriesFrameworkBuilder RegisterEdgeAgentV2
-        (
-            this AriesFrameworkBuilder builder,
-            Action<AgentOptions> options,
-            bool delayProvisioning = false)
-            => RegisterEdgeAgentV2<DefaultAgent>(builder, options, delayProvisioning
-        );
-
         /// <summary>
         /// Registers and provisions an agent with custom implementation
         /// </summary>
@@ -61,6 +53,28 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        /// <summary>
+        /// Registers and provisions an agent.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="options"></param>
+        /// <param name="delayProvisioning"></param>
+        /// <returns></returns>
+        public static AriesFrameworkBuilder RegisterEdgeAgentV2
+        (
+            this AriesFrameworkBuilder builder,
+            Action<AgentOptions> options,
+            bool delayProvisioning = false)
+            => RegisterEdgeAgentV2<DefaultAgent>(builder, options, delayProvisioning
+        );
+
+        /// <summary>
+        /// Registers and provisions an agent with custom implementation
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="options"></param>
+        /// <param name="delayProvisioning"></param>
+        /// <returns></returns>
         public static AriesFrameworkBuilder RegisterEdgeAgentV2<T>
         (
             this AriesFrameworkBuilder builder,
@@ -77,7 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddExtendedConnectionService<EdgeConnectionServiceV2>();
             if (!delayProvisioning)
             {
-                builder.Services.AddHostedService<EdgeProvisioningService>();
+                builder.Services.AddHostedService<EdgeProvisioningServiceV2>();
             }
 
             return builder;

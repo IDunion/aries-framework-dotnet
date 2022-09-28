@@ -434,7 +434,7 @@ namespace Hyperledger.TestHarness.Mock
                     services.Configure<ConsoleLifetimeOptions>(options =>
                         options.SuppressStatusMessages = true);
                     services.AddAriesFrameworkV2(builder => builder
-                        .RegisterAgent(options =>
+                        .RegisterAgentV2(options =>
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";
