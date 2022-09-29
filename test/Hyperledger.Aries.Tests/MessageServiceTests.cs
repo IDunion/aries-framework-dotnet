@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
+using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection;
@@ -728,5 +729,163 @@ namespace Hyperledger.Aries.Tests
         {
             await _walletService.DeleteWalletAsync(_walletConfig, _walletCredentials);
         }        
+    }
+
+    public class MessageServiceTestsV1V2 : IAsyncLifetime
+    {
+        private string Config = "{\"id\":\"" + Guid.NewGuid() + "\"}";
+        private const string WalletCredentials = "{\"key\":\"test_wallet_key\"}";
+
+        private readonly WalletConfiguration _walletConfig = TestConstants.TestSingleWalletV2WalletConfig;
+        private readonly WalletCredentials _walletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+
+        private AriesStorage _wallet;
+        private AriesStorage _store;
+
+        private readonly IMessageService _messagingService;
+        private DefaultWalletServiceV2 _walletServiceV2;
+        private DefaultWalletRecordServiceV2 _walletRecordServiceV2;
+
+        private readonly ConcurrentBag<HttpRequestMessage> _messages = new ConcurrentBag<HttpRequestMessage>();
+
+        public MessageServiceTestsV1V2()
+        {
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+                .Protected()
+                // Setup the PROTECTED method to mock
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                // prepare the expected response of the mocked http call
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(""),
+                })
+                .Callback((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                {
+                    _messages.Add(request);
+                })
+                .Verifiable();
+
+            var clientFactory = new Mock<IHttpClientFactory>();
+            clientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(new HttpClient(handlerMock.Object));
+
+            var mockConnectionService = new Mock<IConnectionService>();
+            mockConnectionService.Setup(_ => _.ListAsync(It.IsAny<IAgentContext>(), It.IsAny<ISearchQuery>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns(Task.FromResult(new List<ConnectionRecord> { new ConnectionRecord() }));
+
+            var httpMessageDispatcher = new HttpMessageDispatcher(clientFactory.Object);
+
+            _messagingService =
+                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher }, recordService: null);
+
+            _walletServiceV2 = new DefaultWalletServiceV2();
+            _walletRecordServiceV2 = new DefaultWalletRecordServiceV2();
+        }
+
+        public async Task InitializeAsync()
+        {
+            var agentContextV1 = await AgentUtils.Create(Config, WalletCredentials);
+            _wallet = agentContextV1.AriesStorage;
+
+            var agentContextV2 = await AgentUtils.CreateV2(_walletServiceV2, _walletConfig, _walletCredentials);
+            _store = agentContextV2.AriesStorage;
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _walletServiceV2.DeleteWalletAsync(_walletConfig, _walletCredentials);
+
+            if (_wallet.Wallet != null) await _wallet.Wallet.CloseAsync();
+            await Wallet.DeleteWalletAsync(Config, WalletCredentials);
+        }
+
+        [Fact]
+        public async Task PackV1AndUnpackV2Anon()
+        {
+
+            var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
+
+            //var sender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}");
+            var sender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.StewardSeed}.ToJson());
+            //Simulate that there was already a keyExchange and both wallet and store have the sekretKey for the verkey
+            _ = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed : TestConstants.StewardSeed);
+
+            var packed = await CryptoUtils.PackAsync(_wallet, sender.VerKey, message, senderKey: null, recordService: null);
+
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed, _walletRecordServiceV2);
+
+            Assert.NotNull(unpack);
+            Assert.Null(unpack.SenderVerkey);
+            Assert.NotNull(unpack.RecipientVerkey);
+            Assert.Equal(unpack.RecipientVerkey, sender.VerKey);
+        }
+
+        [Fact]
+        public async Task PackV1AndUnpackV2Auth()
+        {
+
+            var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
+
+            var mySender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}"); 
+            var anotherMySender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}");
+
+            var packed = await CryptoUtils.PackAsync(_wallet, anotherMySender.VerKey, message, mySender.VerKey, recordService: null);
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed, _walletRecordServiceV2);
+
+            var jObject = JObject.Parse(unpack.Message);
+
+            Assert.NotNull(unpack);
+            Assert.NotNull(unpack.SenderVerkey);
+            Assert.NotNull(unpack.RecipientVerkey);
+            Assert.Equal(unpack.RecipientVerkey, anotherMySender.VerKey);
+            Assert.Equal(unpack.SenderVerkey, mySender.VerKey);
+            Assert.Equal(MessageTypes.ConnectionInvitation, jObject["@type"].ToObject<string>());
+        }
+
+        [Fact]
+        public async Task PackV2AndUnpackV1Anon()
+        {
+
+            var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
+
+            var (_, senderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
+
+            var packed = await CryptoUtils.PackAsync(_store, senderVerkey, message, senderKey: null, recordService: _walletRecordServiceV2);
+
+            var unpack = await CryptoUtils.UnpackAsync(_wallet, packed, recordService: null);
+
+            Assert.NotNull(unpack);
+            Assert.Null(unpack.SenderVerkey);
+            Assert.NotNull(unpack.RecipientVerkey);
+            Assert.Equal(unpack.RecipientVerkey, senderVerkey);
+        }
+
+        [Fact]
+        public async Task PackV2AndUnpackV1Auth()
+        {
+
+            var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
+
+            var (_, mySenderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
+            var (_, anotherMySenderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
+
+            var packed = await CryptoUtils.PackAsync(_wallet, anotherMySenderVerkey, message, mySenderVerkey);
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed);
+
+            var jObject = JObject.Parse(unpack.Message);
+
+            Assert.NotNull(unpack);
+            Assert.NotNull(unpack.SenderVerkey);
+            Assert.NotNull(unpack.RecipientVerkey);
+            Assert.Equal(unpack.RecipientVerkey, anotherMySenderVerkey);
+            Assert.Equal(unpack.SenderVerkey, mySenderVerkey);
+            Assert.Equal(MessageTypes.ConnectionInvitation, jObject["@type"].ToObject<string>());
+        }
     }
 }
