@@ -808,42 +808,41 @@ namespace Hyperledger.Aries.Tests
         [Fact]
         public async Task PackV1AndUnpackV2Anon()
         {
-
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            //var sender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}");
-            var sender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.StewardSeed}.ToJson());
-            //Simulate that there was already a keyExchange and both wallet and store have the sekretKey for the verkey
-            _ = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed : TestConstants.StewardSeed);
+            //Simulate that there is already a connection and each one knows the verkey of the other party. In this case for simplicity myVerkey = theirVerkey
+            var theirRecipient = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.RecipientSeed}.ToJson());
+            _ = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed : TestConstants.RecipientSeed);
 
-            var packed = await CryptoUtils.PackAsync(_wallet, sender.VerKey, message, senderKey: null, recordService: null);
-
-            var unpack = await CryptoUtils.UnpackAsync(_store, packed, _walletRecordServiceV2);
+            var packed = await CryptoUtils.PackAsync(_wallet, theirRecipient.VerKey, message, senderKey: null, recordService: null);
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed, recordService: _walletRecordServiceV2);
 
             Assert.NotNull(unpack);
             Assert.Null(unpack.SenderVerkey);
             Assert.NotNull(unpack.RecipientVerkey);
-            Assert.Equal(unpack.RecipientVerkey, sender.VerKey);
+            Assert.Equal(unpack.RecipientVerkey, theirRecipient.VerKey);
         }
 
         [Fact]
         public async Task PackV1AndUnpackV2Auth()
         {
-
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            var mySender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}"); 
-            var anotherMySender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, "{}");
+            //Simulate that there is already a connection and each one knows the verkey of the other party. In this case for simplicity myVerkey = theirVerkey
+            var mySender = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.SenderSeed }.ToJson());
+            _ = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed: TestConstants.SenderSeed);
+            var theirRecipient = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.RecipientSeed }.ToJson());
+            _ = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed: TestConstants.RecipientSeed);
 
-            var packed = await CryptoUtils.PackAsync(_wallet, anotherMySender.VerKey, message, mySender.VerKey, recordService: null);
-            var unpack = await CryptoUtils.UnpackAsync(_store, packed, _walletRecordServiceV2);
+            var packed = await CryptoUtils.PackAsync(_wallet, theirRecipient.VerKey, message, mySender.VerKey, recordService: null);
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed, recordService: _walletRecordServiceV2);
 
             var jObject = JObject.Parse(unpack.Message);
 
             Assert.NotNull(unpack);
             Assert.NotNull(unpack.SenderVerkey);
             Assert.NotNull(unpack.RecipientVerkey);
-            Assert.Equal(unpack.RecipientVerkey, anotherMySender.VerKey);
+            Assert.Equal(unpack.RecipientVerkey, theirRecipient.VerKey);
             Assert.Equal(unpack.SenderVerkey, mySender.VerKey);
             Assert.Equal(MessageTypes.ConnectionInvitation, jObject["@type"].ToObject<string>());
         }
@@ -851,19 +850,19 @@ namespace Hyperledger.Aries.Tests
         [Fact]
         public async Task PackV2AndUnpackV1Anon()
         {
-
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            var (_, senderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
+            //Simulate that there is already a connection and each one knows the verkey of the other party. In this case for simplicity myVerkey = theirVerkey
+            var (_, theirRecipientVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed: TestConstants.RecipientSeed);
+            _ = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.RecipientSeed }.ToJson());
 
-            var packed = await CryptoUtils.PackAsync(_store, senderVerkey, message, senderKey: null, recordService: _walletRecordServiceV2);
-
+            var packed = await CryptoUtils.PackAsync(_store, theirRecipientVerkey, message, senderKey: null, recordService: _walletRecordServiceV2);
             var unpack = await CryptoUtils.UnpackAsync(_wallet, packed, recordService: null);
 
             Assert.NotNull(unpack);
             Assert.Null(unpack.SenderVerkey);
             Assert.NotNull(unpack.RecipientVerkey);
-            Assert.Equal(unpack.RecipientVerkey, senderVerkey);
+            Assert.Equal(unpack.RecipientVerkey, theirRecipientVerkey);
         }
 
         [Fact]
@@ -872,18 +871,21 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            var (_, mySenderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
-            var (_, anotherMySenderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2);
+            //Simulate that there is already a connection and each one knows the verkey of the other party. In this case for simplicity myVerkey = theirVerkey
+            var (_, mySenderVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed: TestConstants.SenderSeed);
+            _ = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.SenderSeed }.ToJson());
+            var (_, myRecipientVerkey) = await DidUtils.CreateAndStoreMyDidAsync(_store, _walletRecordServiceV2, seed: TestConstants.RecipientSeed);
+            _ = await Did.CreateAndStoreMyDidAsync(_wallet.Wallet, new { seed = TestConstants.RecipientSeed }.ToJson());
 
-            var packed = await CryptoUtils.PackAsync(_wallet, anotherMySenderVerkey, message, mySenderVerkey);
-            var unpack = await CryptoUtils.UnpackAsync(_store, packed);
+            var packed = await CryptoUtils.PackAsync(_wallet, myRecipientVerkey, message, mySenderVerkey , recordService: null);
+            var unpack = await CryptoUtils.UnpackAsync(_store, packed, recordService: _walletRecordServiceV2);
 
             var jObject = JObject.Parse(unpack.Message);
 
             Assert.NotNull(unpack);
             Assert.NotNull(unpack.SenderVerkey);
             Assert.NotNull(unpack.RecipientVerkey);
-            Assert.Equal(unpack.RecipientVerkey, anotherMySenderVerkey);
+            Assert.Equal(unpack.RecipientVerkey, myRecipientVerkey);
             Assert.Equal(unpack.SenderVerkey, mySenderVerkey);
             Assert.Equal(MessageTypes.ConnectionInvitation, jObject["@type"].ToObject<string>());
         }
