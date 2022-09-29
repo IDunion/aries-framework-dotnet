@@ -200,20 +200,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     credentialRecord.RevocationRegistryId);
 
             // Revoke the credential
-            // TODO : ??? - Format of credRevIdx like revRegistryIndex from revocationRegistryId?
-            if (long.TryParse(credentialRecord.CredentialRevocationId.Split(':').LastOrDefault()?.Split('-').FirstOrDefault(), out long credRevIdx))
+            long credRevIdx = 0;
+            if (credentialRecord.CredentialRevocationId != null)
             {
-                //if (false == long.TryParse(credentialRecord.CredentialRevocationId, out long credRevIdx))
-                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Invalid credentialRevocationId, has to be of type long : {credentialRecord.CredentialRevocationId}.");
+                _ = long.TryParse(credentialRecord.CredentialRevocationId, out credRevIdx);
             }
-
             (string revRegUpdatedJson, string revocRegistryDeltaJson) = await IndySharedRsRev.RevokeCredentialAsync(
                 revRegDefJson: revocationRecord.RevRegDefJson,
                 revRegJson: revocationRecord.RevRegJson,
                 credRevIdx: credRevIdx,
                 tailsPath: revocationRecord.TailsFile);
-
-            //TODO : ??? - check with team -> Need to update revocation Registry in wallet (see indy-sdk code indy_issuer_revoke_credential)
             revocationRecord.RevRegJson = revRegUpdatedJson;
 
             TransactionCost paymentInfo =
