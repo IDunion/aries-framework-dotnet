@@ -193,7 +193,7 @@ namespace Hyperledger.Aries.Tests.Protocols
         }
     }
 
-    public class CredentialTransientTestsV2 : TestSingleWallet
+    public class CredentialTransientTestsV2 : TestSingleWalletV2
     {
         static CredentialTransientTestsV2()
         {

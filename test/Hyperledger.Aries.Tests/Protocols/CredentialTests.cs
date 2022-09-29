@@ -61,7 +61,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             _recordService = new DefaultWalletRecordService();
             var ledgerService = new DefaultLedgerService(new DefaultLedgerSigningService(new DefaultProvisioningService(_recordService, new DefaultWalletService(), Options.Create(new AgentOptions()))));
 
-            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
+            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { }, recordService: null);
 
             _eventAggregator = new EventAggregator();
 
@@ -549,7 +549,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _poolService,
                 provisioning);
 
-            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
+            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { }, _recordService);
 
             _eventAggregator = new EventAggregator();
 

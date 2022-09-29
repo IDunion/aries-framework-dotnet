@@ -71,7 +71,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             _eventAggregator = new EventAggregator();
 
-            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
+            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { }, recordService: null);
 
             var provisioning = ServiceUtils.GetDefaultMockProvisioningService();
             var paymentService = new DefaultPaymentService();
@@ -914,7 +914,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
             _eventAggregator = new EventAggregator();
 
-            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { });
+            var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { }, _recordService);
 
             var paymentService = new DefaultPaymentService();
 

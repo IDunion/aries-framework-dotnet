@@ -79,7 +79,7 @@ namespace Hyperledger.Aries.Tests
             var httpMessageDispatcher = new HttpMessageDispatcher(clientFactory.Object);
 
             _messagingService =
-                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher });
+                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher }, recordService: null);
         }
 
         public async Task InitializeAsync()
@@ -430,7 +430,7 @@ namespace Hyperledger.Aries.Tests
             var httpMessageDispatcher = new HttpMessageDispatcher(clientFactory.Object);
 
             _messagingService =
-                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher });           
+                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher }, _walletRecordService);           
 
             _walletService = new DefaultWalletServiceV2();
             _walletRecordService = new DefaultWalletRecordServiceV2();
