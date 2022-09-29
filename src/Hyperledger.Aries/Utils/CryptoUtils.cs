@@ -142,7 +142,7 @@ namespace Hyperledger.Aries.Utils
             byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
             (byte[] encryptedMessage, byte[] tag, _) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce, protectedInfo);
 
-            string jwe = JsonConvert.SerializeObject(new MessageWrapper
+            string msgWrapper = JsonConvert.SerializeObject(new MessageWrapper
             {
                 Protected = protectedInfo,
                 Iv = Multibase.Encode(MultibaseEncoding.Base64Url, nonce),
@@ -150,7 +150,7 @@ namespace Hyperledger.Aries.Utils
                 Tag = Multibase.Encode(MultibaseEncoding.Base64Url, tag)
             });
 
-            return Encoding.UTF8.GetBytes(jwe);
+            return Encoding.UTF8.GetBytes(msgWrapper);
         }
 
         private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, string contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
@@ -324,28 +324,33 @@ namespace Hyperledger.Aries.Utils
                     if(recipient.Header.Sender != null)
                     {
                         isAuthCrypt = true;
-                    }                    
+                    }
+                    break;
                 }
             }
 
             return (foundRecipient, isAuthCrypt);
         }
 
-        private static async Task<(string, string)> UnpackCekAuthCrypt(Store store, Recipient recipient)
+        private static async Task<string> UnpackCekAuthCrypt(Store store, Recipient recipient)
         {
-            return ("", "");
+            byte[] encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
+            byte[] usedIv = Convert.FromBase64String(recipient.Header.Iv);
+            byte[] senderVerKey = Convert.FromBase64String(recipient.Header.Sender);
+
+            await AriesAskarKey.OpenSealCryptoBoxAsync();
+            await AriesAskarKey.OpenCryptoBoxAsync();
+
+            return "";
         }
 
-        private static async Task<(string, string)> UnpackCekAnonCrypt(Store store, Recipient recipient)
+        private static async Task<string> UnpackCekAnonCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
         {
-            string encryptedCek = Encoding.UTF8.GetString(Convert.FromBase64String(recipient.EncryptedKey));
+            byte[] encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
+            IntPtr privateKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
+            string unencryptedCek = await AriesAskarKey.OpenSealCryptoBoxAsync(privateKeyHandle, encryptedCek);
 
-            IntPtr localKeyHandle = new IntPtr(); 
-            byte[] privateKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(localKeyHandle);
-
-            //AriesAskarKey.OpenSealCryptoBoxAsync( );
-
-            return ("", "");
+            return unencryptedCek;
         }
         #endregion
 
