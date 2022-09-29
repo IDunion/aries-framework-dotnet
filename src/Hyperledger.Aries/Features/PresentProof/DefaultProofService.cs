@@ -868,6 +868,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                 foreach (var proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
                 {
                     var revocationInterval = proofRequestRequestedAttribute.Value.NonRevoked;
+                    if (revocationInterval == null)
+                        continue;
+                    
                     var (delta, state) = await BuildRevocationStateAsync(
                         agentContext, credential, registryDefinition, revocationInterval);
                     
@@ -882,6 +885,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                 foreach (var proofRequestRequestedPredicate in proofRequest.RequestedPredicates)
                 {
                     var revocationInterval = proofRequestRequestedPredicate.Value.NonRevoked;
+                    if (revocationInterval == null)
+                        continue;
+                    
                     var (delta, state) = await BuildRevocationStateAsync(
                         agentContext, credential, registryDefinition, revocationInterval);
                     
