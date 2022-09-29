@@ -20,6 +20,10 @@ namespace Hyperledger.TestHarness
 
         public const string WalletSeed = "000000000000000000000000Wallet11";
 
+        public const string RecipientSeed = "00000000000000000000000Recipient"; 
+
+        public const string SenderSeed = "00000000000000000000000000Sender";
+
         public static WalletConfiguration TestSingleWalletV2WalletConfig = new WalletConfiguration
         {
             Id = Guid.NewGuid().ToString(),
