@@ -291,7 +291,7 @@ namespace Hyperledger.Aries.Utils
             }
             else
             {
-                await UnpackCekAnonCrypt(store, recipient);
+                //await UnpackCekAnonCrypt(store, recipient);
             }
 
             IntPtr contentEncryptionKeyHandle = new IntPtr(); // TODO: get the handle.
@@ -338,8 +338,8 @@ namespace Hyperledger.Aries.Utils
             byte[] usedIv = Convert.FromBase64String(recipient.Header.Iv);
             byte[] senderVerKey = Convert.FromBase64String(recipient.Header.Sender);
 
-            await AriesAskarKey.OpenSealCryptoBoxAsync();
-            await AriesAskarKey.OpenCryptoBoxAsync();
+            //await AriesAskarKey.OpenSealCryptoBoxAsync();
+            //await AriesAskarKey.OpenCryptoBoxAsync();
 
             return "";
         }
