@@ -23,26 +23,31 @@ namespace Hyperledger.Aries.Agents
 
         /// <summary>The HTTP client</summary>
         protected readonly IEnumerable<IMessageDispatcher> MessageDispatchers;
+
+        protected readonly IWalletRecordService RecordService;
         // ReSharper restore InconsistentNaming
 
         /// <summary>Initializes a new instance of the <see cref="DefaultMessageService"/> class.</summary>
         /// <param name="logger">The logger.</param>
         /// <param name="messageDispatchers">The message handler.</param>
+        /// <param name="recordService">The record service.</param>
         public DefaultMessageService(
             ILogger<DefaultMessageService> logger,
-            IEnumerable<IMessageDispatcher> messageDispatchers)
+            IEnumerable<IMessageDispatcher> messageDispatchers,
+            IWalletRecordService recordService)
         {
             Logger = logger;
             MessageDispatchers = messageDispatchers;
+            RecordService = recordService;
         }
 
-        private async Task<UnpackedMessageContext> UnpackAsync(AriesStorage storage, PackedMessageContext message, string senderKey)
+        private async Task<UnpackedMessageContext> UnpackAsync(AriesStorage storage, PackedMessageContext message, string senderKey, IWalletRecordService recordService)
         {
             UnpackResult unpacked;
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync(storage, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(storage, message.Payload, recordService);
             }
             catch (Exception e)
             {
@@ -75,7 +80,7 @@ namespace Hyperledger.Aries.Agents
             if (dispatcher == null)
                 throw new AriesFrameworkException(ErrorCode.A2AMessageTransmissionError, $"No registered dispatcher for transport scheme : {uri.Scheme}");
 
-            var wireMsg = await CryptoUtils.PrepareAsync(agentContext, message, recipientKey, routingKeys, senderKey);
+            var wireMsg = await CryptoUtils.PrepareAsync(agentContext, message, recipientKey, routingKeys, senderKey, RecordService);
 
             await dispatcher.DispatchAsync(uri, new PackedMessageContext(wireMsg));
         }
@@ -104,12 +109,12 @@ namespace Hyperledger.Aries.Agents
                 throw new AriesFrameworkException(ErrorCode.A2AMessageTransmissionError, $"No registered dispatcher for transport scheme : {uri.Scheme}");
 
             message.AddReturnRouting(returnType);
-            var wireMsg = await CryptoUtils.PrepareAsync(agentContext, message, recipientKey, routingKeys, senderKey);
+            var wireMsg = await CryptoUtils.PrepareAsync(agentContext, message, recipientKey, routingKeys, senderKey, RecordService);
 
             var response = await dispatcher.DispatchAsync(uri, new PackedMessageContext(wireMsg));
             if (response is PackedMessageContext responseContext)
             {
-                return await UnpackAsync(agentContext.AriesStorage, responseContext, senderKey);
+                return await UnpackAsync(agentContext.AriesStorage, responseContext, senderKey, RecordService);
             }
             throw new InvalidOperationException("Invalid or empty response");
         }

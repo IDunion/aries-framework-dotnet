@@ -291,7 +291,7 @@ namespace Hyperledger.Aries.Utils
             }
             else
             {
-                //await UnpackCekAnonCrypt(store, recipient);
+                await UnpackCekAnonCrypt(store, recordService, recipient);
             }
 
             IntPtr contentEncryptionKeyHandle = new IntPtr(); // TODO: get the handle.
@@ -388,7 +388,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="routingKeys">The routing keys to pack the message for.</param>
         /// <param name="senderKey">The sender key to encrypt the message from.</param>
         /// <returns>The response async.</returns>
-        public static async Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, string recipientKey, string[] routingKeys = null, string senderKey = null)
+        public static async Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, string recipientKey, string[] routingKeys = null, string senderKey = null, IWalletRecordService recordService = null)
         {
             if (message == null)
             {
@@ -403,7 +403,7 @@ namespace Hyperledger.Aries.Utils
             recipientKey = DidUtils.IsDidKey(recipientKey) ? DidUtils.ConvertDidKeyToVerkey(recipientKey) : recipientKey;
 
             // Pack application level message
-            byte[] msg = await PackAsync(agentContext.AriesStorage, recipientKey, message.ToByteArray(), senderKey);
+            byte[] msg = await PackAsync(agentContext.AriesStorage, recipientKey, message.ToByteArray(), senderKey, recordService);
 
             string previousKey = recipientKey;
 
@@ -415,7 +415,15 @@ namespace Hyperledger.Aries.Utils
                 {
                     string verkey = DidUtils.IsDidKey(routingKey) ? DidUtils.ConvertDidKeyToVerkey(routingKey) : routingKey;
                     // Anonpack
-                    msg = await PackAsync(agentContext.AriesStorage, verkey, new ForwardMessage(agentContext.UseMessageTypesHttps) { Message = JObject.Parse(msg.GetUTF8String()), To = previousKey }.ToByteArray());
+                    msg = await PackAsync(
+                        agentContext.AriesStorage, 
+                        verkey, 
+                        new ForwardMessage(agentContext.UseMessageTypesHttps) 
+                        { 
+                            Message = JObject.Parse(msg.GetUTF8String()),
+                            To = previousKey 
+                        }.ToByteArray(),
+                        recordService: recordService);
                     previousKey = verkey;
                 }
             }
@@ -432,13 +440,13 @@ namespace Hyperledger.Aries.Utils
         /// <param name="message">The message context.</param>
         /// <param name="connection">The connection to prepare the message for.</param>
         /// <returns>The response async.</returns>
-        public static Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, ConnectionRecord connection)
+        public static Task<byte[]> PrepareAsync(IAgentContext agentContext, AgentMessage message, ConnectionRecord connection, IWalletRecordService recordService = null)
         {
             string recipientKey = connection.TheirVk
                 ?? throw new AriesFrameworkException(ErrorCode.A2AMessageTransmissionError, "Cannot find encryption key");
 
             string[] routingKeys = connection.Endpoint?.Verkey != null ? connection.Endpoint.Verkey : new string[0];
-            return PrepareAsync(agentContext, message, recipientKey, routingKeys, connection.MyVk);
+            return PrepareAsync(agentContext, message, recipientKey, routingKeys, connection.MyVk, recordService);
         }
 
         #region CreateKey

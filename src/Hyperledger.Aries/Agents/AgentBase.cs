@@ -15,6 +15,7 @@ using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Features.Routing;
 using Hyperledger.Aries.Features.TrustPing;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,11 @@ namespace Hyperledger.Aries.Agents
         /// </summary>
         protected IEnumerable<IAgentMiddleware> Middlewares { get; }
 
+        /// <summary>
+        /// Gets a collecrion of registered agent middlewares
+        /// </summary>
+        protected IWalletRecordService RecordService { get; }
+
         /// <summary>Initializes a new instance of the <see cref="AgentBase"/> class.</summary>
         protected AgentBase(IServiceProvider provider)
         {
@@ -62,6 +68,7 @@ namespace Hyperledger.Aries.Agents
             Logger = provider.GetRequiredService<ILogger<AgentBase>>();
             Handlers = new List<IMessageHandler>();
             Middlewares = provider.GetServices<IAgentMiddleware>();
+            RecordService = provider.GetService<IWalletRecordService>();
         }
 
         /// <summary>Adds a handler for supporting default out-of-band flows.</summary>
@@ -178,8 +185,8 @@ namespace Hyperledger.Aries.Agents
                         }
 
                         var result = inboundMessageContext.Connection != null
-                            ? await CryptoUtils.PackAsync(agentContext.AriesStorage, inboundMessageContext.Connection.TheirVk, response.ToByteArray())
-                            : await CryptoUtils.PackAsync(agentContext.AriesStorage, unpacked?.SenderVerkey, response.ToByteArray());
+                            ? await CryptoUtils.PackAsync(agentContext.AriesStorage, inboundMessageContext.Connection.TheirVk, response.ToByteArray(), recordService: RecordService)
+                            : await CryptoUtils.PackAsync(agentContext.AriesStorage, unpacked?.SenderVerkey, response.ToByteArray(), recordService: RecordService);
                         return new PackedMessageContext(result);
                     }
                     if (inboundMessageContext.Connection != null)
@@ -204,7 +211,7 @@ namespace Hyperledger.Aries.Agents
 
             try
             {
-                unpacked = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, message.Payload);
+                unpacked = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, message.Payload, RecordService);
             }
             catch (Exception e)
             {
