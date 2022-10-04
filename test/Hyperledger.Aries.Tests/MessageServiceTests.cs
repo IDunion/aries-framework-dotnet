@@ -534,7 +534,7 @@ namespace Hyperledger.Aries.Tests
             (_, string senderVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new string[0], senderVerKey);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new string[0], senderVerKey, _walletRecordService);
 
             var unpackRes = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, encrypted, _walletRecordService);
             var unpackMsg = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes.Message);
@@ -555,7 +555,7 @@ namespace Hyperledger.Aries.Tests
             (_, string routingRecipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new[] { routingRecipientVerKey }, senderVerKey);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new[] { routingRecipientVerKey }, senderVerKey, _walletRecordService);
 
             var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordService);
             var unpackMsg = JsonConvert.DeserializeObject<ForwardMessage>(unpackRes.Message);
@@ -582,7 +582,7 @@ namespace Hyperledger.Aries.Tests
             (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, recordService: _walletRecordService);
 
             var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordService);
             var unpackMsg = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes.Message);
@@ -621,7 +621,8 @@ namespace Hyperledger.Aries.Tests
                 message: message,
                 recipientKey: keys.RecipientVerKey,
                 routingKeys: new[] { keys.RoutingOneVerKey, keys.RoutingTwoVerKey },
-                senderKey: keys.SenderVerKey);
+                senderKey: keys.SenderVerKey,
+                recordService: _walletRecordService);
 
             // Unpack and assert outter forward message
             var outterResult = await CryptoUtils.UnpackAsync(_storage, transportMessage, _walletRecordService);

@@ -47,6 +47,15 @@ namespace Hyperledger.Aries.Utils
             return PackAsync(wallet, new[] { recipientKey }, message, senderKey);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <param name="recipientKey"></param>
+        /// <param name="message"></param>
+        /// <param name="senderKey"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
         public static Task<byte[]> PackAsync(
            AriesStorage storage, string recipientKey, byte[] message, string senderKey = null, IWalletRecordService recordService = null)
         {
@@ -60,6 +69,16 @@ namespace Hyperledger.Aries.Utils
             return Crypto.PackMessageAsync(wallet, recipientKeys.ToJson(), senderKey, message);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <param name="recipientKeys"></param>
+        /// <param name="message"></param>
+        /// <param name="senderKey"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<byte[]> PackAsync(
             AriesStorage storage, string[] recipientKeys, byte[] message, string senderKey = null, IWalletRecordService recordService = null)
         {
@@ -84,6 +103,16 @@ namespace Hyperledger.Aries.Utils
             return PackAsync(wallet, new[] { recipientKey }, message.ToByteArray(), senderKey);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="storage"></param>
+        /// <param name="recipientKey"></param>
+        /// <param name="message"></param>
+        /// <param name="senderKey"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
         public static Task<byte[]> PackAsync<T>(
             AriesStorage storage, string recipientKey, T message, string senderKey = null, IWalletRecordService recordService = null)
         {
@@ -97,6 +126,17 @@ namespace Hyperledger.Aries.Utils
             return Crypto.PackMessageAsync(wallet, recipientKeys.ToJson(), senderKey, message.ToByteArray());
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="storage"></param>
+        /// <param name="recipientKeys"></param>
+        /// <param name="message"></param>
+        /// <param name="senderKey"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<byte[]> PackAsync<T>(
             AriesStorage storage, string[] recipientKeys, T message, string senderKey = null, IWalletRecordService recordService = null)
         {
@@ -114,6 +154,16 @@ namespace Hyperledger.Aries.Utils
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recipientVerKeys"></param>
+        /// <param name="senderVerKey"></param>
+        /// <param name="unencryptedMessage"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         private static async Task<byte[]> PackMessageAsync(Store store, string[] recipientVerKeys, string senderVerKey, byte[] unencryptedMessage, IWalletRecordService recordService)
         {
             if (recipientVerKeys == null || recipientVerKeys.Length <= 0)
@@ -155,30 +205,37 @@ namespace Hyperledger.Aries.Utils
             return Encoding.UTF8.GetBytes(msgWrapper);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recordService"></param>
+        /// <param name="contentEncryptionKey"></param>
+        /// <param name="recipientVerKeys"></param>
+        /// <param name="senderVerkey"></param>
+        /// <returns></returns>
         private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, string contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
         {
 
             IntPtr keyHandle = await recordService.GetKeyAsync(store, senderVerkey);
             byte[] secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
-            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.X25519, secretKey);
+            // Key needs to be created with KeyAlg.ED25519 and then converted, due some native method bug.
+            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.ED25519, secretKey);
+            IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(senderKeyHandle, KeyAlg.X25519);
 
             List<Recipient> recipients = new();
 
             foreach (string verKey in recipientVerKeys)
             {
-                IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.X25519, Multibase.Base58.Decode(verKey));
+                var decodedVerkey = Multibase.Base58.Decode(verKey);
+                // Key needs to be created with KeyAlg.ED25519 and then converted, due some native method bug.
+                IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedVerkey);
+                IntPtr convertedRecipientKeyHandle = await AriesAskarKey.ConvertKeyAsync(recipientKeyHandle, KeyAlg.X25519);
                 byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
+                // Encrypting the content encryption key.
+                byte[] encryptedCek = await AriesAskarKey.CryptoBoxAsync(convertedRecipientKeyHandle, convertedSenderKeyHandle, contentEncryptionKey,nonce);
                 // Encrypting the recipient verKey.
-                byte[] encryptedCek = await AriesAskarKey.CryptoBoxAsync(recipientKeyHandle, senderKeyHandle,contentEncryptionKey,nonce);
-                byte[] encryptedSender = await AriesAskarKey.SealCryptoBoxAsync(recipientKeyHandle, senderVerkey);
-                
-                ///////////////////////////////////////////////////////////////////////////////////
-                IntPtr verKeyHandle = await recordService.GetKeyAsync(store, verKey);
-                byte[] secretBytes = await AriesAskarKey.GetSecretBytesFromKeyAsync(verKeyHandle);
-                IntPtr handle2 = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.X25519, secretBytes);
-                //IntPtr convertedverKeyHandle = await AriesAskarKey.ConvertKeyAsync(handle2, KeyAlg.X25519);
-                string unencryptedSenderVerKey = await AriesAskarKey.OpenSealCryptoBoxAsync(handle2, encryptedSender);
-                //////////////////////////////////////////////////////////////////////////////////
+                byte[] encryptedSender = await AriesAskarKey.SealCryptoBoxAsync(convertedRecipientKeyHandle, senderVerkey);
 
                 recipients.Add(new Recipient {
                     EncryptedKey = Convert.ToBase64String(encryptedCek),
@@ -194,6 +251,12 @@ namespace Hyperledger.Aries.Utils
             return await WrapProtectedInfo(recipients, true);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="contentEncryptionKey"></param>
+        /// <param name="recipientVerKeys"></param>
+        /// <returns></returns>
         private static async Task<string> PrepareProtectedInfoAnonCrypt(string contentEncryptionKey, string[] recipientVerKeys)
         {
             List<Recipient> recipients = new();
@@ -219,6 +282,12 @@ namespace Hyperledger.Aries.Utils
             return await WrapProtectedInfo(recipients, false);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="recipients"></param>
+        /// <param name="isAuthCrypt"></param>
+        /// <returns></returns>
         private static Task<string> WrapProtectedInfo(List<Recipient> recipients, bool isAuthCrypt = false)
         {
             return Task.FromResult(Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new ProtectedHeader {
@@ -238,6 +307,14 @@ namespace Hyperledger.Aries.Utils
             return result.ToObject<UnpackResult>();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <param name="message"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<UnpackResult> UnpackAsync(AriesStorage storage, byte[] message, IWalletRecordService recordService = null)
         {
             byte[] result;
@@ -265,6 +342,15 @@ namespace Hyperledger.Aries.Utils
             return unpacked.Message.ToObject<T>();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="storage"></param>
+        /// <param name="message"></param>
+        /// <param name="recordService"></param>
+        /// <returns></returns>
+        /// <exception cref="AriesFrameworkException"></exception>
         public static async Task<T> UnpackAsync<T>(AriesStorage storage, byte[] message, IWalletRecordService recordService = null)
         {
             byte[] result = null;
@@ -285,6 +371,13 @@ namespace Hyperledger.Aries.Utils
             return unpacked.Message.ToObject<T>();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recordService"></param>
+        /// <param name="encryptedMessage"></param>
+        /// <returns></returns>
         private static async Task<byte[]> UnpackMessageAsync(Store store, IWalletRecordService recordService, byte[] encryptedMessage)
         {
             string decodedMessage = Encoding.UTF8.GetString(encryptedMessage);
@@ -297,9 +390,10 @@ namespace Hyperledger.Aries.Utils
             (Recipient recipient, bool isAuthCrypt) = await FindCorrectRecipient(store, recordService, headerObject);
 
             string contentEncryptionKey;
+            string unencryptedSenderKey = null;
             if (isAuthCrypt)
             {
-                (_, contentEncryptionKey) = await UnpackCekAuthCrypt(store, recordService, recipient);
+                (unencryptedSenderKey, contentEncryptionKey) = await UnpackCekAuthCrypt(store, recordService, recipient);
             }
             else
             {
@@ -317,11 +411,18 @@ namespace Hyperledger.Aries.Utils
             return new UnpackResult
             {
                 RecipientVerkey = recipient.Header.Kid,
-                SenderVerkey = recipient.Header.Sender,
+                SenderVerkey = unencryptedSenderKey,
                 Message = Encoding.UTF8.GetString(decryptedMessage),
             }.ToByteArray();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recordService"></param>
+        /// <param name="header"></param>
+        /// <returns></returns>
         private static async Task<(Recipient, bool)> FindCorrectRecipient(Store store, IWalletRecordService recordService, ProtectedHeader header)
         {
             Recipient foundRecipient = null;
@@ -345,22 +446,38 @@ namespace Hyperledger.Aries.Utils
             return (foundRecipient, isAuthCrypt);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recordService"></param>
+        /// <param name="recipient"></param>
+        /// <returns></returns>
         private static async Task<(string, string)> UnpackCekAuthCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
         {
             byte[] encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
             byte[] usedIv = Convert.FromBase64String(recipient.Header.Iv);
             byte[] encryptedSenderVerKey = Convert.FromBase64String(recipient.Header.Sender);
 
-            IntPtr privateKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
-            IntPtr convertedKeyHandle = await AriesAskarKey.ConvertKeyAsync(privateKeyHandle, KeyAlg.X25519);
-            string unencryptedSenderVerKey = await AriesAskarKey.OpenSealCryptoBoxAsync(convertedKeyHandle, encryptedSenderVerKey);
+            IntPtr myKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
+            IntPtr convertedMyKeyHandle = await AriesAskarKey.ConvertKeyAsync(myKeyHandle, KeyAlg.X25519);
+            string unencryptedSenderVerKey = await AriesAskarKey.OpenSealCryptoBoxAsync(convertedMyKeyHandle, encryptedSenderVerKey);
 
-            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.X25519, Encoding.UTF8.GetBytes(unencryptedSenderVerKey));
-            string unencryptedCek = await AriesAskarKey.OpenCryptoBoxAsync(privateKeyHandle, senderKeyHandle, encryptedCek, usedIv);
+            byte[] decodedSenderVerKey = Multibase.Base58.Decode(unencryptedSenderVerKey);
+            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedSenderVerKey);
+            IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(senderKeyHandle, KeyAlg.X25519);
+            string unencryptedCek = await AriesAskarKey.OpenCryptoBoxAsync(convertedMyKeyHandle, convertedSenderKeyHandle, encryptedCek, usedIv);
 
             return (unencryptedSenderVerKey, unencryptedCek);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="recordService"></param>
+        /// <param name="recipient"></param>
+        /// <returns></returns>
         private static async Task<string> UnpackCekAnonCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
         {
             byte[] encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
