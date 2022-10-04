@@ -116,7 +116,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did)
+        public virtual async Task<ServiceEndpointResult> LookupServiceEndpointAsync(IAgentContext context, string did)
         {
             string res = await LookupAttributeAsync(context, did, "endpoint");
             JObject jobj = JObject.Parse(res);
@@ -125,7 +125,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task RegisterServiceEndpointAsync(IAgentContext context, string did, string serviceEndpoint, TransactionCost paymentInfo = null)
+        public virtual async Task RegisterServiceEndpointAsync(IAgentContext context, string did, string serviceEndpoint, TransactionCost paymentInfo = null)
         {
             var value = new { endpoint = serviceEndpoint };
             await RegisterAttributeAsync(context, did, did, "endpoint", value);
@@ -203,7 +203,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
+        public virtual async Task<string> LookupNymAsync(IAgentContext agentContext, string did)
         {
             string req = await IndyLedger.BuildGetNymRequestAsync(null, did);
             string res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);
@@ -214,7 +214,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext)
+        public virtual async Task<IList<AuthorizationRule>> LookupAuthorizationRulesAsync(IAgentContext agentContext)
         {
             string req = await IndyLedger.BuildGetAuthRuleRequestAsync(null, null, null, null, null, null);
             string res = await IndyLedger.SubmitRequestAsync((await agentContext.Pool).Pool, req);

@@ -19,7 +19,7 @@ namespace Hyperledger.Aries.Ledger
             this.provisioningService = provisioningService;
         }
         /// <inheritdoc />
-        public async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
+        public virtual async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <inheritdoc />
-        public Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson)
+        public virtual Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson)
         {
             return IndyLedger.SignRequestAsync(storage.Wallet, submitterDid, requestJson);
         }

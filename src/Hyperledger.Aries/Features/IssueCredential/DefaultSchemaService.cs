@@ -2,13 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Hyperledger.Aries.Contracts;
+using Flurl;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Configuration;
+using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Models.Records;
+using Hyperledger.Aries.Payments;
+using Hyperledger.Aries.Storage;
 using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Payments;
@@ -110,7 +115,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<string> LookupSchemaFromCredentialDefinitionAsync(IAgentContext agentContext,
+        public virtual async Task<string> LookupSchemaFromCredentialDefinitionAsync(IAgentContext agentContext,
             string credentialDefinitionId)
         {
             var credDef = await LookupCredentialDefinitionAsync(agentContext, credentialDefinitionId);
@@ -187,7 +192,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<string> CreateCredentialDefinitionAsync(IAgentContext agentContext, CredentialDefinitionConfiguration configuration)
+        public virtual async Task<string> CreateCredentialDefinitionAsync(IAgentContext agentContext, CredentialDefinitionConfiguration configuration)
         {
             if (agentContext.AriesStorage.Wallet is null)
             {
@@ -246,7 +251,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
+        public virtual async Task<(RevocationRegistryResult, RevocationRegistryRecord)> CreateRevocationRegistryAsync(
                     IAgentContext agentContext,
                     string tag,
                     DefinitionRecord definitionRecord)

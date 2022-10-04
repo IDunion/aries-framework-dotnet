@@ -8,12 +8,13 @@ using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Decorators;
 using Hyperledger.Aries.Decorators.Attachments;
+using Hyperledger.Aries.Decorators.PleaseAck;
 using Hyperledger.Aries.Decorators.Service;
 using Hyperledger.Aries.Decorators.Threading;
-using Hyperledger.Aries.Decorators.PleaseAck;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.Handshakes.Common;
 using Hyperledger.Aries.Features.Handshakes.Connection;
+using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Payments;
@@ -25,7 +26,6 @@ using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.DidApi;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using Hyperledger.Aries.Features.IssueCredential.Models.Messages;
 using Polly;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Features.IssueCredential.Records;
@@ -153,7 +153,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task RevokeCredentialOfferAsync(IAgentContext agentContext, string offerId)
+        public virtual async Task RevokeCredentialOfferAsync(IAgentContext agentContext, string offerId)
         {
             var credentialRecord = await GetAsync(agentContext, offerId);
 
@@ -246,7 +246,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task DeleteCredentialAsync(IAgentContext agentContext, string credentialId)
+        public virtual async Task DeleteCredentialAsync(IAgentContext agentContext, string credentialId)
         {
             if (agentContext.AriesStorage.Wallet is null)
             {
@@ -267,7 +267,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<CredentialAcknowledgeMessage> CreateAcknowledgementMessageAsync(IAgentContext agentContext, string credentialRecordId,
+        public virtual async Task<CredentialAcknowledgeMessage> CreateAcknowledgementMessageAsync(IAgentContext agentContext, string credentialRecordId,
             string status = AcknowledgementStatusConstants.Ok)
         {
             var record = await GetAsync(agentContext, credentialRecordId);
@@ -284,7 +284,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<CredentialRecord> ProcessAcknowledgementMessageAsync(IAgentContext agentContext,
+        public virtual async Task<CredentialRecord> ProcessAcknowledgementMessageAsync(IAgentContext agentContext,
             CredentialAcknowledgeMessage credentialAcknowledgeMessage)
         {
             var credentialRecord = await this.GetByThreadIdAsync(agentContext, credentialAcknowledgeMessage.GetThreadId());
@@ -345,7 +345,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<CredentialRecord> CreateCredentialAsync(IAgentContext agentContext,
+        public virtual async Task<CredentialRecord> CreateCredentialAsync(IAgentContext agentContext,
             CredentialOfferMessage message)
         {
             var credentialRecordId = "";
@@ -382,7 +382,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<(CredentialRequestMessage, CredentialRecord)> CreateRequestAsync(IAgentContext agentContext,
+        public virtual async Task<(CredentialRequestMessage, CredentialRecord)> CreateRequestAsync(IAgentContext agentContext,
             string credentialId)
         {
             var credential = await GetAsync(agentContext, credentialId);
@@ -504,7 +504,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<(CredentialOfferMessage, CredentialRecord)> CreateOfferAsync(
+        public virtual async Task<(CredentialOfferMessage, CredentialRecord)> CreateOfferAsync(
             IAgentContext agentContext, OfferConfiguration config, string connectionId)
         {
             if (agentContext.AriesStorage.Wallet is null)
@@ -593,7 +593,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public async Task<(CredentialOfferMessage, CredentialRecord)> CreateOfferAsync(
+        public virtual async Task<(CredentialOfferMessage, CredentialRecord)> CreateOfferAsync(
             IAgentContext agentContext, OfferConfiguration config)
         {
             if (config is null)
@@ -647,14 +647,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
         }
 
         /// <inheritdoc />
-        public Task<(CredentialIssueMessage, CredentialRecord)> CreateCredentialAsync(IAgentContext agentContext, string
+        public virtual Task<(CredentialIssueMessage, CredentialRecord)> CreateCredentialAsync(IAgentContext agentContext, string
             credentialId)
         {
             return CreateCredentialAsync(agentContext, credentialId, values: null);
         }
 
         /// <inheritdoc />
-        public async Task<(CredentialIssueMessage, CredentialRecord)> CreateCredentialAsync(IAgentContext agentContext,
+        public virtual async Task<(CredentialIssueMessage, CredentialRecord)> CreateCredentialAsync(IAgentContext agentContext,
             string credentialId, IEnumerable<CredentialPreviewAttribute> values)
         {
             var credentialRecord = await GetAsync(agentContext, credentialId);
