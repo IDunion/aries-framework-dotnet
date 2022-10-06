@@ -9,6 +9,7 @@ using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.TestHarness;
 using Hyperledger.TestHarness;
+using Hyperledger.Aries.Storage;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
@@ -247,6 +248,10 @@ namespace Hyperledger.Aries.Tests.Protocols
             Assert.Equal(expected: CredentialState.Issued, actual: issuerRecord.State);
             Assert.NotNull(holderRecord.CredentialAttributesValues);
             Assert.Null(holderRecord.ConnectionId);
+
+            var walletService = Host.Services.GetService<IWalletService>();
+            await walletService.DeleteWalletAsync(TestConstants.TestSingleWalletV2IssuerConfig, TestConstants.TestSingelWalletV2IssuerCreds);
+            await walletService.DeleteWalletAsync(TestConstants.TestSingleWalletV2HolderConfig, TestConstants.TestSingelWalletV2HolderCreds);
         }
 
         [Fact(DisplayName = "Create a credential and automatically scale revocation registry")]
