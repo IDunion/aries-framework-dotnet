@@ -16,6 +16,7 @@ using Hyperledger.Aries.Routing.Mediator.Storage;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Hyperledger.TestHarness.Mock
@@ -496,11 +497,13 @@ namespace Hyperledger.TestHarness.Mock
         }
 
         /// <inheritdoc />
-        public Task DisposeAsync()
+        public async Task DisposeAsync()
         {
-            Host.StopAsync(TimeSpan.FromSeconds(10));
+            await Host.StopAsync(TimeSpan.FromSeconds(10));
+            var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
+            var walletService = Host.Services.GetService<IWalletService>();
+            await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
             Host.Dispose();
-            return Task.CompletedTask;
         }
 
         public class PairedAgentsV2
