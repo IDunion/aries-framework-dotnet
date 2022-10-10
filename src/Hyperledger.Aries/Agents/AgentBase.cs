@@ -179,9 +179,9 @@ namespace Hyperledger.Aries.Agents
                 {
                     if (inboundMessageContext.ReturnRoutingRequested())
                     {
-                        if (agentContext.AriesStorage.Wallet is null)
+                        if (agentContext.AriesStorage.Wallet is null && agentContext.AriesStorage.Store is null)
                         {
-                            throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
+                            throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet and Storage.Store are null.");
                         }
 
                         var result = inboundMessageContext.Connection != null

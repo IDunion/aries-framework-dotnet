@@ -393,7 +393,7 @@ namespace Hyperledger.Aries.Tests
 
         private  IMessageService _messagingService;
         private  IWalletService _walletService;
-        private  IWalletRecordService _walletRecordService;
+        private  IWalletRecordService _walletRecordServiceV2;
 
         private readonly ConcurrentBag<HttpRequestMessage> _messages = new ConcurrentBag<HttpRequestMessage>();
 
@@ -431,10 +431,10 @@ namespace Hyperledger.Aries.Tests
             var httpMessageDispatcher = new HttpMessageDispatcher(clientFactory.Object);
 
             _messagingService =
-                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher }, _walletRecordService);           
+                new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new[] { httpMessageDispatcher }, _walletRecordServiceV2);           
 
             _walletService = new DefaultWalletServiceV2();
-            _walletRecordService = new DefaultWalletRecordServiceV2();
+            _walletRecordServiceV2 = new DefaultWalletRecordServiceV2();
         }
 
         public async Task InitializeAsync()
@@ -449,9 +449,9 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            (_, string verKey )= await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string verKey )= await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
-            var packed = await CryptoUtils.PackAsync(_storage, verKey, message, null, _walletRecordService);
+            var packed = await CryptoUtils.PackAsync(_storage, verKey, message, null, _walletRecordServiceV2);
 
             Assert.NotNull(packed);
         }
@@ -462,10 +462,10 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
-            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message, myVerKey, _walletRecordService);
+            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message, myVerKey, _walletRecordServiceV2);
 
             Assert.NotNull(packed);
         }
@@ -476,10 +476,10 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            (_, string verKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string verKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
-            var packed = await CryptoUtils.PackAsync(_storage, verKey, message, null, _walletRecordService);
-            var unpack = await CryptoUtils.UnpackAsync(_storage, packed, _walletRecordService);
+            var packed = await CryptoUtils.PackAsync(_storage, verKey, message, null, _walletRecordServiceV2);
+            var unpack = await CryptoUtils.UnpackAsync(_storage, packed, _walletRecordServiceV2);
 
             Assert.NotNull(unpack);
             Assert.Null(unpack.SenderVerkey);
@@ -493,11 +493,11 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
-            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message, myVerKey, _walletRecordService);
-            var unpack = await CryptoUtils.UnpackAsync(_storage, packed, _walletRecordService);
+            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message, myVerKey, _walletRecordServiceV2);
+            var unpack = await CryptoUtils.UnpackAsync(_storage, packed, _walletRecordServiceV2);
 
             var jObject = JObject.Parse(unpack.Message);
 
@@ -515,11 +515,11 @@ namespace Hyperledger.Aries.Tests
 
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string myVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string anotherVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
-            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message.ToByteArray(), null, _walletRecordService);
-            var unpack = await CryptoUtils.UnpackAsync<ConnectionInvitationMessage>(_storage, packed, _walletRecordService);
+            var packed = await CryptoUtils.PackAsync(_storage, anotherVerKey, message.ToByteArray(), null, _walletRecordServiceV2);
+            var unpack = await CryptoUtils.UnpackAsync<ConnectionInvitationMessage>(_storage, packed, _walletRecordServiceV2);
 
             Assert.NotNull(unpack);
             Assert.Equal("123", unpack.RecipientKeys[0]);
@@ -530,13 +530,13 @@ namespace Hyperledger.Aries.Tests
         {
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string senderVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string senderVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new string[0], senderVerKey, _walletRecordService);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new string[0], senderVerKey, _walletRecordServiceV2);
 
-            var unpackRes = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, encrypted, _walletRecordService);
+            var unpackRes = await CryptoUtils.UnpackAsync(agentContext.AriesStorage, encrypted, _walletRecordServiceV2);
             var unpackMsg = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes.Message);
 
             Assert.NotNull(unpackMsg);
@@ -550,14 +550,14 @@ namespace Hyperledger.Aries.Tests
         {
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string senderVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string routingRecipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string senderVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string routingRecipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new[] { routingRecipientVerKey }, senderVerKey, _walletRecordService);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new[] { routingRecipientVerKey }, senderVerKey, _walletRecordServiceV2);
 
-            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordService);
+            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordServiceV2);
             var unpackMsg = JsonConvert.DeserializeObject<ForwardMessage>(unpackRes.Message);
 
             Assert.NotNull(unpackMsg);
@@ -565,7 +565,7 @@ namespace Hyperledger.Aries.Tests
             Assert.True(unpackRes.RecipientVerkey == routingRecipientVerKey);
             Assert.Equal(recipientVerKey, unpackMsg.To);
 
-            var unpackRes1 = await CryptoUtils.UnpackAsync(_storage, unpackMsg.Message.ToJson().GetUTF8Bytes(), _walletRecordService);
+            var unpackRes1 = await CryptoUtils.UnpackAsync(_storage, unpackMsg.Message.ToJson().GetUTF8Bytes(), _walletRecordServiceV2);
             var unpackMsg1 = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes1.Message);
 
             Assert.NotNull(unpackMsg1);
@@ -579,12 +579,12 @@ namespace Hyperledger.Aries.Tests
         {
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
-            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, recordService: _walletRecordService);
+            var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, recordService: _walletRecordServiceV2);
 
-            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordService);
+            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordServiceV2);
             var unpackMsg = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes.Message);
 
             Assert.NotNull(unpackMsg);
@@ -601,10 +601,10 @@ namespace Hyperledger.Aries.Tests
             var json = message.ToJson();
             var messageBack = json.ToObject<ConnectionInvitationMessage>();
 
-            (_, string sender) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string recipient) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string routingOne) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string routingTwo) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string sender) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string recipient) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string routingOne) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string routingTwo) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
             var keys = new
             {
@@ -622,10 +622,10 @@ namespace Hyperledger.Aries.Tests
                 recipientKey: keys.RecipientVerKey,
                 routingKeys: new[] { keys.RoutingOneVerKey, keys.RoutingTwoVerKey },
                 senderKey: keys.SenderVerKey,
-                recordService: _walletRecordService);
+                recordService: _walletRecordServiceV2);
 
             // Unpack and assert outter forward message
-            var outterResult = await CryptoUtils.UnpackAsync(_storage, transportMessage, _walletRecordService);
+            var outterResult = await CryptoUtils.UnpackAsync(_storage, transportMessage, _walletRecordServiceV2);
             var outterMessage = outterResult.Message.ToObject<ForwardMessage>();
 
             Assert.Equal(keys.RoutingTwoVerKey, outterResult.RecipientVerkey);
@@ -634,7 +634,7 @@ namespace Hyperledger.Aries.Tests
             Assert.Equal(outterMessage.To, keys.RoutingOneVerKey);
 
             // Unpack and test inner forward message
-            var innerResult = await CryptoUtils.UnpackAsync(_storage, outterMessage.Message.ToJson().GetUTF8Bytes(), _walletRecordService);
+            var innerResult = await CryptoUtils.UnpackAsync(_storage, outterMessage.Message.ToJson().GetUTF8Bytes(), _walletRecordServiceV2);
             var innerMessage = innerResult.Message.ToObject<ForwardMessage>();
 
             Assert.Equal(keys.RoutingOneVerKey, innerResult.RecipientVerkey);
@@ -643,7 +643,7 @@ namespace Hyperledger.Aries.Tests
             Assert.Equal(innerMessage.To, keys.RecipientVerKey);
 
             // Unpack and test inner content message
-            var contentResult = await CryptoUtils.UnpackAsync(_storage, innerMessage.Message.ToJson().GetUTF8Bytes(), _walletRecordService);
+            var contentResult = await CryptoUtils.UnpackAsync(_storage, innerMessage.Message.ToJson().GetUTF8Bytes(), _walletRecordServiceV2);
             var contentMessage = contentResult.Message.ToObject<ConnectionInvitationMessage>();
 
             Assert.Equal(keys.RecipientVerKey, contentResult.RecipientVerkey);
@@ -659,13 +659,13 @@ namespace Hyperledger.Aries.Tests
         {
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
 
-            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
-            (_, string routingRecipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordService);
+            (_, string recipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string routingRecipientVerKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
 
             var agentContext = new AgentContext() { AriesStorage = _storage };
             var encrypted = await CryptoUtils.PrepareAsync(agentContext, message, recipientVerKey, new[] { routingRecipientVerKey });
 
-            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordService);
+            var unpackRes = await CryptoUtils.UnpackAsync(_storage, encrypted, _walletRecordServiceV2);
             var unpackMsg = JsonConvert.DeserializeObject<ForwardMessage>(unpackRes.Message);
 
             Assert.NotNull(unpackMsg);
@@ -673,7 +673,7 @@ namespace Hyperledger.Aries.Tests
             Assert.True(unpackRes.RecipientVerkey == routingRecipientVerKey);
             Assert.Equal(recipientVerKey, unpackMsg.To);
 
-            var unpackRes1 = await CryptoUtils.UnpackAsync(_storage, unpackMsg.Message.ToJson().GetUTF8Bytes(), _walletRecordService);
+            var unpackRes1 = await CryptoUtils.UnpackAsync(_storage, unpackMsg.Message.ToJson().GetUTF8Bytes(), _walletRecordServiceV2);
             var unpackMsg1 = JsonConvert.DeserializeObject<ConnectionInvitationMessage>(unpackRes1.Message);
 
             Assert.NotNull(unpackMsg1);
