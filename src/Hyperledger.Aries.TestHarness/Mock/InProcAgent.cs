@@ -16,6 +16,7 @@ using Hyperledger.Aries.Routing.Mediator.Storage;
 using Hyperledger.Aries.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Hyperledger.TestHarness.Mock
@@ -337,8 +338,8 @@ namespace Hyperledger.TestHarness.Mock
             var handler1 = new InProcMessageHandlerV2();
             var handler2 = new InProcMessageHandlerV2();
 
-            var agent1 = Create(handler1);
-            var agent2 = Create(handler2);
+            var agent1 = Create(handler1, TestConstants.TestSingleWalletV2IssuerConfig, TestConstants.TestSingelWalletV2IssuerCreds);
+            var agent2 = Create(handler2, TestConstants.TestSingleWalletV2HolderConfig, TestConstants.TestSingelWalletV2HolderCreds);
 
             handler1.TargetAgent = agent2;
             handler2.TargetAgent = agent1;
@@ -427,7 +428,7 @@ namespace Hyperledger.TestHarness.Mock
             return (agent1Connection, agent2Connection);
         }
 
-        private static InProcAgentV2 Create(HttpMessageHandler handler) =>
+        private static InProcAgentV2 Create(HttpMessageHandler handler, WalletConfiguration config, WalletCredentials creds) =>
             new InProcAgentV2(new HostBuilder()
                 .ConfigureServices(services =>
                 {
@@ -438,8 +439,8 @@ namespace Hyperledger.TestHarness.Mock
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";
-                            options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
-                            options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+                            options.WalletConfiguration = config;
+                            options.WalletCredentials = creds;
                             options.EndpointUri = "http://test";
                             options.RevocationRegistryDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                         }));
@@ -496,11 +497,13 @@ namespace Hyperledger.TestHarness.Mock
         }
 
         /// <inheritdoc />
-        public Task DisposeAsync()
+        public async Task DisposeAsync()
         {
-            Host.StopAsync(TimeSpan.FromSeconds(10));
+            await Host.StopAsync(TimeSpan.FromSeconds(10));
+            var walletOptions = Host.Services.GetService<IOptions<AgentOptions>>().Value;
+            var walletService = Host.Services.GetService<IWalletService>();
+            await walletService.DeleteWalletAsync(walletOptions.WalletConfiguration, walletOptions.WalletCredentials);
             Host.Dispose();
-            return Task.CompletedTask;
         }
 
         public class PairedAgentsV2
