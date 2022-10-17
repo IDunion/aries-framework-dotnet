@@ -82,6 +82,10 @@
         /// <summary>
         /// Wrong storage used
         /// </summary>
-        InvalidStorage
+        InvalidStorage,
+        /// <summary>
+        /// Revocation registry is full
+        /// </summary>
+        RevocationRegistryFull
     }
 }

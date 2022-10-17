@@ -293,9 +293,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     string tag,
                     DefinitionRecord definitionRecord)
         {
-            //TODO : ??? - remove after fixing issue in line 276
-            //var tailsHandle = await TailsService.CreateTailsAsync(); 
-
             IssuerType issuanceType = IssuerType.ISSUANCE_BY_DEFAULT;
             long maxCredNum = definitionRecord.MaxCredentialCount;
 
@@ -310,7 +307,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             {
                 //schema id is already a string
             }
-
+            
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,
@@ -321,10 +318,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                  revRegType: RegistryType.CL_ACCUM,
                  issuanceType: issuanceType,
                  maxCredNumber: maxCredNum,
-                 tailsDirPath: null // null : default path set in IndySharedRs method 
-                 //TODO : ??? - investigate how to use right tailsPath, can we use infos from TailsService ? Maybe write our own NewTailsService for this?
-                 //revocationRecord.TailsLocation 
-                 );
+                 tailsDirPath: null);
 
             string revocationRegistryDefinitionId = await IndySharedRsRevoc.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
 
@@ -361,7 +355,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 context: context,
                 issuerDid: definitionRecord.IssuerDid,
                 revocationRegistryDefinitionId: revocationRegistryDefinitionId,
-                revocationDefinitionType: "CL_ACCUM", //RegistryType.CL_ACCUM.ToString()
+                revocationDefinitionType: "CL_ACCUM",
                 value: revocationRegistryJson,
                 paymentInfo: null);
 

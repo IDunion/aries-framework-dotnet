@@ -179,11 +179,6 @@ namespace Hyperledger.Aries.Agents
                 {
                     if (inboundMessageContext.ReturnRoutingRequested())
                     {
-                        if (agentContext.AriesStorage.Wallet is null)
-                        {
-                            throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Indy.WalletApi.Wallet)} which must not be null.");
-                        }
-
                         var result = inboundMessageContext.Connection != null
                             ? await CryptoUtils.PackAsync(agentContext.AriesStorage, inboundMessageContext.Connection.TheirVk, response.ToByteArray(), recordService: RecordService)
                             : await CryptoUtils.PackAsync(agentContext.AriesStorage, unpacked?.SenderVerkey, response.ToByteArray(), recordService: RecordService);

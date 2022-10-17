@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Aries.Storage.Records;
+using System.Collections.Generic;
 
 namespace Hyperledger.Aries.Models.Records
 {
@@ -64,5 +65,18 @@ namespace Hyperledger.Aries.Models.Records
         /// </summary>
         /// <value>Json of the revocation registry delta.</value>
         public string RevRegDeltaJson { get; set; }
+
+        /// <summary>
+        /// Gets or sets the credential revocation identifier for the next issued credential.
+        /// </summary>
+        /// <value>The nect credential revocation identifier.</value>
+        public long NextCredRevocationIdx { get; set; } = 1;
+
+        /// <summary>
+        /// Gets or sets the credential revocation identifiers which are already in use.
+        /// If RevocationRegistry was created with IssuerType.ISSUANCE_BY_DEFAULT, it's a list of revoked Credentials. If IssuerType.ISSUANCE_ON_DEMAND iwas used, it's a list of issued Credentials.
+        /// </summary>
+        /// <value>The nect credential revocation identifier.</value>
+        public List<long> CredRevocationIdxUsed { get; set; }  = null;
     }
 }
