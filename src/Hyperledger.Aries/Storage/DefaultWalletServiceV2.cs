@@ -48,7 +48,7 @@ namespace Hyperledger.Aries.Storage
 
                 if (ariesStorage.Store == null)
                 {
-                    //TODO : ??? - Other Input parameter needed like profile?
+                    //Other Input parameter needed like profile?
                     string keyDerivationMethod =
                         string.IsNullOrEmpty(credentials.KeyDerivationMethod) ? "none" : credentials.KeyDerivationMethod;
                     ariesStorage.Store = await AriesAskarStore.OpenAsync(
@@ -91,7 +91,7 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            //TODO : ??? - Other Input parameter needed like profile?
+            //Other Input parameter needed like profile?
             string keyDerivationMethod =
                 string.IsNullOrEmpty(credentials.KeyDerivationMethod) ? "none" : credentials.KeyDerivationMethod;
 
@@ -106,7 +106,6 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            //TODO : ??? - Check if there are remaining stores with same specUris left in Storages? Deletion of database is only possible if no active prozess onto the store is left. 
             if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
             {
                 if (ariesStorage.Store is null)
@@ -122,6 +121,7 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
+        /// <inheritdoc />
         public virtual async Task CloseWalletAsync(WalletConfiguration configuration)
         {
             if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
