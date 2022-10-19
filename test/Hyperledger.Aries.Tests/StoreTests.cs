@@ -71,6 +71,24 @@ namespace Hyperledger.Aries.Tests
             Assert.NotEqual(default, storage.Store.storeHandle);
         }
 
+        [Fact(DisplayName = "Should create wallet with RAW key derivation and changes wallet key.")]
+        public async Task CanChangeKeyOnWallet_WhenRawKeyDerivationIsUsed()
+        {
+            string newKey = await StoreApi.GenerateRawKeyAsync(TestConstants.NewWalletSeed);
+            await _walletService.CreateWalletAsync(_config, TestConstants.TestSingelWalletCredsRawEncoding);
+
+            _ = await _walletService.GetWalletAsync(_config, TestConstants.TestSingelWalletCredsRawEncoding);
+            bool changeKeyResult = await _walletService.ChangeWalletKeyAsync(newKey, _config, TestConstants.TestSingelWalletCredsRawEncoding);
+
+            WalletCredentials newWalletCredentials = TestConstants.TestSingelWalletCredsRawEncoding;
+            newWalletCredentials.Key = newKey;
+            var storageWithNewKey = await _walletService.GetWalletAsync(_config, newWalletCredentials);
+
+            Assert.True(changeKeyResult);
+            Assert.NotNull(storageWithNewKey.Store);
+            Assert.NotEqual(default, storageWithNewKey.Store.storeHandle);
+        }
+
         [Fact]
         public async Task CanCreateGetAndCloseWallet()
         {
@@ -81,7 +99,7 @@ namespace Hyperledger.Aries.Tests
             Assert.NotNull(storage.Store);
             Assert.NotEqual(default, storage.Store.storeHandle);
 
-            await AriesAskarStore.CloseAsync(storage.Store);
+            await _walletService.CloseWalletAsync(_config);
 
             storage = await _walletService.GetWalletAsync(_config, _creds);
 

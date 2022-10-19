@@ -55,6 +55,10 @@ namespace Hyperledger.Aries.Storage
                         await BuildSpecUriAsync(configuration),
                         keyMethod: KeyMethodConverter.ToKeyMethod(keyDerivationMethod),
                         passKey: credentials.Key);
+
+                    if (ariesStorage.Store.storeHandle == (IntPtr)0)
+                        return new AriesStorage();
+
                     _ = Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
@@ -117,6 +121,38 @@ namespace Hyperledger.Aries.Storage
                 _ = await AriesAskarStore.RemoveAsync(new Store(new IntPtr(), specUri), specUri);
             }
         }
+
+        public virtual async Task CloseWalletAsync(WalletConfiguration configuration)
+        {
+            if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
+            {
+                if (ariesStorage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
+                _ = await AriesAskarStore.CloseAsync(ariesStorage.Store);
+            }
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<bool> ChangeWalletKeyAsync(string newKey, WalletConfiguration configuration, WalletCredentials oldCredentials)
+        {
+            AriesStorage ariesStorage = await GetWalletAsync(configuration, oldCredentials);
+            bool result = false;
+
+            if (ariesStorage.Store != null && ariesStorage.Store.storeHandle != (IntPtr)0) 
+            {
+                result = await AriesAskarStore.RekeyAsync(
+                   ariesStorage.Store,
+                   KeyMethodConverter.ToKeyMethod(oldCredentials.KeyDerivationMethod),
+                   newKey);
+
+                await CloseWalletAsync(configuration);
+            }
+
+            return result;
+        }
+
 
         private Task<string> BuildSpecUriAsync(WalletConfiguration configuration)
         {
