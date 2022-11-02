@@ -99,6 +99,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.AddSingleton<IProofService, DefaultProofServiceV2>();
             builder.AddSingleton<IProvisioningService, DefaultProvisioningServiceV2>();
             builder.AddSingleton<ISchemaService, DefaultSchemaServiceV2>();
+            builder.AddSingleton<ITailsService, DefaultTailsServiceV2>();
             builder.AddSingleton<IWalletRecordService, DefaultWalletRecordServiceV2>();
             builder.AddSingleton<IWalletService, DefaultWalletServiceV2>();
             builder.AddSingleton<ILedgerService, DefaultLedgerServiceV2>();

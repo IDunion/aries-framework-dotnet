@@ -32,5 +32,21 @@ namespace Hyperledger.Aries.Storage
         /// <param name="configuration">Configuration.</param>
         /// <param name="credentials">Credentials.</param>
         Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials);
+
+        /// <summary>
+        /// Changes the wallet key async.
+        /// </summary>
+        /// <returns>Boolean flag which indicates success or not. True if successfull, otherwise false.</returns>
+        /// <param name="newKey">The new key for decrypting/encrypting the wallet.</param>
+        /// <param name="configuration">Configuration.</param>
+        /// <param name="oldCredentials">Credentials of the wallet containing the old key.</param>
+        Task<bool> ChangeWalletKeyAsync(string newKey, WalletConfiguration configuration, WalletCredentials oldCredentials);
+
+        /// <summary>
+        /// Closes the wallet async.
+        /// </summary>
+        /// <returns>Async Task</returns>
+        /// <param name="configuration">Configuration.</param>
+        Task CloseWalletAsync(WalletConfiguration configuration);
     }
 }

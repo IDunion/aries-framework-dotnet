@@ -149,6 +149,7 @@ namespace Hyperledger.Aries.Storage
 
             try
             {
+                Debug.WriteLine($"Updating record of type {record.TypeName} with Id {record.Id}");
                 _ = await AriesAskarStore.ReplaceAsync(
                     session: storage.Store.session,
                     category: record.TypeName,

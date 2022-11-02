@@ -442,7 +442,7 @@ namespace Hyperledger.TestHarness.Mock
                             options.WalletConfiguration = config;
                             options.WalletCredentials = creds;
                             options.EndpointUri = "http://test";
-                            options.RevocationRegistryDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                            options.RevocationRegistryDirectory = Path.GetTempPath(); // Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                         }));
                     services.AddSingleton<IHttpClientFactory>(new InProcFactoryV2(handler));
                     services.AddSingleton<IStorageService, DefaultStorageService>();

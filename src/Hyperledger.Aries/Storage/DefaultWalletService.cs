@@ -91,5 +91,16 @@ namespace Hyperledger.Aries.Storage
             }
             await Wallet.DeleteWalletAsync(configuration.ToJson(), credentials.ToJson());
         }
+
+        /// <inheritdoc />
+        public Task<bool> ChangeWalletKeyAsync(string newKey, WalletConfiguration configuration, WalletCredentials oldCredentials)
+        {
+            throw new System.NotImplementedException();
+        }
+        /// <inheritdoc />
+        public Task CloseWalletAsync(WalletConfiguration configuration)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

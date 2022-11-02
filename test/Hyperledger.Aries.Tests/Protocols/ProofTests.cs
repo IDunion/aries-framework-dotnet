@@ -911,7 +911,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 new DefaultLedgerSigningServiceV2(_recordService),
                 _poolService,
                 provisioning);
-
+            
             _eventAggregator = new EventAggregator();
 
             var messageService = new DefaultMessageService(new Mock<ILogger<DefaultMessageService>>().Object, new IMessageDispatcher[] { }, _recordService);
@@ -921,6 +921,8 @@ namespace Hyperledger.Aries.Tests.Protocols
             var clientFactory = new Mock<IHttpClientFactory>();
             clientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(new HttpClient());
+
+            var tailsService = new DefaultTailsServiceV2(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object);
 
             _schemaService = new DefaultSchemaServiceV2(provisioning, _recordService, ledgerService, paymentService, Options.Create(new Configuration.AgentOptions()));
 
@@ -947,6 +949,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 _recordService,
                 provisioning,
                 ledgerService,
+                tailsService,
                 messageService,
                 new Mock<ILogger<DefaultProofServiceV2>>().Object);
         }

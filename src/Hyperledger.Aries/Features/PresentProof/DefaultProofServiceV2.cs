@@ -23,7 +23,9 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using IndySharedRsCred = indy_shared_rs_dotnet.IndyCredx.CredentialApi;
 using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
 using IndySharedRsPres = indy_shared_rs_dotnet.IndyCredx.PresentationApi;
@@ -66,6 +68,11 @@ namespace Hyperledger.Aries.Features.PresentProof
         protected readonly ILogger<DefaultProofServiceV2> Logger;
 
         /// <summary>
+        /// The tails service
+        /// </summary>
+        protected readonly ITailsService TailsService;
+
+        /// <summary>
         /// Message Service
         /// </summary>
         protected readonly IMessageService MessageService;
@@ -87,10 +94,12 @@ namespace Hyperledger.Aries.Features.PresentProof
             IWalletRecordService recordService,
             IProvisioningService provisioningService,
             ILedgerService ledgerService,
+            ITailsService tailsService,
             IMessageService messageService,
             ILogger<DefaultProofServiceV2> logger)
         {
             EventAggregator = eventAggregator;
+            TailsService = tailsService;
             MessageService = messageService;
             ConnectionService = connectionService;
             RecordService = recordService;
@@ -113,21 +122,34 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, attr.Value.CredentialId);
                 indy_shared_rs_dotnet.Models.Credential credential = await IndySharedRsCred.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
-                credentialObjects.Add(new CredentialInfo { SchemaId = credentialRecord.SchemaId, CredentialDefinitionId = credentialRecord.CredentialDefinitionId, RevocationRegistryId = credentialRecord.RevocationRegistryId });
+
+                Dictionary<string, string> attributes = new();
+                credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
+                var credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+                credentialObjects.Add(new CredentialInfo {
+                    SchemaId = credentialRecord.SchemaId,
+                    CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
+                    RevocationRegistryId = credentialRecord.RevocationRegistryId,
+                    Referent = credentialRecord.Id,
+                    CredentialRevocationId = credentialRevocationIdx,
+                    Attributes = attributes
+                });
 
                 RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
                 if (revRegRecord != null)
                 {
                     string revRegDefJson = revRegRecord.RevRegDefJson;
                     string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+                    long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
+                    var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                         revRegDefJson,
                         revRegDeltaJson,
-                        0,
-                        0,
-                        revRegRecord.TailsLocation,
-                        new CredentialRevocationState().JsonString);
+                        credentialRevocationId,
+                        0, //TODO : ??? - where to get timestamp
+                        tailsFilePath,
+                        null);
 
                     CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
@@ -149,21 +171,36 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
                 indy_shared_rs_dotnet.Models.Credential credential = await IndySharedRsCred.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
-                credentialObjects.Add(new CredentialInfo { SchemaId = credentialRecord.SchemaId, CredentialDefinitionId = credentialRecord.CredentialDefinitionId, RevocationRegistryId = credentialRecord.RevocationRegistryId });
+
+                Dictionary<string, string> attributes = new();
+                credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
+                var credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+
+                credentialObjects.Add(new CredentialInfo 
+                {
+                    SchemaId = credentialRecord.SchemaId,
+                    CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
+                    RevocationRegistryId = credentialRecord.RevocationRegistryId,
+                    Referent = credentialRecord.Id,
+                    CredentialRevocationId = credentialRevocationIdx,
+                    Attributes = attributes
+                });
 
                 RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
                 if (revRegRecord != null)
                 {
                     string revRegDefJson = revRegRecord.RevRegDefJson;
                     string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+                    long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
+                    var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                         revRegDefJson,
                         revRegDeltaJson,
-                        0,
-                        0,
-                        revRegRecord.TailsLocation,
-                        new CredentialRevocationState().JsonString);
+                        credentialRevocationId,
+                        0, //TODO : ??? - where to get timestamp
+                        tailsFilePath,
+                        null);
 
                     CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
@@ -882,17 +919,18 @@ namespace Hyperledger.Aries.Features.PresentProof
                 // Ledger will not return correct revocation state if the 'from' field
                 // is other than 0
                 from: 0, //nonRevoked.From,
-                to: nonRevoked.To);
+                to: (long)nonRevoked.To);
 
-            RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credentialInfo.RevocationRegistryId);
+            var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialInfo.RevocationRegistryId);
+            long.TryParse(credentialInfo.CredentialRevocationId, out var credentialRevocationId);
 
             string state = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
                 registryDefinition.ObjectJson,
                 delta.ObjectJson,
-                0,
+                credentialRevocationId,
                 (long)delta.Timestamp,
-                revRegRecord.TailsLocation,
-                new CredentialRevocationState().JsonString);
+                tailsFilePath,
+                null);
 
             return (delta, state);
         }

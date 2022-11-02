@@ -48,13 +48,17 @@ namespace Hyperledger.Aries.Storage
 
                 if (ariesStorage.Store == null)
                 {
-                    //TODO : ??? - Other Input parameter needed like profile?
+                    //Other Input parameter needed like profile?
                     string keyDerivationMethod =
                         string.IsNullOrEmpty(credentials.KeyDerivationMethod) ? "none" : credentials.KeyDerivationMethod;
                     ariesStorage.Store = await AriesAskarStore.OpenAsync(
                         await BuildSpecUriAsync(configuration),
                         keyMethod: KeyMethodConverter.ToKeyMethod(keyDerivationMethod),
                         passKey: credentials.Key);
+
+                    if (ariesStorage.Store.storeHandle == (IntPtr)0)
+                        return new AriesStorage();
+
                     _ = Storages.TryAdd(configuration.Id, ariesStorage);
                 }
             }
@@ -87,7 +91,7 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task CreateWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            //TODO : ??? - Other Input parameter needed like profile?
+            //Other Input parameter needed like profile?
             string keyDerivationMethod =
                 string.IsNullOrEmpty(credentials.KeyDerivationMethod) ? "none" : credentials.KeyDerivationMethod;
 
@@ -102,7 +106,6 @@ namespace Hyperledger.Aries.Storage
         /// <inheritdoc />
         public virtual async Task DeleteWalletAsync(WalletConfiguration configuration, WalletCredentials credentials)
         {
-            //TODO : ??? - Check if there are remaining stores with same specUris left in Storages? Deletion of database is only possible if no active prozess onto the store is left. 
             if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
             {
                 if (ariesStorage.Store is null)
@@ -117,6 +120,39 @@ namespace Hyperledger.Aries.Storage
                 _ = await AriesAskarStore.RemoveAsync(new Store(new IntPtr(), specUri), specUri);
             }
         }
+
+        /// <inheritdoc />
+        public virtual async Task CloseWalletAsync(WalletConfiguration configuration)
+        {
+            if (Storages.TryRemove(configuration.Id, out AriesStorage ariesStorage))
+            {
+                if (ariesStorage.Store is null)
+                {
+                    throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
+                }
+                _ = await AriesAskarStore.CloseAsync(ariesStorage.Store);
+            }
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<bool> ChangeWalletKeyAsync(string newKey, WalletConfiguration configuration, WalletCredentials oldCredentials)
+        {
+            AriesStorage ariesStorage = await GetWalletAsync(configuration, oldCredentials);
+            bool result = false;
+
+            if (ariesStorage.Store != null && ariesStorage.Store.storeHandle != (IntPtr)0) 
+            {
+                result = await AriesAskarStore.RekeyAsync(
+                   ariesStorage.Store,
+                   KeyMethodConverter.ToKeyMethod(oldCredentials.KeyDerivationMethod),
+                   newKey);
+
+                await CloseWalletAsync(configuration);
+            }
+
+            return result;
+        }
+
 
         private Task<string> BuildSpecUriAsync(WalletConfiguration configuration)
         {

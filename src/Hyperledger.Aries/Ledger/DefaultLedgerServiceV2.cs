@@ -124,7 +124,6 @@ namespace Hyperledger.Aries.Ledger
         public async Task<AriesRegistryResponse> LookupRevocationRegistryDeltaAsync(IAgentContext agentContext, string revocationRegistryId, long from, long to)
         {
             IntPtr req = await LedgerApi.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
-
             string res = await SubmitRequestAsync(agentContext, req);
 
             return ResponseParser.ParseRevocRegResponse(res);
@@ -154,7 +153,7 @@ namespace Hyperledger.Aries.Ledger
         {
             IntPtr req = await LedgerApi.BuildCredDefRequest(submitterDid, data);
 
-            _ = await SignAndSubmitRequestAsync(context, submitterDid, req);
+            var res = await SignAndSubmitRequestAsync(context, submitterDid, req);
         }
 
         public async Task RegisterRevocationRegistryDefinitionAsync(IAgentContext context, string submitterDid, string data,
@@ -162,7 +161,7 @@ namespace Hyperledger.Aries.Ledger
         {
             IntPtr req = await LedgerApi.BuildRevocRegDefRequestAsync(submitterDid, data);
 
-            _ = await SignAndSubmitRequestAsync(context, submitterDid, req);
+            string res = await SignAndSubmitRequestAsync(context, submitterDid, req);
         }
 
         /// <inheritdoc />
@@ -172,7 +171,7 @@ namespace Hyperledger.Aries.Ledger
             IntPtr req = await LedgerApi.BuildRevocRegEntryRequestAsync(issuerDid, revocationRegistryDefinitionId,
                 revocationDefinitionType, value);
 
-            _ = await SignAndSubmitRequestAsync(context, issuerDid, req);
+            string res = await SignAndSubmitRequestAsync(context, issuerDid, req);
         }
 
         /// <inheritdoc />

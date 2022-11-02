@@ -1,7 +1,13 @@
+using Flurl.Util;
 using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Indy.AnonCredsApi;
+using indy_shared_rs_dotnet;
+using indy_shared_rs_dotnet.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Hyperledger.Aries.Ledger
@@ -96,7 +102,16 @@ namespace Hyperledger.Aries.Ledger
         /// </returns>
         internal static AriesResponse ParseRegistryDefinitionResponse(string registryDefinitionId, string getRegistryDefinitionResponse)
         {
-            JToken objectJson = JObject.Parse(getRegistryDefinitionResponse)["result"]!["data"];
+            JToken revRegDef = JObject.Parse(getRegistryDefinitionResponse)["result"]!["data"];
+            var objectJson = new
+            {
+                ver = "1.0",
+                id = revRegDef["id"]!,
+                revocDefType = revRegDef!["revocDefType"],
+                tag = revRegDef["tag"],
+                credDefId = revRegDef["credDefId"],
+                value = revRegDef["value"]
+            };
 
             return new AriesResponse(registryDefinitionId, objectJson.ToJson());
         }
@@ -108,12 +123,36 @@ namespace Hyperledger.Aries.Ledger
         /// <returns><see cref="ParseRegistryResponseResult"/></returns>
         internal static AriesRegistryResponse ParseRevocRegResponse(string revocRegResponse)
         {
+            JsonSerializerSettings settings = new()
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
             JToken jobj = JObject.Parse(revocRegResponse)["result"]!;
             string revocRegDefId = jobj["revocRegDefId"]!.ToString();
-            string data = jobj["data"]!.ToString();
-            string timestamp = jobj["txnTime"]!.ToString();
+            var accum = jobj["data"]!["value"]?["accum_to"]?["value"]?.ToKeyValuePairs().First().Value;
+            var prevAccum = jobj["data"]!["value"]?["accum_from"]?["value"]?.ToKeyValuePairs().First().Value;
+            var issued = jobj["data"]!["value"]?["issued"]?.ToList();
+            issued.ForEach(x => x.ToObject<uint>());
+            var revoked = jobj["data"]!["value"]?["revoked"]?.ToList();
+            revoked.ForEach(x => x.ToObject<uint>());
 
-            return new AriesRegistryResponse(revocRegDefId, data, Convert.ToUInt64(timestamp));
+            var value = JsonConvert.SerializeObject(new
+            {
+                accum = accum,
+                issued = issued,
+                revoked = revoked,
+                prev_accum = prevAccum
+            },settings);
+
+            var data = JsonConvert.SerializeObject(new
+            {
+                ver = "1.0",
+                value = JsonConvert.DeserializeObject<Dictionary<string, object>>(value),
+            }, settings);
+
+            ulong timestamp = (ulong)jobj["data"]!["value"]?["accum_to"]?["txnTime"]!;
+            return new AriesRegistryResponse(revocRegDefId, data, timestamp);
         }
     }
 }
