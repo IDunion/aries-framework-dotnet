@@ -125,7 +125,13 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
-                var credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+
+                var credentialRevocationIdx = "";
+                if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
+                    credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+                else
+                    credentialRevocationIdx = null;
+
                 credentialObjects.Add(new CredentialInfo {
                     SchemaId = credentialRecord.SchemaId,
                     CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
@@ -174,7 +180,12 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
-                var credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+
+                var credentialRevocationIdx = "";
+                if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
+                    credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+                else
+                    credentialRevocationIdx = null;
 
                 credentialObjects.Add(new CredentialInfo 
                 {
