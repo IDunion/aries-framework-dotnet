@@ -438,7 +438,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
     public class RevocationTestsV2 : TestSingleWalletV2, IAsyncLifetime
     {
-        private readonly uint _now = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
+        public uint _now;
 
         public InProcAgentV2.PairedAgentsV2 PairedAgents;
 
@@ -521,6 +521,8 @@ namespace Hyperledger.Aries.Tests.Protocols
                         RevocationRegistryBaseUri = "http://localhost",
                         Tag = "norevoc"
                     });
+
+            _now = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
         }
 
         public override async Task DisposeAsync()
