@@ -56,9 +56,31 @@ namespace Hyperledger.TestHarness
             }
         };
 
+        public static WalletConfiguration TestWalletV2EdgeConfig = new WalletConfiguration
+        {
+            Id = Guid.NewGuid().ToString(),
+            StorageType = "sqlite",
+            StorageConfiguration = new WalletStorageConfiguration
+            {
+                Path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\test-edge-db"))
+            }
+        };
+
+        public static WalletConfiguration TestWalletV2MediatorConfig = new WalletConfiguration
+        {
+            Id = Guid.NewGuid().ToString(),
+            StorageType = "sqlite",
+            StorageConfiguration = new WalletStorageConfiguration
+            {
+                Path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\test-mediator-db"))
+            }
+        };
+
         public static WalletCredentials TestSingelWalletV2WalletCreds = new WalletCredentials { Key = "key" };
         public static WalletCredentials TestSingelWalletV2HolderCreds = new WalletCredentials { Key = "holder-key" };
         public static WalletCredentials TestSingelWalletV2IssuerCreds = new WalletCredentials { Key = "issuer-key" };
+        public static WalletCredentials TestWalletV2EdgeCreds = new WalletCredentials { Key = "edge-key" };
+        public static WalletCredentials TestWalletV2MediatorCreds = new WalletCredentials { Key = "mediator-key" };
         public static WalletCredentials TestSingelWalletCredsRawEncoding = new WalletCredentials { 
             Key = StoreApi.GenerateRawKeyAsync(WalletSeed).GetAwaiter().GetResult(), 
             KeyDerivationMethod = "raw" };

@@ -461,8 +461,8 @@ namespace Hyperledger.TestHarness.Mock
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";
-                            options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
-                            options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+                            options.WalletConfiguration = TestConstants.TestWalletV2EdgeConfig;
+                            options.WalletCredentials = TestConstants.TestWalletV2EdgeCreds;
                             options.EndpointUri = "http://test";
                             options.MetaData = metaData;
                         }));
@@ -480,8 +480,8 @@ namespace Hyperledger.TestHarness.Mock
                         {
                             options.GenesisFilename = Path.GetFullPath("pool_genesis.txn");
                             options.PoolName = "TestPool";
-                            options.WalletConfiguration = TestConstants.TestSingleWalletV2WalletConfig;
-                            options.WalletCredentials = TestConstants.TestSingelWalletV2WalletCreds;
+                            options.WalletConfiguration = TestConstants.TestWalletV2MediatorConfig;
+                            options.WalletCredentials = TestConstants.TestWalletV2MediatorCreds;
                             options.EndpointUri = "http://test";
                         }));
                     services.AddSingleton<IHttpClientFactory>(new InProcFactoryV2(handler));
