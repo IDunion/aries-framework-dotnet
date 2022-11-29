@@ -30,10 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using IndySharedRsCred = anoncreds_rs_dotnet.Anoncreds.CredentialApi;
-using IndySharedRsCredReq = anoncreds_rs_dotnet.Anoncreds.CredentialRequestApi;
-using IndySharedRsOffer = anoncreds_rs_dotnet.Anoncreds.CredentialOfferApi;
-using IndySharedRsRev = anoncreds_rs_dotnet.Anoncreds.RevocationApi;
+using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -204,8 +201,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
             {
                 _ = long.TryParse(credentialRecord.CredentialRevocationId, out credRevIdx);
             }
-            var tailsPath = await IndySharedRsRev.GetRevocationRegistryDefinitionAttributeAsync(revocationRecord.RevRegDefJson, "tails_location");
-            (string revRegUpdatedJson, string revocRegistryDeltaJson) = await IndySharedRsRev.RevokeCredentialAsync(
+            var tailsPath = await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revocationRecord.RevRegDefJson, "tails_location");
+            (string revRegUpdatedJson, string revocRegistryDeltaJson) = await Anoncreds.RevocationApi.RevokeCredentialAsync(
                 revRegDefJson: revocationRecord.RevRegDefJson,
                 revRegJson: revocationRecord.RevRegJson,
                 credRevIdx: credRevIdx,
@@ -395,7 +392,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
             (definition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
 
-            (string CredentialRequestJson, string CredentialRequestMetadataJson) = await IndySharedRsCredReq.CreateCredentialRequestJsonAsync(
+            (string CredentialRequestJson, string CredentialRequestMetadataJson) = await Anoncreds.CredentialRequestApi.CreateCredentialRequestJsonAsync(
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
                 masterSecretJson: await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
@@ -474,14 +471,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
             (credentialDefinition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
             string masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
 
-            string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
+            string credentialProcessedJson = await Anoncreds.CredentialApi.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
                 masterSecretJson,
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
-            string credentialProcessedId = await IndySharedRsCred.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
+            string credentialProcessedId = await Anoncreds.CredentialApi.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
 
             // TODO : ??? - need to update credentialJson information
             // we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential 
@@ -537,7 +534,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             DefinitionRecord definition = await SchemaService.GetCredentialDefinitionAsync(agentContext.AriesStorage, config.CredentialDefinitionId);
             (string credDefJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.CredDefJson, config.CredentialDefinitionId);
 
-            string offerJson = await IndySharedRsOffer.CreateCredentialOfferJsonAsync(
+            string offerJson = await Anoncreds.CredentialOfferApi.CreateCredentialOfferJsonAsync(
                 schemaId,
                 credDefJson,
                 definition.KeyCorrectnesProofJson);
@@ -809,7 +806,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string revocationRegistryUpdatedJson;
             string revocationRegistryDeltaJson;
 
-            (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForIndySharedRs(credentialRecord.CredentialAttributesValues);
+            (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForAnoncreds(credentialRecord.CredentialAttributesValues);
 
             //Default values for use without revocation
             long revRegistryIndex = 0;
@@ -835,7 +832,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     credRevocationIdxUsed = revocationRecord.CredRevocationIdxUsed;
 
                     //Check if RevocationRegistry has enough space for a new credential.
-                    if (!long.TryParse(await IndySharedRsRev.GetRevocationRegistryDefinitionAttributeAsync(revRegDefJson, "max_cred_num"), out long maxCredNum))
+                    if (!long.TryParse(await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revRegDefJson, "max_cred_num"), out long maxCredNum))
                     {
                         throw new AriesFrameworkException(ErrorCode.InvalidRecordData, "Invalid Parameter max_cred_num.");
                     }
@@ -846,7 +843,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     }
                 }
 
-                (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
+                (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await Anoncreds.CredentialApi.CreateCredentialAsync(
                     definitionRecord.CredDefJson,
                     definitionRecord.PrivateJson,
                     credentialRecord.OfferJson,
@@ -899,7 +896,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             definitionRecord.CurrentRevocationRegistryId = nextRevocationRecord.Id;
             await RecordService.UpdateAsync(agentContext.AriesStorage, definitionRecord);
 
-            (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
+            (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await Anoncreds.CredentialApi.CreateCredentialAsync(
                 definitionRecord.CredDefJson,
                 definitionRecord.PrivateJson,
                 credentialRecord.OfferJson,

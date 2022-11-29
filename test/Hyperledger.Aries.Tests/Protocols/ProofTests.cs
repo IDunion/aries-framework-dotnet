@@ -33,7 +33,7 @@ using Newtonsoft.Json;
 using Xunit;
 using AttributeFilter = Hyperledger.Aries.Features.PresentProof.AttributeFilter;
 using AttributeValue = Hyperledger.Aries.Features.PresentProof.AttributeValue;
-using IndySharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
+using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
@@ -997,7 +997,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
@@ -1469,7 +1469,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {"first-name-requirement", new ProofAttributeInfo {Name = "first_name"}}
@@ -1587,7 +1587,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {"name-requirement", new ProofAttributeInfo {Names = new string[]{"first_name", "last_name" } } },
@@ -1684,7 +1684,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {
@@ -1782,7 +1782,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {
@@ -1873,7 +1873,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "ProofReq",
                     Version = "1.0",
-                    Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         {

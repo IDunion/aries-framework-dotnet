@@ -23,7 +23,7 @@ namespace Hyperledger.Aries.Utils
         /// </summary>
         /// <returns>The credential values as three string lists. First is attribute names, second is attribute raw values , third is attribute encoded values.</returns>
         /// <param name="credentialAttributes">The credential attributes.</param>
-        public static (List<string>, List<string>, List<string>) FormatCredentialValuesForIndySharedRs(IEnumerable<CredentialPreviewAttribute> credentialAttributes)
+        public static (List<string>, List<string>, List<string>) FormatCredentialValuesForAnoncreds(IEnumerable<CredentialPreviewAttribute> credentialAttributes)
         {
             if (credentialAttributes == null)
             {

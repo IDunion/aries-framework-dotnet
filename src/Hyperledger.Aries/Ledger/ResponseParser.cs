@@ -113,12 +113,13 @@ namespace Hyperledger.Aries.Ledger
         }
 
         /// <summary>
-        /// Parse revocation registry response result in the format compatible with Anoncreds API.
+        /// Parse revocation registry delta response result in the format compatible with Anoncreds API.
         /// </summary>
         /// <param name="revocRegResponse">Ledger response from revocation registry lookup</param>
-        /// <returns><see cref="ParseRegistryResponseResult"/></returns>
-        internal static AriesRegistryResponse ParseRevocRegResponse(string revocRegResponse)
+        /// <returns><see cref="AriesRegistryResponse"/></returns>
+        internal static AriesRegistryResponse ParseRevocRegDeltaResponse(string revocRegResponse)
         {
+            
             JsonSerializerSettings settings = new()
             {
                 NullValueHandling = NullValueHandling.Ignore
@@ -126,12 +127,33 @@ namespace Hyperledger.Aries.Ledger
 
             JToken jobj = JObject.Parse(revocRegResponse)["result"]!;
             string revocRegDefId = jobj["revocRegDefId"]!.ToString();
-            object accum = jobj["data"]!["value"]?["accum_to"]?["value"]?.ToKeyValuePairs().First().Value;
-            object prevAccum = jobj["data"]!["value"]?["accum_from"]?["value"]?.ToKeyValuePairs().First().Value;
-            List<JToken> issued = jobj["data"]!["value"]?["issued"]?.ToList();
-            issued.ForEach(x => x.ToObject<uint>());
-            List<JToken> revoked = jobj["data"]!["value"]?["revoked"]?.ToList();
-            revoked.ForEach(x => x.ToObject<uint>());
+
+            string accum = null;
+            string prevAccum = null;
+            var issued = new List<JToken>();
+            var revoked = new List<JToken>();
+            ulong timestamp = 0;
+            
+            foreach (KeyValuePair<string, object> pair in jobj["data"]["value"].ToKeyValuePairs())
+            {
+                if (pair.Key is "accum_to" && pair.Value != null)
+                {
+                    accum = jobj["data"]["value"]["accum_to"]["value"]?.ToKeyValuePairs().First().Value.ToString();
+                    timestamp = (ulong)jobj["data"]["value"]["accum_to"]["txnTime"];
+                }
+                if (pair.Key is "accum_from" && pair.Value != null)
+                    prevAccum = jobj["data"]["value"]["accum_from"]["value"]?.ToKeyValuePairs().First().Value.ToString();
+                if (pair.Key is "issued" && pair.Value != null)
+                { 
+                    issued = jobj["data"]!["value"]["issued"]?.ToList();
+                    issued.ForEach(x => x.ToObject<uint>());
+                }
+                if (pair.Key is "revoked" && pair.Value != null)
+                {
+                    revoked = jobj["data"]!["value"]["revoked"]?.ToList();
+                    revoked.ForEach(x => x.ToObject<uint>());
+                }
+            }
 
             string value = JsonConvert.SerializeObject(new
             {
@@ -147,7 +169,48 @@ namespace Hyperledger.Aries.Ledger
                 value = JsonConvert.DeserializeObject<Dictionary<string, object>>(value),
             }, settings);
 
-            ulong timestamp = (ulong)jobj["data"]!["value"]?["accum_to"]?["txnTime"]!;
+            return new AriesRegistryResponse(revocRegDefId, data, timestamp);
+        }
+
+        /// <summary>
+        /// Parse revocation registry response result in the format compatible with Anoncreds API.
+        /// </summary>
+        /// <param name="revocRegResponse">Ledger response from revocation registry lookup</param>
+        /// <returns><see cref="AriesRegistryResponse"/></returns>
+        internal static AriesRegistryResponse ParseRevocRegResponse(string revocRegResponse)
+        {
+
+            JsonSerializerSettings settings = new()
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            string accum = null;
+            ulong timestamp = 0;
+
+            JToken jobj = JObject.Parse(revocRegResponse)["result"]!;
+            string revocRegDefId = jobj["revocRegDefId"]!.ToString();            
+            timestamp = (ulong)jobj["txnTime"];
+
+            foreach (KeyValuePair<string, object> pair in jobj["data"]["value"].ToKeyValuePairs())
+            {
+                if (pair.Key is "accum" && pair.Value != null)
+                {
+                    accum = jobj["data"]["value"]?.ToKeyValuePairs().First().Value.ToString();
+                }
+            }
+
+            var value = JsonConvert.SerializeObject(new
+            {
+                accum,
+            }, settings);
+
+            var data = JsonConvert.SerializeObject(new
+            {
+                ver = "1.0",
+                value = JsonConvert.DeserializeObject<Dictionary<string, object>>(value),
+            }, settings);
+
             return new AriesRegistryResponse(revocRegDefId, data, timestamp);
         }
     }

@@ -126,7 +126,7 @@ namespace Hyperledger.Aries.Ledger
             IntPtr req = await LedgerApi.BuildGetRevocRegDeltaRequestAsync(revocationRegistryId, to, from);
             string res = await SubmitRequestAsync(agentContext, req);
 
-            return ResponseParser.ParseRevocRegResponse(res);
+            return ResponseParser.ParseRevocRegDeltaResponse(res);
         }
 
         /// <inheritdoc />

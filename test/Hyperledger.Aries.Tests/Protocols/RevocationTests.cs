@@ -20,7 +20,7 @@ using Hyperledger.TestHarness.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static Hyperledger.TestHarness.Mock.InProcAgentV1;
-using SharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
+using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
@@ -438,7 +438,7 @@ namespace Hyperledger.Aries.Tests.Protocols
 
     public class RevocationTestsV2 : TestSingleWalletV2, IAsyncLifetime
     {
-        private readonly uint _now = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
+        public uint _now;
 
         public InProcAgentV2.PairedAgentsV2 PairedAgents;
 
@@ -521,6 +521,8 @@ namespace Hyperledger.Aries.Tests.Protocols
                         RevocationRegistryBaseUri = "http://localhost",
                         Tag = "norevoc"
                     });
+
+            _now = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
         }
 
         public override async Task DisposeAsync()
@@ -898,7 +900,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "Test Verification",
                     Version = "1.0",
-                    Nonce = await SharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         { "id-verification", new ProofAttributeInfo { Names = new [] { "name", "age" } } }
@@ -970,7 +972,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "Test Verification",
                     Version = "1.0",
-                    Nonce = await SharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         { "id-verification", new ProofAttributeInfo { Names = new [] { "name", "age" } } }
@@ -1046,7 +1048,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 {
                     Name = "Test Verification",
                     Version = "1.0",
-                    Nonce = await SharedRsPresReq.GenerateNonceAsync(),
+                    Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
                         { "id-verification", new ProofAttributeInfo

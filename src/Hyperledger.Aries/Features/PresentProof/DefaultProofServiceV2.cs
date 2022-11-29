@@ -14,25 +14,16 @@ using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.PresentProof.Messages;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Models.Events;
-using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
-using anoncreds_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using System.Xml.Schema;
-using IndySharedRsCred = anoncreds_rs_dotnet.Anoncreds.CredentialApi;
-using IndySharedRsCredDef = anoncreds_rs_dotnet.Anoncreds.CredentialDefinitionApi;
-using IndySharedRsPres = anoncreds_rs_dotnet.Anoncreds.PresentationApi;
-using IndySharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
-using IndySharedRsRev = anoncreds_rs_dotnet.Anoncreds.RevocationApi;
-using IndySharedRsSchema = anoncreds_rs_dotnet.Anoncreds.SchemaApi;
+using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
@@ -122,7 +113,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var attr in requestedCredentials.RequestedAttributes)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, attr.Value.CredentialId);
-                anoncreds_rs_dotnet.Models.Credential credential = await CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
+                anoncreds_rs_dotnet.Models.Credential credential = await Anoncreds.CredentialApi.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
@@ -142,24 +133,42 @@ namespace Hyperledger.Aries.Features.PresentProof
                     Attributes = attributes
                 });
 
-                RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
-                if (revRegRecord != null)
+                if (credentialRecord.RevocationRegistryId != null)
                 {
-                    string revRegDefJson = revRegRecord.RevRegDefJson;
-                    string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+                    uint nonRevokedTo = 0;
+                    if (proofRequest.NonRevoked != null)
+                        nonRevokedTo = proofRequest.NonRevoked.To;
+                    else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                    {
+                        nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
+                    }
+
+                    var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                        agentContext: agentContext,
+                        registryId: credential.RevocationRegistryId);
+
+                    var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
+                    agentContext: agentContext,
+                    revocationRegistryId: credential.RevocationRegistryId,
+                    // Ledger will not return correct revocation state if the 'from' field
+                    // is other than 0
+                    from: 0,
+                    to: nonRevokedTo);
+
+                    string revRegDefJson = registryDefinition.ObjectJson;
+                    string revRegDeltaJson = registryDelta.ObjectJson;
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
-                    string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                    string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
                         revRegDefJson,
                         revRegDeltaJson,
                         credentialRevocationId,
-                        0, //TODO : ??? - where to get timestamp
+                        (long)registryDelta.Timestamp,
                         tailsFilePath,
                         null);
 
-                    CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
                 else
                 {
@@ -174,10 +183,11 @@ namespace Hyperledger.Aries.Features.PresentProof
                 }));
                 index += 1;
             }
+
             foreach (var pred in requestedCredentials.RequestedPredicates)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
-                anoncreds_rs_dotnet.Models.Credential credential = await CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
+                anoncreds_rs_dotnet.Models.Credential credential = await Anoncreds.CredentialApi.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
@@ -198,29 +208,48 @@ namespace Hyperledger.Aries.Features.PresentProof
                     Attributes = attributes
                 });
 
-                RevocationRegistryRecord revRegRecord = await RecordService.GetAsync<RevocationRegistryRecord>(agentContext.AriesStorage, credential.RevocationRegistryId);
-                if (revRegRecord != null)
+                if (credentialRecord.RevocationRegistryId != null)
                 {
-                    string revRegDefJson = revRegRecord.RevRegDefJson;
-                    string revRegDeltaJson = revRegRecord.RevRegDeltaJson;
+                    uint nonRevokedTo = 0;
+                    if (proofRequest.NonRevoked != null)
+                        nonRevokedTo = proofRequest.NonRevoked.To;
+                    else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                    {
+                        nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
+                    }
+
+                    var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                        agentContext: agentContext,
+                        registryId: credential.RevocationRegistryId);
+
+                    var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
+                    agentContext: agentContext,
+                    revocationRegistryId: credential.RevocationRegistryId,
+                    // Ledger will not return correct revocation state if the 'from' field
+                    // is other than 0
+                    from: 0,
+                    to: nonRevokedTo);
+
+                    string revRegDefJson = registryDefinition.ObjectJson;
+                    string revRegDeltaJson = registryDelta.ObjectJson;
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
-                    string revStateJson = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+                    string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
                         revRegDefJson,
                         revRegDeltaJson,
                         credentialRevocationId,
-                        0, //TODO : ??? - where to get timestamp
+                        (long)registryDelta.Timestamp,
                         tailsFilePath,
                         null);
 
-                    CredentialRevocationState revState = JsonConvert.DeserializeObject<CredentialRevocationState>(revStateJson);
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential, revState.Timestamp, revState)));
+                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
                 else
                 {
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
                 }
+
                 credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
                 {
                     EntryIndex = index,
@@ -253,7 +282,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             var masterSecret = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioningRecord.MasterSecretId);
 
-            string presentation = await IndySharedRsPres.CreatePresentationAsync(
+            string presentation = await Anoncreds.PresentationApi.CreatePresentationAsync(
                 proofrequestJson,
                 credentialEntryJsons,
                 credentialProofJsons,
@@ -264,12 +293,6 @@ namespace Hyperledger.Aries.Features.PresentProof
                 definitions);
 
             return presentation;
-        }
-
-        // TODO: Implement from former SharedRs Package.
-        private Task<anoncreds_rs_dotnet.Models.Credential> CreateCredentialFromJsonAsync(string credentialJson)
-        {
-            throw new NotImplementedException();
         }
 
         /// <inheritdoc />
@@ -321,7 +344,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 Name = "revocation check",
                 Version = "1.0",
-                Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                 RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                 {
                     { "referent1", new ProofAttributeInfo { Name = record.CredentialAttributesValues.First().Name } }
@@ -393,7 +416,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 agentContext,
                 proof.Identifiers.Where(x => x.RevocationRegistryId != null));
 
-            return await IndySharedRsPres.VerifyPresentationAsync(proofJson,
+            return await Anoncreds.PresentationApi.VerifyPresentationAsync(proofJson,
                 proofRequestJson,
                 schemas,
                 definitions,
@@ -580,7 +603,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 Name = requestParams.Name,
                 Version = requestParams.Version,
-                Nonce = await IndySharedRsPresReq.GenerateNonceAsync(),
+                Nonce = await Anoncreds.PresentationRequestApi.GenerateNonceAsync(),
                 RequestedAttributes = new Dictionary<string, ProofAttributeInfo>(),
                 NonRevoked = requestParams.NonRevoked
             };
@@ -843,7 +866,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             if (record.State != ProofState.Requested)
                 throw new AriesFrameworkException(ErrorCode.RecordInInvalidState,
                     $"Proof state was invalid. Expected '{ProofState.Requested}', found '{record.State}'");
-            var proofJson = await CreatePresentationAsync(
+             var proofJson = await CreatePresentationAsync(
                 agentContext,
                 record.RequestJson.ToObject<ProofRequest>(),
                 requestedCredentials);
@@ -887,7 +910,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var schemaId in schemaIds)
             {
                 var ledgerSchema = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
-                var schema = await IndySharedRsSchema.CreateSchemaFromJsonAsync(ledgerSchema.ObjectJson);
+                var schema = await Anoncreds.SchemaApi.CreateSchemaFromJsonAsync(ledgerSchema.ObjectJson);
                 schemas.Add(schema);
                 schemaJsonss.Add(schema.JsonString);
             }
@@ -907,7 +930,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                 }
 
-                var credDef = await IndySharedRsCredDef.CreateCredentialDefinitionFromJsonAsync(JsonConvert.SerializeObject(credDefJObject));
+                var credDef = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionFromJsonAsync(JsonConvert.SerializeObject(credDefJObject));
                 credDefJsons.Add(credDef.JsonString);
             }
 
@@ -942,7 +965,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialInfo.RevocationRegistryId);
             long.TryParse(credentialInfo.CredentialRevocationId, out var credentialRevocationId);
 
-            string state = await IndySharedRsRev.CreateOrUpdateRevocationStateAsync(
+            string state = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
                 registryDefinition.ObjectJson,
                 delta.ObjectJson,
                 credentialRevocationId,
@@ -1029,6 +1052,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             IEnumerable<ProofIdentifier> proofIdentifiers)
         {
             var result = new List<string>();
+            var defEntryIndex = 0;
 
             foreach (var identifier in proofIdentifiers)
             {
@@ -1039,7 +1063,14 @@ namespace Hyperledger.Aries.Features.PresentProof
                     identifier.RevocationRegistryId,
                     long.Parse(identifier.Timestamp));
 
-                result.Add(revocationRegistry.ObjectJson);
+                _ = long.TryParse(identifier.Timestamp, out var parsedTimestamp);
+                result.Add(JsonConvert.SerializeObject(new RevocationRegistryEntry
+                {
+                    DefEntryIdx = defEntryIndex,
+                    Entry = (await Anoncreds.RevocationApi.CreateRevocationRegistryFromJsonAsync(revocationRegistry.ObjectJson)).Handle,
+                    Timestamp = parsedTimestamp,
+                }));
+                defEntryIndex++;
             }
 
             return result;
@@ -1232,20 +1263,20 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private IssueCredential.Credential ConvertCredential(CredentialRecord credentialRecord)
         {
-            anoncreds_rs_dotnet.Models.Credential sharedRsCredential = JsonConvert.DeserializeObject< anoncreds_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
+            anoncreds_rs_dotnet.Models.Credential anoncredsCredential = JsonConvert.DeserializeObject< anoncreds_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
             IssueCredential.Credential issueCredential = new IssueCredential.Credential
             {
                 CredentialInfo = new CredentialInfo
                 {
                     Referent = credentialRecord.Id,
-                    CredentialDefinitionId = sharedRsCredential.CredentialDefinitionId,
-                    SchemaId = sharedRsCredential.SchemaId,
-                    RevocationRegistryId = sharedRsCredential.RevocationRegistryId,
+                    CredentialDefinitionId = anoncredsCredential.CredentialDefinitionId,
+                    SchemaId = anoncredsCredential.SchemaId,
+                    RevocationRegistryId = anoncredsCredential.RevocationRegistryId,
                     Attributes = new Dictionary<string, string>()
                 }
             };
 
-            foreach (var keyValuePair in sharedRsCredential.Values)
+            foreach (var keyValuePair in anoncredsCredential.Values)
             {
                 issueCredential.CredentialInfo.Attributes.Add(keyValuePair.Key, keyValuePair.Value.Raw);
             }

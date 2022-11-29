@@ -1,9 +1,8 @@
 ﻿using System;
-using IndySharedRsMs = anoncreds_rs_dotnet.Anoncreds.MasterSecretApi;
+using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Storage;
-using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Storage.Models;
 
 namespace Hyperledger.Aries.Utils
@@ -27,7 +26,7 @@ namespace Hyperledger.Aries.Utils
             MasterSecretRecord masterSecretRecord = new()
             {
                 Id = masterSecretId,
-                MasterSecretJson = await IndySharedRsMs.CreateMasterSecretJsonAsync()
+                MasterSecretJson = await Anoncreds.MasterSecretApi.CreateMasterSecretJsonAsync()
             };
 
             await recordService.AddAsync(storage, masterSecretRecord);
