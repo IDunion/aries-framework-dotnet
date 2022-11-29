@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using anoncreds_rs_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
@@ -16,7 +17,7 @@ using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Models.Records;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
-using indy_shared_rs_dotnet.Models;
+using anoncreds_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -26,12 +27,12 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Xml.Schema;
-using IndySharedRsCred = indy_shared_rs_dotnet.IndyCredx.CredentialApi;
-using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
-using IndySharedRsPres = indy_shared_rs_dotnet.IndyCredx.PresentationApi;
-using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
-using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
-using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
+using IndySharedRsCred = anoncreds_rs_dotnet.Anoncreds.CredentialApi;
+using IndySharedRsCredDef = anoncreds_rs_dotnet.Anoncreds.CredentialDefinitionApi;
+using IndySharedRsPres = anoncreds_rs_dotnet.Anoncreds.PresentationApi;
+using IndySharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
+using IndySharedRsRev = anoncreds_rs_dotnet.Anoncreds.RevocationApi;
+using IndySharedRsSchema = anoncreds_rs_dotnet.Anoncreds.SchemaApi;
 
 namespace Hyperledger.Aries.Features.PresentProof
 {
@@ -121,7 +122,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var attr in requestedCredentials.RequestedAttributes)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, attr.Value.CredentialId);
-                indy_shared_rs_dotnet.Models.Credential credential = await IndySharedRsCred.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
+                anoncreds_rs_dotnet.Models.Credential credential = await CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
@@ -176,7 +177,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var pred in requestedCredentials.RequestedPredicates)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
-                indy_shared_rs_dotnet.Models.Credential credential = await IndySharedRsCred.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
+                anoncreds_rs_dotnet.Models.Credential credential = await CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
 
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
@@ -263,6 +264,12 @@ namespace Hyperledger.Aries.Features.PresentProof
                 definitions);
 
             return presentation;
+        }
+
+        // TODO: Implement from former SharedRs Package.
+        private Task<anoncreds_rs_dotnet.Models.Credential> CreateCredentialFromJsonAsync(string credentialJson)
+        {
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc />
@@ -1225,7 +1232,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private IssueCredential.Credential ConvertCredential(CredentialRecord credentialRecord)
         {
-            indy_shared_rs_dotnet.Models.Credential sharedRsCredential = JsonConvert.DeserializeObject<indy_shared_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
+            anoncreds_rs_dotnet.Models.Credential sharedRsCredential = JsonConvert.DeserializeObject< anoncreds_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
             IssueCredential.Credential issueCredential = new IssueCredential.Credential
             {
                 CredentialInfo = new CredentialInfo

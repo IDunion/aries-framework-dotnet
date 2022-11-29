@@ -1,4 +1,5 @@
-﻿using Flurl;
+﻿using anoncreds_rs_dotnet.Models;
+using Flurl;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
@@ -11,7 +12,6 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Payments.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
-using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,9 +20,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
-using IndySharedRsRevoc = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
-using IndySharedRsSchema = indy_shared_rs_dotnet.IndyCredx.SchemaApi;
+using IndySharedRsCredDef = anoncreds_rs_dotnet.Anoncreds.CredentialDefinitionApi;
+using IndySharedRsRevoc = anoncreds_rs_dotnet.Anoncreds.RevocationApi;
+using IndySharedRsSchema = anoncreds_rs_dotnet.Anoncreds.SchemaApi;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -121,7 +121,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 int schemaSequenceId = Convert.ToInt32(JObject.Parse(credDef)["schemaId"].ToString());
                 return await LookupSchemaAsync(agentContext, schemaSequenceId);
             }
-            catch (Exception) 
+            catch (Exception)
             {
                 // Do nothing.
             }
@@ -152,7 +152,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                     return txnData.ToString();
                 }
-                catch (Exception) 
+                catch (Exception)
                 {
                     // Do nothing.
                 }
@@ -198,9 +198,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string tag, bool supportsRevocation, int maxCredentialCount)
         {
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
-            
+
             Uri baseUri = null;
-            if(provisioning.TailsBaseUri != null)
+            if (provisioning.TailsBaseUri != null)
             {
                 baseUri = new Uri(provisioning.TailsBaseUri);
             }
@@ -247,7 +247,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 originDid: configuration.IssuerDid,
                 schemaObjectJson: schema.ObjectJson,
                 tag: configuration.Tag,
-                indy_shared_rs_dotnet.Models.SignatureType.CL,
+                anoncreds_rs_dotnet.Models.SignatureType.CL,
                 supportRevocation: configuration.EnableRevocation);
             string credentialDefinitionId = await IndySharedRsCredDef.GetCredentialDefinitionAttributeAsync(credentialDefinitionJson, "id");
 
@@ -297,7 +297,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             long maxCredNum = definitionRecord.MaxCredentialCount;
 
             string credentialDefinitionJson = await LookupCredentialDefinitionAsync(context, definitionRecord.Id);
-            var credDefJObject = JObject.Parse(credentialDefinitionJson);
+            JObject credDefJObject = JObject.Parse(credentialDefinitionJson);
             try
             {
                 _ = (long)credDefJObject["schemaId"];
@@ -307,7 +307,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             {
                 //schema id is already a string
             }
-            
+
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson,
              string revocationRegistryJson,

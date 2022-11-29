@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Agents;
+﻿using anoncreds_rs_dotnet.Models;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
@@ -14,7 +15,6 @@ using Hyperledger.Aries.Features.IssueCredential.Models;
 using Hyperledger.Aries.Features.IssueCredential.Models.Messages;
 using Hyperledger.Aries.Features.IssueCredential.Records;
 using Hyperledger.Aries.Features.RevocationNotification;
-using Hyperledger.Aries.Ledger;
 using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Models.Events;
 using Hyperledger.Aries.Models.Records;
@@ -22,7 +22,6 @@ using Hyperledger.Aries.Payments;
 using Hyperledger.Aries.Payments.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Utils;
-using indy_shared_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -31,12 +30,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
-using IndySharedRsCred = indy_shared_rs_dotnet.IndyCredx.CredentialApi;
-using IndySharedRsCredDef = indy_shared_rs_dotnet.IndyCredx.CredentialDefinitionApi;
-using IndySharedRsCredReq = indy_shared_rs_dotnet.IndyCredx.CredentialRequestApi;
-using IndySharedRsOffer = indy_shared_rs_dotnet.IndyCredx.CredentialOfferApi;
-using IndySharedRsRev = indy_shared_rs_dotnet.IndyCredx.RevocationApi;
+using IndySharedRsCred = anoncreds_rs_dotnet.Anoncreds.CredentialApi;
+using IndySharedRsCredReq = anoncreds_rs_dotnet.Anoncreds.CredentialRequestApi;
+using IndySharedRsOffer = anoncreds_rs_dotnet.Anoncreds.CredentialOfferApi;
+using IndySharedRsRev = anoncreds_rs_dotnet.Anoncreds.RevocationApi;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
@@ -213,13 +210,17 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 revRegJson: revocationRecord.RevRegJson,
                 credRevIdx: credRevIdx,
                 tailsPath: tailsPath);
-            
+
             if ((string)JObject.Parse(revocationRecord.RevRegDefJson)["value"]["issuanceType"] == IssuerType.ISSUANCE_BY_DEFAULT.ToString())
             {
                 if (revocationRecord.CredRevocationIdxUsed == null)
+                {
                     revocationRecord.CredRevocationIdxUsed = new List<long> { credRevIdx };
+                }
                 else
+                {
                     revocationRecord.CredRevocationIdxUsed.Add(credRevIdx);
+                }
             }
             revocationRecord.RevRegJson = revRegUpdatedJson;
 
@@ -471,7 +472,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
             (credentialDefinition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
-            var masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
+            string masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
 
             string credentialProcessedJson = await IndySharedRsCred.ProcessCredentialAsync(
                 credentialJson,
@@ -484,7 +485,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             // TODO : ??? - need to update credentialJson information
             // we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential 
-            var credJObject = JObject.Parse(credentialProcessedJson);
+            JObject credJObject = JObject.Parse(credentialProcessedJson);
             try
             {
                 _ = (long)credJObject["schema_id"];
@@ -835,9 +836,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
                     //Check if RevocationRegistry has enough space for a new credential.
                     if (!long.TryParse(await IndySharedRsRev.GetRevocationRegistryDefinitionAttributeAsync(revRegDefJson, "max_cred_num"), out long maxCredNum))
+                    {
                         throw new AriesFrameworkException(ErrorCode.InvalidRecordData, "Invalid Parameter max_cred_num.");
+                    }
+
                     if (revocationRecord.NextCredRevocationIdx > maxCredNum)
+                    {
                         throw new AriesFrameworkException(ErrorCode.RevocationRegistryFull, $"Revocation registry with index {revRegistryIndex} is full (Max credential number is {maxCredNum}). If RevocationAutoScale is activated a new one will be created and index is incremented by 1.");
+                    }
                 }
 
                 (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await IndySharedRsCred.CreateCredentialAsync(
@@ -864,14 +870,14 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 return (
                     new AriesIssuerCreateCredentialResult(
                         credentialJson: credentialJson,
-                        revocId: credRevocationIdx != -1? credRevocationIdx.ToString() : null,
+                        revocId: credRevocationIdx != -1 ? credRevocationIdx.ToString() : null,
                         revocRegDeltaJson: revocationRegistryDeltaJson
                         ),
                     revocationRecord);
             }
-            catch(AriesFrameworkException e)
+            catch (AriesFrameworkException e)
             {
-                if(e.ErrorCode != ErrorCode.RevocationRegistryFull)
+                if (e.ErrorCode != ErrorCode.RevocationRegistryFull)
                 {
                     throw;
                 }
@@ -942,19 +948,23 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// Updates the NextCredRevocationRegistryIdx in revocation record and returns the credential revocation index for a created credential. If Issuance on demand was used, adds the credential revocation index to the CredRevocationIdxUsed list (issued list). 
         /// </summary>
         /// <returns>credential revocation index for the credential record.</returns>
-        private async Task<long> UpdateCredentialRevocationRegistryIdxAndUsedIdx(RevocationRegistryRecord revRegRecord, string RevRegDefJson)
+        private Task<long> UpdateCredentialRevocationRegistryIdxAndUsedIdx(RevocationRegistryRecord revRegRecord, string RevRegDefJson)
         {
             if ((string)JObject.Parse(RevRegDefJson)["value"]["issuanceType"] == IssuerType.ISSUANCE_ON_DEMAND.ToString())
             {
                 if (revRegRecord.CredRevocationIdxUsed == null)
+                {
                     revRegRecord.CredRevocationIdxUsed = new List<long> { revRegRecord.NextCredRevocationIdx };
+                }
                 else
+                {
                     revRegRecord.CredRevocationIdxUsed.Add(revRegRecord.NextCredRevocationIdx);
+                }
             }
 
             long credRevocationRegistryIdx = revRegRecord.NextCredRevocationIdx;
             revRegRecord.NextCredRevocationIdx += 1;
-            return credRevocationRegistryIdx;
+            return Task.FromResult(credRevocationRegistryIdx);
         }
     }
 }

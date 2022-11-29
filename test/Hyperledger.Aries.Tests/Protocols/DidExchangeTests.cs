@@ -11,7 +11,7 @@ using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
-using indy_shared_rs_dotnet.Models;
+using anoncreds_rs_dotnet.Models;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;

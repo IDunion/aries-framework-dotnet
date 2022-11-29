@@ -1,5 +1,5 @@
 ﻿using System;
-using IndySharedRsMs = indy_shared_rs_dotnet.IndyCredx.MasterSecretApi;
+using IndySharedRsMs = anoncreds_rs_dotnet.Anoncreds.MasterSecretApi;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Storage;

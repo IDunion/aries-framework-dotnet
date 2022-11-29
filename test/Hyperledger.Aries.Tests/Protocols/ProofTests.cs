@@ -25,7 +25,7 @@ using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using Hyperledger.TestHarness;
 using Hyperledger.TestHarness.Utils;
-using indy_shared_rs_dotnet.Models;
+using anoncreds_rs_dotnet.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -33,7 +33,7 @@ using Newtonsoft.Json;
 using Xunit;
 using AttributeFilter = Hyperledger.Aries.Features.PresentProof.AttributeFilter;
 using AttributeValue = Hyperledger.Aries.Features.PresentProof.AttributeValue;
-using IndySharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
+using IndySharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
@@ -1751,7 +1751,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             }
 
             //Holder accepts the proof request and sends a proof
-            var ex = await Assert.ThrowsAsync<SharedRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+            var ex = await Assert.ThrowsAsync<AnoncredsRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
                 requestedCredentials));
         }
 
@@ -1835,7 +1835,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             }
 
             //Holder accepts the proof request and sends a proof
-            var ex = await Assert.ThrowsAsync<SharedRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
+            var ex = await Assert.ThrowsAsync<AnoncredsRsException>(async () => await _proofService.CreatePresentationAsync(_holderWallet, holderProofRequestId.Id,
                 requestedCredentials));
         }
 

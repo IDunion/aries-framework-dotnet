@@ -8,8 +8,8 @@
         <Version>2.0.0-beta</Version>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="Hyperledger.Anoncreds-Rs" Version="0.3.6-alpha" />
         <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.12-alpha" />
-        <PackageReference Include="Hyperledger.Indy-Shared-Rs" Version="0.4.5-alpha" />
         <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.5" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />

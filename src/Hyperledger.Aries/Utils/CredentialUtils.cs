@@ -47,7 +47,7 @@ namespace Hyperledger.Aries.Utils
                         throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"{item.Name} mime type of {item.MimeType} not supported");
                 }
             }
-            List<string> resultAttrNamesEnc = indy_shared_rs_dotnet.IndyCredx.CredentialApi.EncodeCredentialAttributesAsync(resultAttrNamesRaw).GetAwaiter().GetResult();
+            List<string> resultAttrNamesEnc = anoncreds_rs_dotnet.Anoncreds.CredentialApi.EncodeCredentialAttributesAsync(resultAttrNamesRaw).GetAwaiter().GetResult();
             return (resultAttrNames, resultAttrNamesRaw, resultAttrNamesEnc);
         }
 

@@ -20,7 +20,7 @@ using Hyperledger.TestHarness.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static Hyperledger.TestHarness.Mock.InProcAgentV1;
-using SharedRsPresReq = indy_shared_rs_dotnet.IndyCredx.PresentationRequestApi;
+using SharedRsPresReq = anoncreds_rs_dotnet.Anoncreds.PresentationRequestApi;
 
 namespace Hyperledger.Aries.Tests.Protocols
 {
