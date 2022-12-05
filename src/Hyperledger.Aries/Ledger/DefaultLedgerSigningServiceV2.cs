@@ -3,6 +3,7 @@ using Hyperledger.Aries.Ledger.Abstractions;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Utils;
+using Polly;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,33 +19,22 @@ namespace Hyperledger.Aries.Ledger
             _recordService = recordService;
         }
 
-        //public Task<byte[]> SignMessageAsync(IAgentContext context, string signingDid, string message)
-        //{
-        //    var sig = SignMessageAsync(context, signingDid, Encoding.UTF8.GetBytes(message)).GetAwaiter().GetResult();
-        //    return Encoding.UTF8.GetString(sig, 0, sig.Length);
-        //}
-
-        //public async Task<byte[]> SignMessageAsync(IAgentContext context, string signingDid, byte[] message)
-        //{
-        //    string key = await DidUtils.KeyForLocalDidAsync(context.AriesStorage, _recordService, signingDid);
-        //    return await CryptoUtils.CreateSignatureAsync(context.AriesStorage, _recordService, key, message);
-        //}
-
         public async Task<string> SignRequestAsync(IAgentContext context, string submitterDid, string requestJson)
         {
-            byte[] sig = await SignRequestAsync(context, submitterDid, Encoding.UTF8.GetBytes(requestJson));
+            byte[] sig = await SignRequestAsync(context.AriesStorage, submitterDid, Encoding.UTF8.GetBytes(requestJson));
             return Convert.ToBase64String(sig);
         }
 
-        private async Task<byte[]> SignRequestAsync(IAgentContext context, string signingDid, byte[] message)
+        public async Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson)
         {
-            string key = await DidUtils.KeyForLocalDidAsync(context.AriesStorage, _recordService, signingDid);
-            return await CryptoUtils.CreateSignatureAsync(context.AriesStorage, _recordService, key, message);
+            byte[] sig = await SignRequestAsync(storage, submitterDid, Encoding.UTF8.GetBytes(requestJson));
+            return Convert.ToBase64String(sig);
         }
 
-        public Task<string> SignRequestAsync(AriesStorage storage, string submitterDid, string requestJson)
+        private async Task<byte[]> SignRequestAsync(AriesStorage storage, string signingDid, byte[] message)
         {
-            return SignRequestAsync(storage, submitterDid, requestJson);
+            string key = await DidUtils.KeyForLocalDidAsync(storage, _recordService, signingDid);
+            return await CryptoUtils.CreateSignatureAsync(storage, _recordService, key, message);
         }
     }
 }

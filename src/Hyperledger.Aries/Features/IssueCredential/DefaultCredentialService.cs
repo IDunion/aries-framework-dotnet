@@ -30,6 +30,7 @@ using Polly;
 using Hyperledger.Aries.Features.RevocationNotification;
 using Hyperledger.Aries.Features.IssueCredential.Records;
 using Hyperledger.Aries.Ledger.Models;
+using Hyperledger.Aries.Features.IssueCredential.Models.Messages;
 
 namespace Hyperledger.Aries.Features.IssueCredential
 {
