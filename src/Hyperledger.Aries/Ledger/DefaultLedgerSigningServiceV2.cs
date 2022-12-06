@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Ledger
 {
-    internal class DefaultLedgerSigningServiceV2 : ILedgerSigningService
+    public class DefaultLedgerSigningServiceV2 : ILedgerSigningService
     {
         private readonly IWalletRecordService _recordService;
 
