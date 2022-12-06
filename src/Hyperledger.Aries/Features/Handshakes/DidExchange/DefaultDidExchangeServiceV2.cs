@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.Features.Handshakes.DidExchange
 {
-    internal class DefaultDidExchangeServiceV2 : IDidExchangeService
+    public class DefaultDidExchangeServiceV2 : IDidExchangeService
     {
         private readonly IEventAggregator _eventAggregator;
         private readonly ILedgerService _ledgerService;
