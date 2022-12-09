@@ -1,4 +1,5 @@
 ﻿using aries_askar_dotnet;
+using aries_askar_dotnet.AriesAskar;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Common;
@@ -789,6 +790,10 @@ namespace Hyperledger.Aries.Utils
         }
         #endregion
 
+        public static async Task<string> GenerateRawKeyAsync(string seed = null)
+        {
+            return await StoreApi.GenerateRawKeyAsync(seed);
+        }
 
 
         private static Task<byte[]> ValidateAndConvertSeed(string seed)
