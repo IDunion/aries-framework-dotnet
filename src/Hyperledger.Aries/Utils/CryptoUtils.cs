@@ -790,12 +790,6 @@ namespace Hyperledger.Aries.Utils
         }
         #endregion
 
-        public static async Task<string> GenerateRawKeyAsync(string seed = null)
-        {
-            return await StoreApi.GenerateRawKeyAsync(seed);
-        }
-
-
         private static Task<byte[]> ValidateAndConvertSeed(string seed)
         {
             byte[] seedBytes;
