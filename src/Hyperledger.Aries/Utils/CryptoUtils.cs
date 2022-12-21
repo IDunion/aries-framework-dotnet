@@ -173,8 +173,7 @@ namespace Hyperledger.Aries.Utils
             {
                 throw new ArgumentNullException(nameof(recipientVerKeys));
             }
-
-            //IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.XC20P, false);
+    
             IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.C20P, false);
             byte[] contentEncryptionKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(contentEncryptionKeyHandle);
 
@@ -182,14 +181,7 @@ namespace Hyperledger.Aries.Utils
 
             if (!string.IsNullOrEmpty(senderVerKey))
             {
-                // TODO: validate senderVerKey
-                //var sender = Multibase.Base58.Encode(
-                //    await AriesAskarKey.GetPublicBytesFromKeyAsync(
-                //       await AriesAskarKey.CreateKeyFromPublicBytesAsync(
-                //           KeyAlg.ED25519,
-                //           Encoding.UTF8.GetBytes(senderVerKey)))
-                //    );
-
+                //TODO: validate senderVerKey 
                 // AuthCrypt
                 protectedHeaderJson = await PrepareProtectedInfoAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
             }
@@ -199,8 +191,6 @@ namespace Hyperledger.Aries.Utils
                 protectedHeaderJson = await PrepareProtectedInfoAnonCrypt(contentEncryptionKey, recipientVerKeys);
             }
 
-            //byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
-            //(byte[] encryptedMessage, byte[] tag, _) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce, protectedInfo);
             (byte[] encryptedMessage, byte[] tag, byte[] nonce) = await AriesAskarKey.EncryptKeyWithAeadAsync(
                 contentEncryptionKeyHandle, 
                 Encoding.UTF8.GetString(unencryptedMessage), 
@@ -661,14 +651,6 @@ namespace Hyperledger.Aries.Utils
 
             IntPtr keyHandle = await CreateKeyPair(keyAlg, seed);
 
-            //if (string.IsNullOrEmpty(seed))
-            //   seed = GetUniqueKey(32);
-
-            //IntPtr keyHandle = await AriesAskarKey.CreateKeyFromSeedAsync(
-            //    keyAlg: keyAlg,
-            //    seed: seed,
-            //   SeedMethod.BlsKeyGen);
-
             byte[] verKey = await AriesAskarKey.GetPublicBytesFromKeyAsync(keyHandle);
             string verKeyBase58 = Multibase.Base58.Encode(verKey);
             if (cryptoType != "ed25519" && !string.IsNullOrEmpty(cryptoType))
@@ -854,7 +836,6 @@ namespace Hyperledger.Aries.Utils
     {
         [JsonProperty("encrypted_key")]
         [JsonPropertyName("encrypted_key")]
-        //public byte[] EncryptedKey { get; set; }
         public string EncryptedKey { get; set; }
         [JsonProperty("header")]
         [JsonPropertyName("header")]
