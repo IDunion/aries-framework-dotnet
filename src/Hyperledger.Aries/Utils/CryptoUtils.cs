@@ -36,6 +36,8 @@ namespace Hyperledger.Aries.Utils
     {
         #region Constants
         public const string PROTECTED_HEADER_ENCRYPTION = "xchacha20poly1305_ietf";
+        //public const string PROTECTED_HEADER_ENCRYPTION = "chacha20poly1305_ietf";
+        //public const string PROTECTED_HEADER_ENCRYPTION = "xsalsa20poly1305";
         public const string PROTECTED_HEADER_TYP = "JWM/1.0";
         public const string PROTECTED_HEADER_AUTHCRYPT = "Authcrypt";
         public const string PROTECTED_HEADER_ANONCRYPT = "Anoncrypt";
@@ -173,15 +175,21 @@ namespace Hyperledger.Aries.Utils
                 throw new ArgumentNullException(nameof(recipientVerKeys));
             }
 
-            IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.XC20P, false);
-            byte[] contentEncryptionKeyBytes = await AriesAskarKey.GetSecretBytesFromKeyAsync(contentEncryptionKeyHandle);
-            var contentEncryptionKey = Multibase.Base58.Encode(contentEncryptionKeyBytes);
+            //IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.XC20P, false);
+            IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyAsync(KeyAlg.C20P, false); //Used in Python
+            byte[] contentEncryptionKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(contentEncryptionKeyHandle);
 
             string protectedInfo;
 
             if (!string.IsNullOrEmpty(senderVerKey))
             {
                 // TODO: validate senderVerKey
+                //var sender = Multibase.Base58.Encode(
+                //    await AriesAskarKey.GetPublicBytesFromKeyAsync(
+                //       await AriesAskarKey.CreateKeyFromPublicBytesAsync(
+                //           KeyAlg.ED25519,
+                //           Encoding.UTF8.GetBytes(senderVerKey)))
+                //    );
 
                 // AuthCrypt
                 protectedInfo = await PrepareProtectedInfoAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
@@ -193,15 +201,17 @@ namespace Hyperledger.Aries.Utils
             }
 
 
-            byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
-            (byte[] encryptedMessage, byte[] tag, _) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce, protectedInfo);
+            //byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
+            //(byte[] encryptedMessage, byte[] tag, _) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), nonce, protectedInfo);
+            (byte[] encryptedMessage, byte[] tag, byte[] nonce) = await AriesAskarKey.EncryptKeyWithAeadAsync(contentEncryptionKeyHandle, Encoding.UTF8.GetString(unencryptedMessage), null, protectedInfo); // Python version
 
             string msgWrapper = JsonConvert.SerializeObject(new MessageWrapper
             {
                 Protected = protectedInfo,
-                Iv = Convert.ToBase64String(nonce),
-                Ciphertext = Convert.ToBase64String(encryptedMessage),
-                Tag = Convert.ToBase64String(tag)
+                Iv = Multibase.EncodeRaw(MultibaseEncoding.Base64UrlPadded, nonce),//Convert.ToBase64String(nonce),
+                Ciphertext = Multibase.EncodeRaw(MultibaseEncoding.Base64UrlPadded, encryptedMessage),//Convert.ToBase64String(encryptedMessage),
+                Tag = Multibase.EncodeRaw(MultibaseEncoding.Base64UrlPadded, tag),
+                //Convert.ToBase64String(tag)
             });
 
             return Encoding.UTF8.GetBytes(msgWrapper);
@@ -216,7 +226,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recipientVerKeys"></param>
         /// <param name="senderVerkey"></param>
         /// <returns></returns>
-        private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, string contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
+        private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, byte[] contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
         {
 
             IntPtr keyHandle = await recordService.GetKeyAsync(store, senderVerkey);
@@ -240,12 +250,13 @@ namespace Hyperledger.Aries.Utils
                 byte[] encryptedSender = await AriesAskarKey.SealCryptoBoxAsync(convertedRecipientKeyHandle, senderVerkey);
 
                 recipients.Add(new Recipient {
-                    EncryptedKey = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedCek),
+                    EncryptedKey = Convert.ToBase64String(encryptedCek),//Multibase.Encode(MultibaseEncoding.Base64Url, encryptedCek),
+                    //EncryptedKey = encryptedCek,
                     Header = new RecipientHeader
                     {
                         Kid = verKey,
-                        Sender = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedSender),
-                        Iv = Multibase.Encode(MultibaseEncoding.Base64Url, nonce),
+                        Sender = Convert.ToBase64String(encryptedSender),//Multibase.Encode(MultibaseEncoding.Base64Url, encryptedSender),
+                        Iv = Convert.ToBase64String(nonce),//Multibase.Encode(MultibaseEncoding.Base64Url, nonce),
                     }
                 });
             }
@@ -259,7 +270,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="contentEncryptionKey"></param>
         /// <param name="recipientVerKeys"></param>
         /// <returns></returns>
-        private static async Task<string> PrepareProtectedInfoAnonCrypt(string contentEncryptionKey, string[] recipientVerKeys)
+        private static async Task<string> PrepareProtectedInfoAnonCrypt(byte[] contentEncryptionKey, string[] recipientVerKeys)
         {
             List<Recipient> recipients = new();
 
@@ -271,7 +282,7 @@ namespace Hyperledger.Aries.Utils
                 
                 recipients.Add(new Recipient
                 {
-                    EncryptedKey = Multibase.Encode(MultibaseEncoding.Base64Url, encryptedCek),
+                    EncryptedKey = Multibase.EncodeRaw(MultibaseEncoding.Base64UrlPadded, encryptedCek),//Convert.ToBase64String(encryptedCek)
                     Header = new RecipientHeader
                     {
                         Kid = verKey,
@@ -292,12 +303,19 @@ namespace Hyperledger.Aries.Utils
         /// <returns></returns>
         private static Task<string> WrapProtectedInfo(List<Recipient> recipients, bool isAuthCrypt = false)
         {
-            return Task.FromResult(Multibase.Encode(MultibaseEncoding.Base64Url, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new ProtectedHeader {
+            var protectedHeader = JsonConvert.SerializeObject(new ProtectedHeader
+            {
                 Enc = PROTECTED_HEADER_ENCRYPTION,
                 Typ = PROTECTED_HEADER_TYP,
                 Alg = isAuthCrypt ? PROTECTED_HEADER_AUTHCRYPT : PROTECTED_HEADER_ANONCRYPT,
                 Recipients = recipients
-            }))));
+            });
+            var WrapperProtectedInfoBytes = Encoding.UTF8.GetBytes(protectedHeader);
+
+            //return Task.FromResult(Multibase.Encode(MultibaseEncoding.Base64Url, WrapperProtectedInfoBytes));
+            //return Task.FromResult(Multibase.Encode(MultibaseEncoding.Base64, WrapperProtectedInfoBytes));
+            return Task.FromResult(Multibase.Encode(MultibaseEncoding.Base64UrlPadded, WrapperProtectedInfoBytes));
+            //return Task.FromResult(Convert.ToBase64String(WrapperProtectedInfoBytes));
         }
         #endregion
 
@@ -387,27 +405,38 @@ namespace Hyperledger.Aries.Utils
             var tmpEncoding = MultibaseEncoding.Base64Url;
             byte[] headerBytes = null;
             Multibase.TryDecode(messageObject.Protected, out tmpEncoding, out headerBytes);
+            //headerBytes = Convert.FromBase64String(messageObject.Protected);
+            //headerBytes = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, messageObject.Protected);
+            
             string decodedHeader = Encoding.UTF8.GetString(headerBytes);
+
             ProtectedHeader headerObject = JsonConvert.DeserializeObject<ProtectedHeader>(decodedHeader);
 
             (Recipient recipient, bool isAuthCrypt) = await FindCorrectRecipient(store, recordService, headerObject);
 
-            string contentEncryptionKey;
+            byte[] contentEncryptionKey = null;
             string unencryptedSenderKey = null;
             if (isAuthCrypt)
             {
-                (unencryptedSenderKey, contentEncryptionKey) = await UnpackCekAuthCrypt(store, recordService, recipient);
+                //(unencryptedSenderKey, contentEncryptionKey) = await UnpackCekAuthCrypt(store, recordService, recipient);
             }
             else
             {
                 contentEncryptionKey = await UnpackCekAnonCrypt(store, recordService, recipient);
             }
 
-            IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.XC20P, Multibase.Base58.Decode(contentEncryptionKey));
+            IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.C20P, contentEncryptionKey);
+
+            byte[] cipher = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, messageObject.Ciphertext);
+            byte[] iv = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, messageObject.Iv);
+            byte[] tag = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, messageObject.Tag);
+            //Multibase.TryDecode(messageObject.Iv, out tmpEncoding, out var iv);
+            //Multibase.TryDecode(messageObject.Tag, out tmpEncoding, out var tag);
+
             byte[] decryptedMessage = await AriesAskarKey.DecryptKeyWithAeadAsync(contentEncryptionKeyHandle,
-                Convert.FromBase64String(messageObject.Ciphertext),
-                Convert.FromBase64String(messageObject.Iv),
-                Convert.FromBase64String(messageObject.Tag), 
+                cipher,
+                iv,
+                tag, 
                 messageObject.Protected
             );
 
@@ -460,7 +489,8 @@ namespace Hyperledger.Aries.Utils
         {
             var tmpEncoding = MultibaseEncoding.Base64Url;
             byte[] encryptedCek = null;
-            Multibase.TryDecode(recipient.EncryptedKey, out tmpEncoding, out encryptedCek);
+            //Multibase.TryDecode(recipient.EncryptedKey, out tmpEncoding, out encryptedCek);
+            encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
             byte[] usedIv = null;
             Multibase.TryDecode(recipient.Header.Iv, out tmpEncoding, out usedIv);
             byte[] encryptedSenderVerKey = null;
@@ -485,16 +515,22 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <param name="recipient"></param>
         /// <returns></returns>
-        private static async Task<string> UnpackCekAnonCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
+        private static async Task<byte[]> UnpackCekAnonCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
         {
-            var tmpEncoding = MultibaseEncoding.Base64Url;
             byte[] encryptedCek = null;
-            Multibase.TryDecode(recipient.EncryptedKey, out tmpEncoding, out encryptedCek);
+            //
+            //encryptedCek = recipient.EncryptedKey;
+            //encryptedCek = Convert.FromBase64String(recipient.EncryptedKey);
+            //
+            Multibase.TryDecode(recipient.EncryptedKey, out var tmpEncoding, out var temp);
+            encryptedCek = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, recipient.EncryptedKey);
+            //Multibase.TryDecode(recipient.EncryptedKey, out tmpEncoding, out encryptedCek);
 
             IntPtr privateKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
             IntPtr convertedKeyHandle = await AriesAskarKey.ConvertKeyAsync(privateKeyHandle, KeyAlg.X25519);
 
-            return await AriesAskarKey.OpenSealCryptoBoxAsync(convertedKeyHandle, encryptedCek);
+            //return await AriesAskarKey.OpenSealCryptoBoxAsync(convertedKeyHandle, recipient.EncryptedKey);
+            return await AriesAskarKey.OpenSealCryptoBoxBytesAsync(convertedKeyHandle, encryptedCek);
         }
         #endregion
 
@@ -837,11 +873,13 @@ namespace Hyperledger.Aries.Utils
     {
         [JsonProperty("encrypted_key")]
         [JsonPropertyName("encrypted_key")]
+        //public byte[] EncryptedKey { get; set; }
         public string EncryptedKey { get; set; }
         [JsonProperty("header")]
         [JsonPropertyName("header")]
         public RecipientHeader Header { get; set; }
     }
+
     public class RecipientHeader
     {
         [JsonProperty("kid")]

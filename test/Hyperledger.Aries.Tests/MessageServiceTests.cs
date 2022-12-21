@@ -473,10 +473,11 @@ namespace Hyperledger.Aries.Tests
         [Fact]
         public async Task PackAndUnpackAnon()
         {
-
+            var debug = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } };
             var message = new ConnectionInvitationMessage { RecipientKeys = new[] { "123" } }.ToByteArray();
 
-            (_, string verKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            //(_, string verKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2);
+            (_, string verKey) = await DidUtils.CreateAndStoreMyDidAsync(_storage, _walletRecordServiceV2, seed: TestConstants.RecipientSeed);
 
             var packed = await CryptoUtils.PackAsync(_storage, verKey, message, null, _walletRecordServiceV2);
             var unpack = await CryptoUtils.UnpackAsync(_storage, packed, _walletRecordServiceV2);
