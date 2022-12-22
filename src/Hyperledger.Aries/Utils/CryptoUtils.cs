@@ -226,10 +226,7 @@ namespace Hyperledger.Aries.Utils
         private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, byte[] contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
         {
             IntPtr keyHandle = await recordService.GetKeyAsync(store, senderVerkey);
-            byte[] secretKey = await AriesAskarKey.GetSecretBytesFromKeyAsync(keyHandle);
-            // Key needs to be created with KeyAlg.ED25519 and then converted, due some native method bug.
-            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(KeyAlg.ED25519, secretKey);
-            IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(senderKeyHandle, KeyAlg.X25519);
+            IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(keyHandle, KeyAlg.X25519);
 
             List<Recipient> recipients = new();
 
@@ -237,19 +234,29 @@ namespace Hyperledger.Aries.Utils
             {
                 // In case verkey is in format 'verkey:cryptoType', KeyHandle is generated only from verkey bytes
                 string vk = verKey;
+                string cryptoType = null;
                 if (verKey.Contains(':'))
                 {
                     vk = verKey.Split(':')[0];
+                    cryptoType = verKey.Split(':')[1];
                 }
 
                 var decodedVerkey = Multibase.Base58.Decode(vk);
-                // Key needs to be created with KeyAlg.ED25519 and then converted, due some native method bug.
-                IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedVerkey);
+                IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(
+                    cryptoType == null ? KeyAlg.ED25519 : KeyAlgConverter.ToKeyAlg(cryptoType), 
+                    decodedVerkey);
                 IntPtr convertedRecipientKeyHandle = await AriesAskarKey.ConvertKeyAsync(recipientKeyHandle, KeyAlg.X25519);
+
                 byte[] nonce = await AriesAskarKey.CreateCryptoBoxRandomNonceAsync();
+
                 // Encrypting the content encryption key.
-                byte[] encryptedCek = await AriesAskarKey.CryptoBoxAsync(convertedRecipientKeyHandle, convertedSenderKeyHandle, contentEncryptionKey, nonce);
-                // Encrypting the recipient verKey.
+                byte[] encryptedCek = await AriesAskarKey.CryptoBoxAsync(
+                    convertedRecipientKeyHandle, 
+                    convertedSenderKeyHandle, 
+                    contentEncryptionKey, 
+                    nonce);
+
+                // Encrypting the sender verKey.
                 byte[] encryptedSender = await AriesAskarKey.SealCryptoBoxAsync(convertedRecipientKeyHandle, senderVerkey);
 
                 recipients.Add(new Recipient {
@@ -280,12 +287,17 @@ namespace Hyperledger.Aries.Utils
             {
                 // In case verkey is in format 'verkey:cryptoType', KeyHandle is generated only from verkey bytes
                 string vk = verKey;
+                string cryptoType = null;
                 if (verKey.Contains(':'))
                 {
                     vk = verKey.Split(':')[0];
+                    cryptoType = verKey.Split(':')[1];
                 }
 
-                IntPtr verKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(vk)); 
+                IntPtr verKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(
+                    cryptoType == null ? KeyAlg.ED25519 : KeyAlgConverter.ToKeyAlg(cryptoType), 
+                    Multibase.Base58.Decode(vk)); 
+
                 IntPtr convertedVerKeyHandle = await AriesAskarKey.ConvertKeyAsync(verKeyHandle, KeyAlg.X25519);
                 byte[] encryptedCek = await AriesAskarKey.SealCryptoBoxAsync(convertedVerKeyHandle, contentEncryptionKey);
                 
@@ -505,14 +517,19 @@ namespace Hyperledger.Aries.Utils
 
             // In case verkey is in format 'verkey:cryptoType', senderKeyHandle is generated only from verkey bytes
             string decryptedSenderVK = decryptedSenderVerKey;
+            string cryptoType = null;
             if (decryptedSenderVerKey.Contains(':'))
             {
                 decryptedSenderVK = decryptedSenderVerKey.Split(':')[0];
+                cryptoType = decryptedSenderVerKey.Split(':')[1];
             }
 
             byte[] decodedSenderVerKey = Multibase.Base58.Decode(decryptedSenderVK);
 
-            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedSenderVerKey);
+            IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(
+                cryptoType==null? KeyAlg.ED25519 : KeyAlgConverter.ToKeyAlg(cryptoType), 
+                decodedSenderVerKey);
+
             IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(senderKeyHandle, KeyAlg.X25519);
             byte[] unencryptedCek = await AriesAskarKey.OpenCryptoBoxBytesAsync(convertedMyKeyHandle, convertedSenderKeyHandle, encryptedCek, iv);
 
