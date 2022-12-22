@@ -1,4 +1,5 @@
-﻿using aries_askar_dotnet;
+﻿using anoncreds_rs_dotnet.Models;
+using aries_askar_dotnet;
 using aries_askar_dotnet.AriesAskar;
 using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Agents;
@@ -181,9 +182,14 @@ namespace Hyperledger.Aries.Utils
 
             if (!string.IsNullOrEmpty(senderVerKey))
             {
-                //TODO: validate senderVerKey 
-                // AuthCrypt
-                protectedHeaderJson = await PrepareProtectedInfoAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
+                //TODO : validate senderVerkey -> can be in format 'verkey' (ed25519) or 'verkey:cryptoType' (other crypto types). For now only Ed25519 supported 
+                if (await DidUtils.ValidateVerkeyED25519(senderVerKey))
+                {
+                    // AuthCrypt
+                    protectedHeaderJson = await PrepareProtectedInfoAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
+                }
+                else 
+                    throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Provided sender verkey is no valid base58 encoded verkey : {senderVerKey}.");
             }
             else
             {
@@ -229,7 +235,14 @@ namespace Hyperledger.Aries.Utils
 
             foreach (string verKey in recipientVerKeys)
             {
-                var decodedVerkey = Multibase.Base58.Decode(verKey);
+                // In case verkey is in format 'verkey:cryptoType', KeyHandle is generated only from verkey bytes
+                string vk = verKey;
+                if (verKey.Contains(':'))
+                {
+                    vk = verKey.Split(':')[0];
+                }
+
+                var decodedVerkey = Multibase.Base58.Decode(vk);
                 // Key needs to be created with KeyAlg.ED25519 and then converted, due some native method bug.
                 IntPtr recipientKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedVerkey);
                 IntPtr convertedRecipientKeyHandle = await AriesAskarKey.ConvertKeyAsync(recipientKeyHandle, KeyAlg.X25519);
@@ -265,7 +278,14 @@ namespace Hyperledger.Aries.Utils
 
             foreach(string verKey in recipientVerKeys)
             {
-                IntPtr verKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(verKey)); 
+                // In case verkey is in format 'verkey:cryptoType', KeyHandle is generated only from verkey bytes
+                string vk = verKey;
+                if (verKey.Contains(':'))
+                {
+                    vk = verKey.Split(':')[0];
+                }
+
+                IntPtr verKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, Multibase.Base58.Decode(vk)); 
                 IntPtr convertedVerKeyHandle = await AriesAskarKey.ConvertKeyAsync(verKeyHandle, KeyAlg.X25519);
                 byte[] encryptedCek = await AriesAskarKey.SealCryptoBoxAsync(convertedVerKeyHandle, contentEncryptionKey);
                 
@@ -478,7 +498,19 @@ namespace Hyperledger.Aries.Utils
             IntPtr myKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
             IntPtr convertedMyKeyHandle = await AriesAskarKey.ConvertKeyAsync(myKeyHandle, KeyAlg.X25519);
             string decryptedSenderVerKey = await AriesAskarKey.OpenSealCryptoBoxAsync(convertedMyKeyHandle, encryptedSenderVerkey);
-            byte[] decodedSenderVerKey = Multibase.Base58.Decode(decryptedSenderVerKey);
+            
+            //TODO : validate senderVerkey -> can be in format 'verkey' (ed25519) or 'verkey:cryptoType' (other crypto types). For now only Ed25519 supported 
+            if (!await DidUtils.ValidateVerkeyED25519(decryptedSenderVerKey))
+                throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Sender verkey is no valid base58 encoded verkey : {decryptedSenderVerKey}.");
+
+            // In case verkey is in format 'verkey:cryptoType', senderKeyHandle is generated only from verkey bytes
+            string decryptedSenderVK = decryptedSenderVerKey;
+            if (decryptedSenderVerKey.Contains(':'))
+            {
+                decryptedSenderVK = decryptedSenderVerKey.Split(':')[0];
+            }
+
+            byte[] decodedSenderVerKey = Multibase.Base58.Decode(decryptedSenderVK);
 
             IntPtr senderKeyHandle = await AriesAskarKey.CreateKeyFromPublicBytesAsync(KeyAlg.ED25519, decodedSenderVerKey);
             IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(senderKeyHandle, KeyAlg.X25519);

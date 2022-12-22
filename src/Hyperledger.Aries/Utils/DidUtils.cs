@@ -431,6 +431,28 @@ namespace Hyperledger.Aries.Utils
 
             return decodedDid.Equals(firstPart) ? Task.FromResult($"~{secondPart}") : Task.FromResult(verKey);
         }
+        public static Task<bool> ValidateVerkeyED25519(string myVerkey)
+        {
+            string vk_abbrev;
+            if (myVerkey.Contains(':'))
+            {
+                string[] splits = myVerkey.Split(':');
+                string vk_part1 = splits[0];
+                string cryptoType = splits[1];
+                // For now only ED25519 supported as standard, which is indicated by verkeys without a ':cryptoType' addition
+                if (!string.IsNullOrEmpty(cryptoType)) 
+                    throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Invalid key alg provided: '{cryptoType}', only key alg 'ED25519' supported for now and this algorithm is not contained in verkey.");
+            }
+
+            if (myVerkey.StartsWith("~"))
+            {
+                vk_abbrev = myVerkey.Remove(0,1);
+                return Task.FromResult(IsVerkey(vk_abbrev));
+            }
+
+            return Task.FromResult(IsVerkey(myVerkey));
+           
+        }
 
         private static Task<string> BuildFullVerkey(string dest, string str)
         {
