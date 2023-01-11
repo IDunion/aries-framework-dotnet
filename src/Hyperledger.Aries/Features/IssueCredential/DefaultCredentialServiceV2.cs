@@ -267,19 +267,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public async Task DeleteCredentialAsync(IAgentContext agentContext, string credentialId)
         {
-            // TODO : ??? - ProverDeleteCredentialAsync has same functionality than RecordService.DeleteAsync - delete after discussed with team
-            // see indy-sdk : NonSecrets.indy_delete_wallet_record and AnonCreds.indy_prover_delete_credential lead to delete_record(wallet,type,name)
-            //var credentialRecord = await GetAsync(agentContext, credentialId);
-            //try
-            //{
-            //    /** TODO : ??? - No such function in SharedRS **/
-            //    await AnonCreds.ProverDeleteCredentialAsync(agentContext.AriesStorage.Store, credentialRecord.CredentialId);
-            //}
-            //catch
-            //{
-            //    // OK
-            //}
-
             _ = await RecordService.DeleteAsync<CredentialRecord>(agentContext.AriesStorage, credentialId);
         }
 
@@ -480,8 +467,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 );
             string credentialProcessedId = await Anoncreds.CredentialApi.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
 
-            // TODO : ??? - need to update credentialJson information
-            // we also need to check if attributes in credentialRecord need an update -> compare with indy-sdk : indy_prover_store_credential 
             JObject credJObject = JObject.Parse(credentialProcessedJson);
             try
             {
