@@ -1,6 +1,9 @@
-﻿using Hyperledger.Aries.Extensions;
+﻿using anoncreds_rs_dotnet;
+using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
+using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,6 +93,13 @@ namespace Hyperledger.Aries.Storage
                 ariesStorage.Wallet.Dispose();
             }
             await Wallet.DeleteWalletAsync(configuration.ToJson(), credentials.ToJson());
+        }
+
+        /// <inheritdoc />
+        public async Task<string> CreateWalletKeyAsync(string seed = null)
+        {
+            return await Wallet.GenerateWalletKeyAsync(new { seed }.ToJson());
+
         }
 
         /// <inheritdoc />

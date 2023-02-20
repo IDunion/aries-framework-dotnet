@@ -121,5 +121,16 @@ namespace Hyperledger.Aries.Tests
 
             await Assert.ThrowsAsync<AriesAskarException>(() => _walletService.GetWalletAsync(_config, _creds));
         }
+
+        [Fact]
+        public async Task CanCreateWalletKey()
+        {
+            string seed = null;
+
+            string actual = await _walletService.CreateWalletKeyAsync(seed);
+
+            Assert.NotNull(actual);
+            Assert.NotEmpty(actual);
+        }
     }
 }

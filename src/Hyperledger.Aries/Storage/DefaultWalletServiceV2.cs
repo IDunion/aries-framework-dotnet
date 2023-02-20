@@ -153,6 +153,11 @@ namespace Hyperledger.Aries.Storage
             return result;
         }
 
+        /// <inheritdoc />
+        public async Task<string> CreateWalletKeyAsync(string seed = null)
+        {
+            return await AriesAskarStore.GenerateRawKeyAsync(seed);
+        }
 
         private Task<string> BuildSpecUriAsync(WalletConfiguration configuration)
         {

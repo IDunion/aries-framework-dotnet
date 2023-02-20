@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using aries_askar_dotnet.Models;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Indy.WalletApi;
@@ -132,6 +133,18 @@ namespace Hyperledger.Aries.Tests
             await walletService.DeleteWalletAsync(config, creds);
 
             await Assert.ThrowsAsync<WalletNotFoundException>(() => walletService.GetWalletAsync(config, creds));
+        }
+
+        [Fact]
+        public async Task CanCreateWalletKey()
+        {
+            string seed = null;
+            var walletService = new DefaultWalletService();
+
+            string actual = await walletService.CreateWalletKeyAsync(seed);
+
+            Assert.NotNull(actual);
+            Assert.NotEmpty(actual);
         }
     }
 }

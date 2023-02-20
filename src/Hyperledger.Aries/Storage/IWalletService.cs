@@ -47,5 +47,13 @@ namespace Hyperledger.Aries.Storage
         /// <returns>Async Task</returns>
         /// <param name="configuration">Configuration.</param>
         Task CloseWalletAsync(WalletConfiguration configuration);
+
+        /// <summary>
+        /// Create a wallet key async.
+        /// </summary>
+        /// <returns>Async Task</returns>
+        /// <param name="seed">wallet key seed.</param>
+        /// <returns>The wallet key.</returns>
+        Task<string> CreateWalletKeyAsync(string seed = null);
     }
 }
