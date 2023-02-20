@@ -91,7 +91,7 @@ namespace Hyperledger.Aries.Features.Handshakes.Connection
 
             Logger.LogInformation(LoggingEvents.CreateInvitation, "ConnectionId {0}", connection.Id);
 
-            string connectionKey = await CryptoUtils.CreateKeyAsync(agentContext.AriesStorage, RecordService);
+            string connectionKey = await CryptoUtils.CreateAndStoreKeyAsync(agentContext.AriesStorage, RecordService);
             connection.SetTag(TagConstants.ConnectionKey, connectionKey);
 
             if (config.AutoAcceptConnection)

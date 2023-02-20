@@ -189,7 +189,7 @@ namespace Hyperledger.Aries.Utils
         }
 
         /// <summary>
-        /// for use with <c>indy_shared_rs</c>.
+        /// Creates and stores a DID with corresponding keypair in <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/>.
         /// </summary>
         /// <remarks>
         /// <para>Saves the identity DID with keys in a wallet so that it can be used to sign
@@ -207,7 +207,7 @@ namespace Hyperledger.Aries.Utils
         /// keys.  If not provided then ed25519 curve is used.
         /// <note type="note">The only value currently supported for this member is 'ed25519'.</note>
         /// </para>
-        /// <para>The <c>cid</c> member indicates whether the DID should be used in creating the DID.
+        /// <para>The <c>cid</c> member indicates whether the DID consists of the short or the full verkey.
         /// If not provided then the value defaults to false.</para>
         /// </remarks>
         /// <param name="storage">The storage</param>
@@ -336,10 +336,10 @@ namespace Hyperledger.Aries.Utils
         /// <note type="note">The only value currently supported for this member is 'ed25519'.</note>
         /// </para>
         /// </remarks>
-        /// <param name="recordService"></param>
-        /// <param name="storage">The wallet to store the DID in.</param>
+        /// <param name="recordService">An implementation of the walletRecordService.</param>
+        /// <param name="storage">The storage containing the indy-sdk or aries-askar wallet.</param>
         /// <param name="identityJson">The identity JSON.</param>
-        /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
+        /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public static async Task StoreTheirDidAsync(IWalletRecordService recordService, AriesStorage storage, string identityJson)
         {
             if (string.IsNullOrEmpty(identityJson))
@@ -384,19 +384,14 @@ namespace Hyperledger.Aries.Utils
         /// Gets the verification key for the specified DID.
         /// </summary>
         /// <remarks>
-        /// If the provided agent context <cref name="storage"/> of the agent context does not contain the verification key associated with the specified DID then 
-        /// an attempt will be made to look up the key from the provided agent context <cref name="Pool"/>. If resolved from the agent context <cref name="pool"/>
-        /// then the DID and key will be automatically cached in the <cref name="wallet"/>.
-        /// <note type="note">
-        /// The <see cref="CreateAndStoreMyDidAsync(AriesStorage,IWalletRecordService, string, string,string,bool)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
-        /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
-        /// </note>
+        /// If the provided <see cref ="AriesStorage.Store"/> in agentContext does not contain the verification key associated with the specified DID then 
+        /// an attempt will be made to look up the key from ledger with the provided agent context pool config.
         /// </remarks>
-        /// <param name="agentContext"></param>
-        /// <param name="recordService"></param>
-        /// <param name="ledgerService"></param>
+        /// <param name="agentContext">The agentContext.</param>
+        /// <param name="recordService">An implementation of the walletRecordService.</param>
+        /// <param name="ledgerService">An implementation of the ledgerService.</param>
         /// <param name="did">The DID to get the verification key for.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
+        /// <returns>The verification key associated with the DID or null if no key was found.</returns>
         /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <cref name="wallet"/> and <cref name="pool"/>.</exception>
         public static async Task<string> KeyForDidAsync(IAgentContext agentContext, IWalletRecordService recordService, ILedgerService ledgerService, string did)
         {
@@ -431,6 +426,13 @@ namespace Hyperledger.Aries.Utils
 
             return decodedDid.Equals(firstPart) ? Task.FromResult($"~{secondPart}") : Task.FromResult(verKey);
         }
+
+        /// <summary>
+        /// Checks if its a valid base58 encoded verification key created with crypto type ed25519 
+        /// </summary>
+        /// <param name="myVerkey">verification key encoded as base58 string.</param>
+        /// <returns>True if its a valid base58 encoded verification key, otherwise false.</returns>
+        /// <exception cref="AriesFrameworkException"></exception>
         public static Task<bool> ValidateVerkeyED25519(string myVerkey)
         {
             string vk_abbrev;
@@ -482,6 +484,14 @@ namespace Hyperledger.Aries.Utils
             return Task.FromResult(verkey);
         }
 
+        /// <summary>
+        /// Gets the verification key for the specified DID from the <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/>.
+        /// </summary>
+        /// <param name="storage">The storage containing the indy-sdk or aries-askar wallet.</param>
+        /// <param name="recordService">An implementation of the walletRecordService.</param>
+        /// <param name="did">The DID to get the verification key for.</param>
+        /// <returns>The verification key associated with the DID or null if no key was found.</returns>
+        /// <exception cref="AriesFrameworkException">Throws when <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/> are null.</exception>
         public static async Task<string> KeyForLocalDidAsync(AriesStorage storage, IWalletRecordService recordService, string did)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))

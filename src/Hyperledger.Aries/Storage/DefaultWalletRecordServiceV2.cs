@@ -75,7 +75,7 @@ namespace Hyperledger.Aries.Storage
         }
 
         /// <inheritdoc />
-        public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query, SearchOptions options, int count, int skip)
+        public virtual async Task<List<T>> SearchAsync<T>(AriesStorage storage, ISearchQuery query = null, SearchOptions options = null, int count = 10, int skip = 0)
             where T : RecordBase, new()
         {
             await Validate(storage);
@@ -252,6 +252,7 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
+        /// <inheritdoc />
         public virtual async Task AddKeyAsync(AriesStorage storage, IntPtr keyHandle, string myVerkey)
         {
             await Validate(storage);
@@ -282,6 +283,7 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
+        /// <inheritdoc />
         public virtual async Task<IntPtr> GetKeyAsync(AriesStorage storage, string myVerkey)
         {
             await Validate(storage);
@@ -311,35 +313,6 @@ namespace Hyperledger.Aries.Storage
             }
         }
 
-        public virtual async Task<IntPtr> GetKeyAsync(Store store, string myVerkey)
-        {
-            await Validate(store);
-
-            try
-            {
-                Debug.WriteLine($"Getting keypair for verkey: {myVerkey}");
-
-                IntPtr keyEntryListHandle = await AriesAskarStore.FetchKeyAsync(store.session, myVerkey);
-                return await AriesAskarResults.LoadLocalKeyHandleFromKeyEntryListAsync(keyEntryListHandle, 0);
-            }
-            catch (AriesAskarException e)
-            {
-                if (e.errorCode == AriesAskarErrorCode.Input)
-                {
-                    Debug.WriteLine($"Keypair doesn't exist in store for verkey: {myVerkey}");
-                    return new IntPtr();
-                }
-                else
-                {
-                    throw new AriesAskarException(e.Message, e.errorCode);
-                }
-            }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(store.session);
-            }
-        }
-
         private async Task Validate(AriesStorage storage)
         {
             if (storage.Store is null)
@@ -350,19 +323,6 @@ namespace Hyperledger.Aries.Storage
             if (storage.Store.session == null || storage.Store.session.sessionHandle == default)
             {
                 _ = await AriesAskarStore.StartSessionAsync(storage.Store);
-            }
-        }
-
-        private async Task Validate(Store store)
-        {
-            if (store is null)
-            {
-                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"You need a storage of type {typeof(Store)} which must not be null.");
-            }
-
-            if (store.session == null || store.session.sessionHandle == default)
-            {
-                _ = await AriesAskarStore.StartSessionAsync(store);
             }
         }
     }

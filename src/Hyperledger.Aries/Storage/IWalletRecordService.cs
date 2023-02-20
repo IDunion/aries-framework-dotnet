@@ -1,5 +1,4 @@
-﻿using aries_askar_dotnet.Models;
-using Hyperledger.Aries.Storage.Models;
+﻿using Hyperledger.Aries.Storage.Models;
 using Hyperledger.Aries.Storage.Records;
 using System;
 using System.Collections.Generic;
@@ -73,12 +72,5 @@ namespace Hyperledger.Aries.Storage
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="myVerkey"></param>
         Task<IntPtr> GetKeyAsync(AriesStorage storage, string myVerkey);
-
-        /// <summary>
-        /// Gets a key for a given verkey.
-        /// </summary>
-        /// <param name="store">Aries-askar Wallet.</param>
-        /// <param name="myVerkey"></param>
-        Task<IntPtr> GetKeyAsync(Store store, string myVerkey);
     }
 }

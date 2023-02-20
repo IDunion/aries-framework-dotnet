@@ -92,7 +92,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await PackMessageAsync(storage.Store, recipientKeys, senderKey, message, recordService);
+                return await PackMessageAsync(storage, recipientKeys, senderKey, message, recordService);
             }
             else
             {
@@ -150,7 +150,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                return await PackMessageAsync(storage.Store, recipientKeys, senderKey, message.ToByteArray(), recordService);
+                return await PackMessageAsync(storage, recipientKeys, senderKey, message.ToByteArray(), recordService);
             }
             else
             {
@@ -168,7 +168,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        private static async Task<byte[]> PackMessageAsync(Store store, string[] recipientVerKeys, string senderVerKey, byte[] unencryptedMessage, IWalletRecordService recordService)
+        private static async Task<byte[]> PackMessageAsync(AriesStorage storage, string[] recipientVerKeys, string senderVerKey, byte[] unencryptedMessage, IWalletRecordService recordService)
         {
             if (recipientVerKeys == null || recipientVerKeys.Length <= 0)
             {
@@ -186,7 +186,7 @@ namespace Hyperledger.Aries.Utils
                 if (await DidUtils.ValidateVerkeyED25519(senderVerKey))
                 {
                     // AuthCrypt
-                    protectedHeaderJson = await PrepareProtectedInfoAuthCrypt(store, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
+                    protectedHeaderJson = await PrepareProtectedInfoAuthCrypt(storage, recordService, contentEncryptionKey, recipientVerKeys, senderVerKey);
                 }
                 else 
                     throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, $"Provided sender verkey is no valid base58 encoded verkey : {senderVerKey}.");
@@ -223,9 +223,9 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recipientVerKeys"></param>
         /// <param name="senderVerkey"></param>
         /// <returns></returns>
-        private static async Task<string> PrepareProtectedInfoAuthCrypt(Store store, IWalletRecordService recordService, byte[] contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
+        private static async Task<string> PrepareProtectedInfoAuthCrypt(AriesStorage storage, IWalletRecordService recordService, byte[] contentEncryptionKey, string[] recipientVerKeys, string senderVerkey)
         {
-            IntPtr keyHandle = await recordService.GetKeyAsync(store, senderVerkey);
+            IntPtr keyHandle = await recordService.GetKeyAsync(storage, senderVerkey);
             IntPtr convertedSenderKeyHandle = await AriesAskarKey.ConvertKeyAsync(keyHandle, KeyAlg.X25519);
 
             List<Recipient> recipients = new();
@@ -362,7 +362,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                result = await UnpackMessageAsync(storage.Store, recordService, message);
+                result = await UnpackMessageAsync(storage, recordService, message);
             }
             else
             {
@@ -398,7 +398,7 @@ namespace Hyperledger.Aries.Utils
             }
             else if (storage?.Store != null)
             {
-                result = await UnpackMessageAsync(storage.Store, recordService, message);
+                result = await UnpackMessageAsync(storage, recordService, message);
             }
             else
             {
@@ -416,7 +416,7 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <param name="encryptedMessage"></param>
         /// <returns></returns>
-        private static async Task<byte[]> UnpackMessageAsync(Store store, IWalletRecordService recordService, byte[] encryptedMessage)
+        private static async Task<byte[]> UnpackMessageAsync(AriesStorage storage, IWalletRecordService recordService, byte[] encryptedMessage)
         {
             string msgWrapperJson = Encoding.UTF8.GetString(encryptedMessage);
             MessageWrapper msgWrapper = JsonConvert.DeserializeObject<MessageWrapper>(msgWrapperJson);
@@ -425,19 +425,19 @@ namespace Hyperledger.Aries.Utils
             string protectedHeaderJson = Encoding.UTF8.GetString(protectedHeaderBytes);
             ProtectedHeader protectedHeader = JsonConvert.DeserializeObject<ProtectedHeader>(protectedHeaderJson);
 
-            (Recipient recipient, bool isAuthCrypt) = await FindCorrectRecipient(store, recordService, protectedHeader);
+            (Recipient recipient, bool isAuthCrypt) = await FindCorrectRecipient(storage, recordService, protectedHeader);
 
             byte[] contentEncryptionKeyBytes;
             string unencryptedSenderKey = null;
             if (isAuthCrypt)
             {
                 (unencryptedSenderKey, contentEncryptionKeyBytes) = 
-                    await UnpackCekAuthCrypt(store, recordService, recipient);
+                    await UnpackCekAuthCrypt(storage, recordService, recipient);
             }
             else
             {
                 contentEncryptionKeyBytes = 
-                    await UnpackCekAnonCrypt(store, recordService, recipient);
+                    await UnpackCekAnonCrypt(storage, recordService, recipient);
             }
 
             IntPtr contentEncryptionKeyHandle = await AriesAskarKey.CreateKeyFromSecretBytesAsync(
@@ -471,14 +471,14 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <param name="header"></param>
         /// <returns></returns>
-        private static async Task<(Recipient, bool)> FindCorrectRecipient(Store store, IWalletRecordService recordService, ProtectedHeader header)
+        private static async Task<(Recipient, bool)> FindCorrectRecipient(AriesStorage storage, IWalletRecordService recordService, ProtectedHeader header)
         {
             Recipient foundRecipient = null;
             bool isAuthCrypt = false;
 
             foreach(Recipient recipient in header.Recipients)
             {
-                IntPtr foundKey = await recordService.GetKeyAsync(store, recipient.Header.Kid);
+                IntPtr foundKey = await recordService.GetKeyAsync(storage, recipient.Header.Kid);
 
                 if (foundKey != new IntPtr())
                 {
@@ -501,13 +501,13 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <param name="recipient"></param>
         /// <returns></returns>
-        private static async Task<(string, byte[])> UnpackCekAuthCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
+        private static async Task<(string, byte[])> UnpackCekAuthCrypt(AriesStorage storage, IWalletRecordService recordService, Recipient recipient)
         {
             byte[] encryptedCek = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, recipient.EncryptedKey);
             byte[] iv = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, recipient.Header.Iv);
             byte[] encryptedSenderVerkey = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, recipient.Header.Sender);
 
-            IntPtr myKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
+            IntPtr myKeyHandle = await recordService.GetKeyAsync(storage, recipient.Header.Kid);
             IntPtr convertedMyKeyHandle = await AriesAskarKey.ConvertKeyAsync(myKeyHandle, KeyAlg.X25519);
             string decryptedSenderVerKey = await AriesAskarKey.OpenSealCryptoBoxAsync(convertedMyKeyHandle, encryptedSenderVerkey);
             
@@ -543,9 +543,9 @@ namespace Hyperledger.Aries.Utils
         /// <param name="recordService"></param>
         /// <param name="recipient"></param>
         /// <returns></returns>
-        private static async Task<byte[]> UnpackCekAnonCrypt(Store store, IWalletRecordService recordService, Recipient recipient)
+        private static async Task<byte[]> UnpackCekAnonCrypt(AriesStorage storage, IWalletRecordService recordService, Recipient recipient)
         {
-            IntPtr privateKeyHandle = await recordService.GetKeyAsync(store, recipient.Header.Kid);
+            IntPtr privateKeyHandle = await recordService.GetKeyAsync(storage, recipient.Header.Kid);
             IntPtr convertedKeyHandle = await AriesAskarKey.ConvertKeyAsync(privateKeyHandle, KeyAlg.X25519);
 
             byte[] encryptedCek = Multibase.DecodeRaw(MultibaseEncoding.Base64UrlPadded, recipient.EncryptedKey);
@@ -650,15 +650,15 @@ namespace Hyperledger.Aries.Utils
 
         #region CreateKey
         /// <summary>
-        /// 
+        /// Creates a new public / private keypair and stores it in the <see cref ="AriesStorage.Wallet"/> or <see cref ="AriesStorage.Store"/>.
         /// </summary>
-        /// <param name="storage"></param>
-        /// <param name="recordService"></param>
-        /// <param name="seed"></param>
-        /// <param name="cryptoType"></param>
-        /// <returns></returns>
-        /// <exception cref="AriesFrameworkException"></exception>
-        public static async Task<string> CreateKeyAsync(AriesStorage storage, IWalletRecordService recordService, string seed = null, string cryptoType = "ed25519")
+        /// <param name="storage">The storage containing the indy-sdk or aries-askar wallet.</param>
+        /// <param name="recordService">An implementation of the walletRecordService.</param>
+        /// <param name="seed">The seed; default is null.</param>
+        /// <param name="cryptoType">The cryptoType; default is ed25519.</param>
+        /// <returns>The verkey to retrieve the keypair from <see cref ="Wallet"/> or <see cref ="Store"/>.</returns>
+        /// <exception cref="AriesFrameworkException">Throws when <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/> are null.</exception>
+        public static async Task<string> CreateAndStoreKeyAsync(AriesStorage storage, IWalletRecordService recordService, string seed = null, string cryptoType = "ed25519")
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
@@ -727,6 +727,16 @@ namespace Hyperledger.Aries.Utils
             return await Crypto.CreateKeyAsync(wallet, keyJson);
         }
 
+        /// <summary>
+        /// Creates a new public / private keypair. 
+        /// <para>
+        /// Note: Keys / keypairs represented by <see cref ="IntPtr"/> are only used in V2 services and can be stored/retrieved in/from the <see cref ="AriesStorage.Store"/> via <see cref ="DefaultWalletRecordServiceV2"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="keyAlg">The key algorithm.</param>
+        /// <param name="seed">The seed.</param>
+        /// <returns>The local key handle for the keypair.</returns>
+        /// <exception cref="AriesFrameworkException">Throws when <see cref ="KeyAlg"/> or seed is invalid.</exception>
         public static async Task<IntPtr> CreateKeyPair(KeyAlg keyAlg, string seed = null)
         {
             if (keyAlg is not KeyAlg.ED25519 and not KeyAlg.BLS12_381_G2)
@@ -772,14 +782,14 @@ namespace Hyperledger.Aries.Utils
 
         #region CreateSignature
         /// <summary>
-        /// 
+        /// Create a signature for a given message and key with EdDSA.
         /// </summary>
-        /// <param name="storage"></param>
-        /// <param name="recordService"></param> 
-        /// <param name="myVerkey"></param>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        /// <exception cref="AriesFrameworkException"></exception>
+        /// <param name="storage">The storage containing the indy-sdk or aries-askar wallet.</param>
+        /// <param name="recordService">An implementation of the walletRecordService.</param> 
+        /// <param name="myVerkey">The verkey to obtain the secret key from the wallet in order to create the signature.</param>
+        /// <param name="message">The message to sign.</param>
+        /// <returns>The signature.</returns>
+        /// <exception cref="AriesFrameworkException">Throws when <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/> are null.</exception>
         public static async Task<byte[]> CreateSignatureAsync(AriesStorage storage, IWalletRecordService recordService, string myVerkey, byte[] message)
         {
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
@@ -810,14 +820,14 @@ namespace Hyperledger.Aries.Utils
 
         #region VerifyAsync
         /// <summary>
-        /// 
+        /// Verifies the signature of the message with EdDSA.
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="message"></param>
-        /// <param name="signature"></param>
-        /// <param name="storage"></param>
-        /// <returns></returns>
-        /// <exception cref="AriesFrameworkException"></exception>
+        /// <param name="key">The verkey for which the signature is verified against.</param>
+        /// <param name="message">The message to verify.</param>
+        /// <param name="signature">The signature of the message.</param>
+        /// <param name="storage">The storage containing the indy-sdk or aries-askar wallet.</param>
+        /// <returns>True if the verification was successfull, otherwise false.</returns>
+        /// <exception cref="AriesFrameworkException">Throws when <see cref ="AriesStorage.Store"/> or <see cref ="AriesStorage.Wallet"/> are null.</exception>
         public static async Task<bool> VerifyAsync(AriesStorage storage, string key, byte[] message, byte[] signature)
         {
             return (storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null)
