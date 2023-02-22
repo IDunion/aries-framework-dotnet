@@ -4,13 +4,15 @@ using System.Threading.Tasks;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Storage;
 using Hyperledger.Aries.Storage.Models;
+using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Utils
 {
     public static class MasterSecretUtils
     {
         /// <summary>
-        /// Creates a new master secret for use with <c>indy_shared_rs</c> methods and stores it as <see cref="MasterSecretRecord"/> in the wallet. 
+        /// Creates a new master secret for use with <c>indy_sdk</c> or <c>anoncreds_rs</c> methods and stores it as <see cref="MasterSecretRecord"/> in the wallet. 
         /// </summary>
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="recordService">The record service.</param>
@@ -18,19 +20,33 @@ namespace Hyperledger.Aries.Utils
         /// <returns>The master secret id for accessing the corresponding record.</returns>
         public static async Task<string> CreateAndStoreMasterSecretAsync(AriesStorage storage, IWalletRecordService recordService, string masterSecretId = null)
         {
-            if (string.IsNullOrEmpty(masterSecretId))
+            //Invalid combination of Wallet and Store in AriesStorage
+            if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
             {
-                masterSecretId = Guid.NewGuid().ToString();
+                throw new AriesFrameworkException(ErrorCode.InvalidStorage, $"Storage.Wallet is {storage?.Wallet} and Storage.Store is {storage?.Store}");
             }
-               
-            MasterSecretRecord masterSecretRecord = new()
+            //Store in AriesStorage (V2 used)
+            else if (storage?.Store != null)
             {
-                Id = masterSecretId,
-                MasterSecretJson = await Anoncreds.MasterSecretApi.CreateMasterSecretJsonAsync()
-            };
+                if (string.IsNullOrEmpty(masterSecretId))
+                {
+                    masterSecretId = Guid.NewGuid().ToString();
+                }
 
-            await recordService.AddAsync(storage, masterSecretRecord);
-            return masterSecretId;
+                MasterSecretRecord masterSecretRecord = new()
+                {
+                    Id = masterSecretId,
+                    MasterSecretJson = await Anoncreds.MasterSecretApi.CreateMasterSecretJsonAsync()
+                };
+
+                await recordService.AddAsync(storage, masterSecretRecord);
+                return masterSecretId;
+            }
+            //Wallet in AriesStorage (V1 used)
+            else
+            {
+                return await AnonCreds.ProverCreateMasterSecretAsync(storage.Wallet, masterSecretId);
+            }
         }
 
         /// <summary>
