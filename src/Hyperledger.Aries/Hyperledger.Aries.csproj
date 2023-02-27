@@ -9,8 +9,9 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
         <PackageReference Include="System.Reactive.Linq" Version="$(SystemReactiveLinqVersion)" />
-        <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+        <PackageReference Include="System.Text.Json" Version="5.0.2" />
 
         <PackageReference Include="Flurl" Version="$(FlurlVersion)" />
         <PackageReference Include="Hyperledger.Indy.Sdk" Version="$(HyperledgerIndySdkVersion)" />
