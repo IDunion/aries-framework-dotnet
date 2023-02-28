@@ -95,9 +95,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
         }
 
         public async Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse)
-        {
-            HttpClient httpClient = new HttpClient();
-            
+        {            
             CredRequest credRequest = new CredRequest();
             credRequest.Format = "vc+sd-jwt";
             credRequest.Type = "VerifiedEMail";
