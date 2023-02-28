@@ -83,7 +83,7 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             var authRecord = await _recordService.GetAsync<OpenId4VpRecord>(agentContext.Wallet, authRecordId);
             var sdJwtRecord = await _recordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, authRecordId);
 
-            //var authenticationRequest = authRecord.AuthenticationRequest;
+            //var authenticationRequest = openIdRecord.AuthenticationRequest;
 
             var vpToken = CreateVpToken(sdJwtRecord, authRecord);
             // Todo: Create presentation submission dynamically
@@ -142,16 +142,17 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         private object CreateVpToken(SdJwtCredentialRecord sdJwtRecord, OpenId4VpRecord vpRecord)
         {
             var sdJwtDoc = new SdJwtDoc(sdJwtRecord.CombinedIssuance);
-            _holder.CreatePresentation(sdJwtDoc);
+            //_holder.CreatePresentation(sdJwtDoc, vpRecord.Nonce, );
         }
         
-        public static object CreatePresentationSubmission(OpenId4VpRecord authRecord)
+        public static object CreatePresentationSubmission(OpenId4VpRecord openIdRecord)
         {
+            var request = PresentationDefinition.FromJson(openIdRecord.PresentationDefinition);
+            
             return new
             {
                 id = "NexcloudCredentialPresentationSubmission",
-                //id holen
-                definition_id = authRecord.PresentationDefinition,
+                definition_id = request.Id,
                 descriptor_map = new[]
                 {
                     new
