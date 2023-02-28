@@ -24,7 +24,7 @@ namespace SdJwt.Tests
         {
             SdJwtDoc sdJwtDoc = new SdJwtDoc(sdJwtIssued);
             
-            var result = _holder.CreatePresentation(sdJwtDoc, new[] { "8TmdnDQzEEL223xDJn7J2bgE217uU49haKWPtms4UmY" }, "key", "XZOUco1u_gEPknxS78sWWg", "https://example.com/verifier");
+            var result = _holder.CreatePresentation(sdJwtDoc, new[] { "email" }, "key", "XZOUco1u_gEPknxS78sWWg", "https://example.com/verifier");
 
             Assert.NotNull(result);
             //Assert.That(result, Is.EqualTo(sdJwtPresentedWithoutConfirmation));
