@@ -30,10 +30,10 @@ namespace Hyperledger.Aries.Features.OpenId4VCI.Models
         [JsonProperty("display")]
         public Display[] Display { get; set; }
         [JsonProperty("credentialSubject")]
-        public Credentialsubject CredentialSubject { get; set; }
+        public CredentialSubject CredentialSubject { get; set; }
     }
 
-    public class Credentialsubject
+    public class CredentialSubject
     {
         [JsonProperty("given_name")]
         public Given_Name GivenName { get; set; }
