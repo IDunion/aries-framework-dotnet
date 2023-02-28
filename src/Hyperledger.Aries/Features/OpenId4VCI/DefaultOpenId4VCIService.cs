@@ -15,6 +15,13 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public class DefaultOpenId4VCIService : IOpenId4VCIService
     {
+        protected readonly HttpClient httpClient;
+
+        public DefaultOpenId4VCIService()
+        {
+            httpClient = new HttpClient();
+        }
+
         public Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId)
         {
             throw new NotImplementedException();
@@ -64,8 +71,6 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 
         public async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload)
         {
-            HttpClient httpClient = new HttpClient();
-
             var tokenValues = new Dictionary<string, string>
             {
                 { "grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code" },
