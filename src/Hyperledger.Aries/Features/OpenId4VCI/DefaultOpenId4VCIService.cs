@@ -1,6 +1,9 @@
 ﻿using Flurl;
+using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.OpenID4Common.Records;
 using Hyperledger.Aries.Features.OpenId4VCI.Models;
+using Hyperledger.Aries.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +15,26 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public class DefaultOpenId4VCIService : IOpenId4VCIService
     {
+        public Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<OpenId4VciRecord> GetVciRecordAsnyc(IAgentContext agentContext, string recordId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<SdJwtCredentialRecord>> ListSdJwtCredentialAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<OpenId4VciRecord>> ListVciRecordAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
+        {
+            throw new NotImplementedException();
+        }
+
         public CredOfferPayload ProcessCredentialOffer(string offer)
         {
             CredOfferPayload credOfferPayload = null;
@@ -63,6 +86,16 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             }
 
             return tokenResponse;
+        }
+
+        public Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task StoreVciRecordAsync(IAgentContext agentContext, OpenId4VciRecord openId4VciRecord)
+        {
+            throw new NotImplementedException();
         }
     }
 }
