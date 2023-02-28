@@ -7,5 +7,6 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
     {
         public CredOfferPayload ProcessCredentialOffer(string offer);
         public Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload);
+        public Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse);
     }
 }
