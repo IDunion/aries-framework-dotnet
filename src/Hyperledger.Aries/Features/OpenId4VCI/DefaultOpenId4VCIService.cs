@@ -95,12 +95,16 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
         }
 
         public async Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse)
-        {            
-            CredRequest credRequest = new CredRequest();
-            credRequest.Format = "vc+sd-jwt";
-            credRequest.Type = "VerifiedEMail";
-            credRequest.Proof = new Proof();
-            credRequest.Proof.ProofType = "jwt";
+        {
+            CredRequest credRequest = new CredRequest
+            {
+                Format = "vc+sd-jwt",
+                Type = "VerifiedEMail",
+                Proof = new Proof
+                {
+                    ProofType = "jwt"
+                }
+            };
 
             // TODO: generate and insert credRequest.Proof.jwt
 
