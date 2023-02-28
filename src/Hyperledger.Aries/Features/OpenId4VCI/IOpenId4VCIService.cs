@@ -10,8 +10,9 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public interface IOpenId4VCIService
     {
-        CredOfferPayload ProcessCredentialOffer(string offer);
-        Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload);
+        public CredOfferPayload ProcessCredentialOffer(string offer);
+        public Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload);
+        public Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse);
         Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId);
         Task<List<SdJwtCredentialRecord>> ListSdJwtCredentialAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0);
         Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord);

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -91,6 +92,35 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             }
 
             return tokenResponse;
+        }
+
+        public async Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse)
+        {
+            HttpClient httpClient = new HttpClient();
+            
+            CredRequest credRequest = new CredRequest();
+            credRequest.Format = "vc+sd-jwt";
+            credRequest.Type = "VerifiedEMail";
+            credRequest.Proof = new Proof();
+            credRequest.Proof.ProofType = "jwt";
+
+            // TODO: generate and insert credRequest.Proof.jwt
+
+            var requestData = new StringContent(credRequest.ToJson(), Encoding.UTF8, "application/json");
+            var credHttpResponse = await httpClient.PostAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/credential"), requestData);
+            var credResponseString = await credHttpResponse.Content.ReadAsStringAsync();
+
+            CredResponse credResponse = null;
+            if (credHttpResponse.IsSuccessStatusCode)
+            {
+                credResponse = credResponseString.ToObject<CredResponse>();
+            }
+            else
+            {
+                throw new Exception($"Status Code is {credHttpResponse.StatusCode} with message {credResponseString}");
+            }
+
+            return credResponse;
         }
 
         public Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord)
