@@ -48,13 +48,11 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     authorizationRequest = AuthorizationRequest.ParseFromJwt(content);
-                    //authorizationRequest = content;
                 }
             }
             else
             {
                 authorizationRequest = AuthorizationRequest.ParseFromUri(uri);
-                //authorizationRequest = uri.ToString();
             }
             
             if (authorizationRequest == null)
@@ -65,7 +63,8 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                 PresentationDefinition = authorizationRequest.PresentationDefinition,
                 ResponseMode = authorizationRequest.ResponseMode,
                 Nonce = authorizationRequest.Nonce,
-                RedirectUri = authorizationRequest.RedirectUri
+                RedirectUri = authorizationRequest.RedirectUri,
+                ClientId = authorizationRequest.ClientId
             };
             
             await _recordService.AddAsync(agentContext.Wallet, record);
@@ -142,7 +141,7 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         private object CreateVpToken(SdJwtCredentialRecord sdJwtRecord, OpenId4VpRecord vpRecord)
         {
             var sdJwtDoc = new SdJwtDoc(sdJwtRecord.CombinedIssuance);
-            //_holder.CreatePresentation(sdJwtDoc, vpRecord.Nonce, );
+            return _holder.CreatePresentation(sdJwtDoc, new []{"email"}, sdJwtRecord.KeyAlias, vpRecord.Nonce, vpRecord.ClientId);
         }
         
         public static object CreatePresentationSubmission(OpenId4VpRecord openIdRecord)
