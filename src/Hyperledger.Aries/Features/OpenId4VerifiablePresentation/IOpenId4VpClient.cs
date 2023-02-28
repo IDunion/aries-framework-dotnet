@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Features.OpenID4Common.Records;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models;
 
 namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation

@@ -5,6 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Contracts;
+using Hyperledger.Aries.Features.OpenID4Common.Events;
+using Hyperledger.Aries.Features.OpenID4Common.Records;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Helpers;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models.PresentationExchange;
@@ -12,13 +15,26 @@ using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SdJwt.Abstractions;
+using SdJwt.Models;
 
 namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
 {
     public class OpenId4VpClient : IOpenId4VpClient
     {
+        public OpenId4VpClient(
+            IWalletRecordService recordService,
+            IEventAggregator eventAggregator)
+        {
+            _recordService = recordService;
+            _eventAggregator = eventAggregator;
+            _httpClient = new HttpClient();
+        }
+        
         private readonly HttpClient _httpClient;
         private readonly IWalletRecordService _recordService;
+        private readonly IEventAggregator _eventAggregator;
+        private readonly IHolder _holder;
         
         public async Task<string> ProcessAuthenticationRequestUrl(IAgentContext agentContext, string url)
         {
@@ -32,40 +48,55 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     authorizationRequest = AuthorizationRequest.ParseFromJwt(content);
+                    //authorizationRequest = content;
                 }
             }
             else
             {
                 authorizationRequest = AuthorizationRequest.ParseFromUri(uri);
+                //authorizationRequest = uri.ToString();
             }
             
             if (authorizationRequest == null)
                 throw new NullReferenceException("Unable to process OpenId url");
+
+            var record = new OpenId4VpRecord
+            {
+                PresentationDefinition = authorizationRequest.PresentationDefinition,
+                ResponseMode = authorizationRequest.ResponseMode,
+                Nonce = authorizationRequest.Nonce,
+                RedirectUri = authorizationRequest.RedirectUri
+            };
             
-            var record = await ProcessAuthorizationRequestAsync(agentContext, authorizationRequest);
+            await _recordService.AddAsync(agentContext.Wallet, record);
             
+            _eventAggregator.Publish(new NewPresentationRequestEvent()
+            {
+                RecordId = record.Id
+            });
+
             return record.Id;
         }
         
         public async Task<string?> GenerateAuthenticationResponse(IAgentContext agentContext, string authRecordId, string credRecordId)
         {
             var authRecord = await _recordService.GetAsync<OpenId4VpRecord>(agentContext.Wallet, authRecordId);
-            var credRecord = await _recordService.GetAsync<SdJwtRecord>(agentContext.Wallet, authRecordId);
+            var sdJwtRecord = await _recordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, authRecordId);
 
-            // Todo: Get AuthorizationRequest from OpenId4VPRecord
-            var authenticationRequest = new AuthorizationRequest();
+            //var authenticationRequest = authRecord.AuthenticationRequest;
 
-            var vpToken = CreateVpToken(credRecord);
+            var vpToken = CreateVpToken(sdJwtRecord, authRecord);
             // Todo: Create presentation submission dynamically
-            var presentationSubmission = CreateStaticPresentationSubmission(authenticationRequest);
-            if (authenticationRequest?.ResponseMode == "direct_post")
+            //var presentationSubmission = CreateStaticPresentationSubmission(authenticationRequest);
+            var presentationSubmission = CreatePresentationSubmission(authRecord);
+            if (authRecord.ResponseMode == "direct_post")
             {
-                await SendAuthorizationResponse(authenticationRequest, vpToken, JsonConvert.SerializeObject(presentationSubmission));
+                await SendAuthorizationResponse(authRecord, vpToken, JsonConvert.SerializeObject(presentationSubmission));
                 return null;
             }
             else
             {
-                var callbackUrl = PrepareAuthorizationResponse(authenticationRequest!, vpToken,
+                var callbackUrl = PrepareAuthorizationResponse(authRecord!, vpToken,
                     JsonConvert.SerializeObject(presentationSubmission));
                     
                 return callbackUrl;
@@ -75,9 +106,10 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         public Task<OpenId4VpRecord> ProcessAuthorizationRequestAsync(IAgentContext agentContext, AuthorizationRequest authorizationRequest)
         {
             throw new NotImplementedException();
+            //return new OpenId4VpRecord().AuthenticationRequest = authorizationRequest;
         }
 
-        public string PrepareAuthorizationResponse(AuthorizationRequest authorizationRequest, string vpToken, string presentation_submission)
+        public string PrepareAuthorizationResponse(OpenId4VpRecord authorizationRequest, object vpToken, string presentation_submission)
         {
             var redirectUri = new Uri(authorizationRequest.RedirectUri);
 
@@ -91,10 +123,10 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             return Uri.EscapeUriString(callbackUri.Uri.ToString());
         }
         
-        private async Task SendAuthorizationResponse(AuthorizationRequest authorizationRequest, string vpToken, string presentationSubmission)
+        private async Task SendAuthorizationResponse(OpenId4VpRecord authorizationRequest, object vpToken, string presentationSubmission)
         {
             var content = new List<KeyValuePair<string, string>>();
-            content.Add(new KeyValuePair<string, string>("vp_token", vpToken));
+            content.Add(new KeyValuePair<string, string>("vp_token", vpToken.ToString()));
             content.Add(new KeyValuePair<string, string>("presentation_submission", presentationSubmission));
             
             var request = new HttpRequestMessage
@@ -107,10 +139,29 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             await _httpClient.SendAsync(request);
         }
         
-        private string CreateVpToken(ProofRecord proofRecord)
+        private object CreateVpToken(SdJwtCredentialRecord sdJwtRecord, OpenId4VpRecord vpRecord)
         {
-            var proofJObject = JObject.Parse(proofRecord.ProofJson);
-            return proofJObject.ToString(Formatting.None);
+            var sdJwtDoc = new SdJwtDoc(sdJwtRecord.CombinedIssuance);
+            _holder.CreatePresentation(sdJwtDoc);
+        }
+        
+        public static object CreatePresentationSubmission(OpenId4VpRecord authRecord)
+        {
+            return new
+            {
+                id = "NexcloudCredentialPresentationSubmission",
+                //id holen
+                definition_id = authRecord.PresentationDefinition,
+                descriptor_map = new[]
+                {
+                    new
+                    {
+                        id = "VerifiedEMail",
+                        format = "verifiable-credential+sd-jwt",
+                        path = "$"
+                    }
+                }
+            };
         }
         
         public static object CreateStaticPresentationSubmission(AuthorizationRequest authRequest)
@@ -125,12 +176,12 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                 {
                     new
                     {
-                        id = "NextcloudCredentialAC",
+                        id = "VerifiableEmail",
                         format = "ac_vp",
                         path = "$",
                         path_nested = new
                         {
-                            id = "NextcloudCredentialAC",
+                            id = "VerifiableEmail",
                             path = "$.requested_proof.revealed_attr_groups.NextcloudCredentialAC",
                             format = "ac_vp"
                         }
