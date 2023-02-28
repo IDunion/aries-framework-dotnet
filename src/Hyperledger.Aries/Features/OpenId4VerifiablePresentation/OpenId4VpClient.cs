@@ -82,11 +82,8 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             var authRecord = await _recordService.GetAsync<OpenId4VpRecord>(agentContext.Wallet, authRecordId);
             var sdJwtRecord = await _recordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, authRecordId);
 
-            //var authenticationRequest = openIdRecord.AuthenticationRequest;
-
             var vpToken = CreateVpToken(sdJwtRecord, authRecord);
             // Todo: Create presentation submission dynamically
-            //var presentationSubmission = CreateStaticPresentationSubmission(authenticationRequest);
             var presentationSubmission = CreatePresentationSubmission(authRecord);
             if (authRecord.ResponseMode == "direct_post")
             {
@@ -105,7 +102,6 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         public Task<OpenId4VpRecord> ProcessAuthorizationRequestAsync(IAgentContext agentContext, AuthorizationRequest authorizationRequest)
         {
             throw new NotImplementedException();
-            //return new OpenId4VpRecord().AuthenticationRequest = authorizationRequest;
         }
 
         public string PrepareAuthorizationResponse(OpenId4VpRecord authorizationRequest, object vpToken, string presentation_submission)
@@ -159,32 +155,6 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                         id = "VerifiedEMail",
                         format = "verifiable-credential+sd-jwt",
                         path = "$"
-                    }
-                }
-            };
-        }
-        
-        public static object CreateStaticPresentationSubmission(AuthorizationRequest authRequest)
-        {
-            var request = PresentationDefinition.FromJson(authRequest.PresentationDefinition);
-            
-            return new
-            {
-                id = "NextcloudCredentialPresentationSubmission",
-                definition_id = request.Id,
-                descriptor_map = new[]
-                {
-                    new
-                    {
-                        id = "VerifiableEmail",
-                        format = "ac_vp",
-                        path = "$",
-                        path_nested = new
-                        {
-                            id = "VerifiableEmail",
-                            path = "$.requested_proof.revealed_attr_groups.NextcloudCredentialAC",
-                            format = "ac_vp"
-                        }
                     }
                 }
             };
