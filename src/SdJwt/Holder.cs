@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography;
+using JWT.Algorithms;
 using JWT.Builder;
+using Microsoft.IdentityModel.Tokens;
 using SdJwt.Abstractions;
 using SdJwt.Models;
 
@@ -8,6 +11,8 @@ namespace SdJwt
 {
     public class Holder : IHolder
     {
+        // private readonly IHardwayKeyAlgorithmFactory _keyAlgorithmFactory;
+        
         public SdJwtDoc ReceiveCredential(string sdJwt)
         {
             /*
@@ -34,7 +39,7 @@ namespace SdJwt
 
             foreach (var disclosure in sdJwt.Disclosures)
             {
-                if (holderDisclosures.Contains(disclosure.GetDigest()))
+                if (holderDisclosures.Contains(disclosure.Name))
                     presentation += $"~{disclosure.Serialize()}";
             }
 
@@ -42,14 +47,23 @@ namespace SdJwt
             
             // Todo: Add holder binding
 
-            var jwtBuilder = new JwtBuilder();
+            if (holderKey != null && nonce != null && audience != null)
+            {
+                var jwtBuilder = new JwtBuilder();
 
-            jwtBuilder.AddClaim("nonce", nonce);
-            jwtBuilder.AddClaim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            jwtBuilder.AddClaim("aud", audience);
+                jwtBuilder.AddClaim("nonce", nonce);
+                jwtBuilder.AddClaim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                jwtBuilder.AddClaim("aud", audience);
             
-            
-            
+                // Todo: Use hardware key
+                using ECDsa ecdsa = ECDsa.Create()!;
+                ECDsaSecurityKey key = new ECDsaSecurityKey(ecdsa);
+
+                jwtBuilder.WithAlgorithm(new ES256Algorithm(key.ECDsa, key.ECDsa));
+
+                presentation += jwtBuilder.Encode();
+            }
+
             return presentation;
         }
     }
