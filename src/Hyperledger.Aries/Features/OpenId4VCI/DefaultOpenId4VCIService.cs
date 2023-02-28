@@ -1,4 +1,5 @@
-﻿using Hyperledger.Aries.Extensions;
+﻿using Flurl;
+using Hyperledger.Aries.Extensions;
 using Hyperledger.Aries.Features.OpenId4VCI.Models;
 using System;
 using System.Collections.Generic;
@@ -48,9 +49,18 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
             };
             var tokenData = new FormUrlEncodedContent(tokenValues);
-            var tokenHttpResponse = await httpClient.PostAsync(credOfferPayload.CredentialIssuer + "/token", tokenData);
+            var tokenHttpResponse = await httpClient.PostAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/token"), tokenData);
             var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
-            var tokenResponse = tokenResponseString.ToObject<TokenResponse>();
+
+            TokenResponse tokenResponse = null;
+            if (tokenHttpResponse.IsSuccessStatusCode)
+            {
+                tokenResponse = tokenResponseString.ToObject<TokenResponse>();
+            }
+            else
+            {
+                throw new Exception($"Status Code is {tokenHttpResponse.StatusCode} with message {tokenResponseString}");
+            }
 
             return tokenResponse;
         }
