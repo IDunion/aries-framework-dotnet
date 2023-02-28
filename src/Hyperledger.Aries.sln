@@ -27,6 +27,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hyperledger.Aries.Routing.E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hyperledger.Aries.AspNetCore.Contracts", "Hyperledger.Aries.AspNetCore.Contracts\Hyperledger.Aries.AspNetCore.Contracts.csproj", "{C35CAB46-4192-4BED-BB1A-0956B5136E96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdJwt", "SdJwt\SdJwt.csproj", "{B73C016F-4203-4CC5-A515-E3629DE8D823}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdJwt.Tests", "SdJwt.Tests\SdJwt.Tests.csproj", "{56AE9B65-9219-41B5-8C1C-5EA15EB4BECB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +73,14 @@ Global
 		{C35CAB46-4192-4BED-BB1A-0956B5136E96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C35CAB46-4192-4BED-BB1A-0956B5136E96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C35CAB46-4192-4BED-BB1A-0956B5136E96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B73C016F-4203-4CC5-A515-E3629DE8D823}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B73C016F-4203-4CC5-A515-E3629DE8D823}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B73C016F-4203-4CC5-A515-E3629DE8D823}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B73C016F-4203-4CC5-A515-E3629DE8D823}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56AE9B65-9219-41B5-8C1C-5EA15EB4BECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56AE9B65-9219-41B5-8C1C-5EA15EB4BECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56AE9B65-9219-41B5-8C1C-5EA15EB4BECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56AE9B65-9219-41B5-8C1C-5EA15EB4BECB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
