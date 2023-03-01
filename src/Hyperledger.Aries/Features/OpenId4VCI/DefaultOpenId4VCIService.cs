@@ -24,6 +24,8 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public class DefaultOpenId4VCIService : IOpenId4VCIService
     {
+        private const string jwk = "{\n    \"kty\": \"EC\",\n    \"d\": \"Iw6qWZhQ04CtijWzp3q-vGrQfmOcKd1SqjlxMgqzvwA\",\n    \"use\": \"sig\",\n    \"crv\": \"P-256\",\n    \"kid\": \"ECSNPzYd7TefqsBXX6LvfskkZSU=\",\n    \"x\": \"xYrl9sGkLv6_K5xa8jQK1ixQ8FC9pKlkzq2e2Po4_VY\",\n    \"y\": \"a281dDn0k54m0wKl-SfqkXLESv4_G8wZEQWpvKmfO2w\",\n    \"alg\": \"ES256\"\n}";
+
         /// <summary>
         /// The record service
         /// </summary>
@@ -137,7 +139,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             jwtBuilder.IssuedAt(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             jwtBuilder.AddClaim("nounce", tokenResponse.CNonce);
 
-            var jwtAlg = new MockJwtAlgorithmFactory().CreateJwtAlgorithm("hackathon-key");
+            var jwtAlg = CreateJwtAlgorithm("hackathon-key");
             jwtBuilder.WithAlgorithm(jwtAlg);
 
             credRequest.Proof.Jwt = jwtBuilder.Encode();
@@ -210,13 +212,8 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 throw new Exception($"Error parsing the result as OpenidCredentialIssuer with message {ex.Message}");
             }
         }
-    }
 
-    internal class MockJwtAlgorithmFactory : IJwtAlgorithmFactory
-    {
-        private const string jwk = "{\n    \"kty\": \"EC\",\n    \"d\": \"Iw6qWZhQ04CtijWzp3q-vGrQfmOcKd1SqjlxMgqzvwA\",\n    \"use\": \"sig\",\n    \"crv\": \"P-256\",\n    \"kid\": \"ECSNPzYd7TefqsBXX6LvfskkZSU=\",\n    \"x\": \"xYrl9sGkLv6_K5xa8jQK1ixQ8FC9pKlkzq2e2Po4_VY\",\n    \"y\": \"a281dDn0k54m0wKl-SfqkXLESv4_G8wZEQWpvKmfO2w\",\n    \"alg\": \"ES256\"\n}";
-
-        public IJwtAlgorithm CreateJwtAlgorithm(string keyAlias)
+        private IJwtAlgorithm CreateJwtAlgorithm(string keyAlias)
         {
             // Todo: Use hardware key
             var jsonWebKey = new JsonWebKey(jwk);
