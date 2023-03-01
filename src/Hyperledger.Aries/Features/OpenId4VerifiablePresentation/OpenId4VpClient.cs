@@ -11,10 +11,8 @@ using Hyperledger.Aries.Features.OpenID4Common.Records;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Helpers;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models;
 using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models.PresentationExchange;
-using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Storage;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using SdJwt.Abstractions;
 using SdJwt.Models;
 
@@ -60,6 +58,7 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
 
             var record = new OpenId4VpRecord
             {
+                Id = Guid.NewGuid().ToString(),
                 PresentationDefinition = authorizationRequest.PresentationDefinition,
                 ResponseMode = authorizationRequest.ResponseMode,
                 Nonce = authorizationRequest.Nonce,
