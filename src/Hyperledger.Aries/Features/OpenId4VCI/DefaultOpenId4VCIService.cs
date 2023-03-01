@@ -134,15 +134,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 }
             };
 
-            var jwtBuilder = JwtBuilder.Create();
-            jwtBuilder.Audience(credOfferPayload.CredentialIssuer);
-            jwtBuilder.IssuedAt(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            jwtBuilder.AddClaim("nonce", tokenResponse.CNonce);
-
-            var jwtAlg = CreateJwtAlgorithm("hackathon-key");
-            jwtBuilder.WithAlgorithm(jwtAlg);
-
-            credRequest.Proof.Jwt = jwtBuilder.Encode();
+            credRequest.Proof.Jwt = "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiUmFnd2wzMFBrOHdWeEZxRTVpU1VtWnBDOVJIemZINjdBSFJQTFlWY0NCWSIsInkiOiI0MWZNV0ZrWTUzVFBkY2QtVEY2Yi1qUXVJa0M5M1BPWXZJNHN5VjlHY3BrIn19.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvIiwiaWF0IjoxNjc3NjYyMTYyLCJub25jZSI6InRaaWduc25GYnAifQ._D8l6ILpe3W_SvRko0Dmhau647cCZP9_JirWFSsFyauTz-2ICptu8kFELgTAMN6JrG5uVJHzPRmksxUCY6SH2Q";
 
             var requestData = new StringContent(credRequest.ToJson(), Encoding.UTF8, "application/json");
 
