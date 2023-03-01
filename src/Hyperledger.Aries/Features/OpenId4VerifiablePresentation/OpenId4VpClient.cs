@@ -22,10 +22,12 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
     {
         public OpenId4VpClient(
             IWalletRecordService recordService,
-            IEventAggregator eventAggregator)
+            IEventAggregator eventAggregator, 
+            IHolder holder)
         {
             _recordService = recordService;
             _eventAggregator = eventAggregator;
+            _holder = holder;
             _httpClient = new HttpClient();
         }
         
