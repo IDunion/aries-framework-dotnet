@@ -20,7 +20,7 @@ namespace Hyperledger.Aries.Ledger.Models
         /// <param name="id">Identifier.</param>
         /// <param name="objectJson">Object json.</param>
         /// <param name="timestamp">Timestamp.</param>
-        internal ParseRegistryResponseResult(string id, string objectJson, ulong timestamp)
+        public ParseRegistryResponseResult(string id, string objectJson, ulong timestamp)
         {
             this.Id = id;
             this.ObjectJson = objectJson;
