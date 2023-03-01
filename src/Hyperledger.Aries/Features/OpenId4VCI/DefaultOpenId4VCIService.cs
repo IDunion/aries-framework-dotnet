@@ -98,7 +98,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             return credOfferPayload;
         }
 
-        public async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload)
+        public async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer)
         {
             var tokenValues = new Dictionary<string, string>
             {
@@ -106,7 +106,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
             };
             var tokenData = new FormUrlEncodedContent(tokenValues);
-            var tokenHttpResponse = await httpClient.PostAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/token"), tokenData);
+            var tokenHttpResponse = await httpClient.PostAsync(oauthAuthorizationServer.TokenEndpoint, tokenData);
             var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
 
             TokenResponse tokenResponse = null;
@@ -206,6 +206,25 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             try
             {
                 return credIsseuerResponseString.ToObject<OpenidCredentialIssuer>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error parsing the result as OpenidCredentialIssuer with message {ex.Message}");
+            }
+        }
+
+        public async Task<OauthAuthorizationServer> RequestOauthAuthorizationServer(CredOfferPayload credOfferPayload)
+        {
+            var credIssuerHttpResponse = await httpClient.GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/oauth-authorization-server"));
+            var credIsseuerResponseString = await credIssuerHttpResponse.Content.ReadAsStringAsync();
+
+            if (!credIssuerHttpResponse.IsSuccessStatusCode)
+            {
+                throw new Exception($"Status Code is {credIssuerHttpResponse.StatusCode} with message {credIsseuerResponseString}");
+            }
+            try
+            {
+                return credIsseuerResponseString.ToObject<OauthAuthorizationServer>();
             }
             catch (Exception ex)
             {
