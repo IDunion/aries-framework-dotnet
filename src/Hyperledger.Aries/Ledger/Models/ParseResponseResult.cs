@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Ledger.Models
         /// </summary>
         /// <param name="id">Identifier.</param>
         /// <param name="objectJson">Object json.</param>
-        internal ParseResponseResult(string id, string objectJson)
+        public ParseResponseResult(string id, string objectJson)
         {
             this.Id = id;
             this.ObjectJson = objectJson;
