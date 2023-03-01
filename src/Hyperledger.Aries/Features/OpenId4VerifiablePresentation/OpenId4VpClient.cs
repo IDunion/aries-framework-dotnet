@@ -153,8 +153,8 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
                 {
                     new
                     {
-                        id = "VerifiedEMail",
-                        format = "verifiable-credential+sd-jwt",
+                        id = "NextcloudCredential",
+                        format = "vp+sd-jwt",
                         path = "$"
                     }
                 }
