@@ -1,9 +1,11 @@
 ﻿using Flurl;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.IssueCredential;
 using Hyperledger.Aries.Features.OpenID4Common.Records;
 using Hyperledger.Aries.Features.OpenId4VCI.Models;
 using Hyperledger.Aries.Storage;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,32 +18,50 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public class DefaultOpenId4VCIService : IOpenId4VCIService
     {
+        /// <summary>
+        /// The record service
+        /// </summary>
+        protected readonly IWalletRecordService RecordService;
+
+        /// <summary>
+        /// The logger
+        /// </summary>
+        protected readonly ILogger<DefaultOpenId4VCIService> Logger;
+
         protected readonly HttpClient httpClient;
 
-        public DefaultOpenId4VCIService()
+        public DefaultOpenId4VCIService(IWalletRecordService recordService, ILogger<DefaultOpenId4VCIService> logger)
         {
             httpClient = new HttpClient();
+            RecordService = recordService;
+            Logger = logger;
         }
 
-        public Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId)
+        public async Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId)
         {
-            throw new NotImplementedException();
+            var record = await RecordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, recordId);
+
+            if (record == null)
+                throw new AriesFrameworkException(ErrorCode.RecordNotFound, "SdJwtCredentialRecord record not found");
+
+            return record;
         }
 
-        public Task<OpenId4VciRecord> GetVciRecordAsnyc(IAgentContext agentContext, string recordId)
+        public async Task<OpenId4VciRecord> GetVciRecordAsnyc(IAgentContext agentContext, string recordId)
         {
-            throw new NotImplementedException();
+            var record = await RecordService.GetAsync<OpenId4VciRecord>(agentContext.Wallet, recordId);
+
+            if (record == null)
+                throw new AriesFrameworkException(ErrorCode.RecordNotFound, "OpenId4VciRecord record not found");
+
+            return record;
         }
 
         public Task<List<SdJwtCredentialRecord>> ListSdJwtCredentialAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
-        {
-            throw new NotImplementedException();
-        }
+        => RecordService.SearchAsync<SdJwtCredentialRecord>(agentContext.Wallet, query, null, count, skip);
 
         public Task<List<OpenId4VciRecord>> ListVciRecordAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
-        {
-            throw new NotImplementedException();
-        }
+        => RecordService.SearchAsync<OpenId4VciRecord>(agentContext.Wallet, query, null, count, skip);
 
         public CredOfferPayload ProcessCredentialOffer(string offer)
         {
@@ -125,14 +145,30 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             return credResponse;
         }
 
-        public Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord)
+        public async Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord)
         {
-            throw new NotImplementedException();
+            var record = await RecordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, sdJwtCredentialRecord.Id);
+            if (record == null)
+            {
+                await RecordService.AddAsync(agentContext.Wallet, sdJwtCredentialRecord);
+            }
+            else 
+            {
+                await RecordService.UpdateAsync(agentContext.Wallet, sdJwtCredentialRecord);
+            }
         }
 
-        public Task StoreVciRecordAsync(IAgentContext agentContext, OpenId4VciRecord openId4VciRecord)
+        public async Task StoreVciRecordAsync(IAgentContext agentContext, OpenId4VciRecord openId4VciRecord)
         {
-            throw new NotImplementedException();
+            var record = await RecordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, openId4VciRecord.Id);
+            if (record == null)
+            {
+                await RecordService.AddAsync(agentContext.Wallet, openId4VciRecord);
+            }
+            else
+            {
+                await RecordService.UpdateAsync(agentContext.Wallet, openId4VciRecord);
+            }
         }
     }
 }
