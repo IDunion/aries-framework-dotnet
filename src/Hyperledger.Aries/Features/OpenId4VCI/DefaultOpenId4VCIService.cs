@@ -170,5 +170,24 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 await RecordService.UpdateAsync(agentContext.Wallet, openId4VciRecord);
             }
         }
+
+        public async Task<OpenidCredentialIssuer> RequestOpenidCredentialIssuerData(CredOfferPayload credOfferPayload)
+        {
+            var credIssuerHttpResponse = await httpClient.GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/openid-credential-issuer"));
+            var credIsseuerResponseString = await credIssuerHttpResponse.Content.ReadAsStringAsync();
+
+            if (!credIssuerHttpResponse.IsSuccessStatusCode)
+            {
+                throw new Exception($"Status Code is {credIssuerHttpResponse.StatusCode} with message {credIsseuerResponseString}");
+            }
+            try
+            {
+                return credIsseuerResponseString.ToObject<OpenidCredentialIssuer>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error parsing the result as OpenidCredentialIssuer with message {ex.Message}");
+            }
+        }
     }
 }
