@@ -79,7 +79,7 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         public async Task<string?> GenerateAuthenticationResponse(IAgentContext agentContext, string authRecordId, string credRecordId)
         {
             var authRecord = await _recordService.GetAsync<OpenId4VpRecord>(agentContext.Wallet, authRecordId);
-            var sdJwtRecord = await _recordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, authRecordId);
+            var sdJwtRecord = await _recordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, credRecordId);
 
             var vpToken = CreateVpToken(sdJwtRecord, authRecord);
             // Todo: Create presentation submission dynamically
