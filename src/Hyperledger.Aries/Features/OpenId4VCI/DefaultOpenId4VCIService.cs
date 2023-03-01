@@ -137,7 +137,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             var jwtBuilder = JwtBuilder.Create();
             jwtBuilder.Audience(credOfferPayload.CredentialIssuer);
             jwtBuilder.IssuedAt(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            jwtBuilder.AddClaim("nounce", tokenResponse.CNonce);
+            jwtBuilder.AddClaim("nonce", tokenResponse.CNonce);
 
             var jwtAlg = CreateJwtAlgorithm("hackathon-key");
             jwtBuilder.WithAlgorithm(jwtAlg);
