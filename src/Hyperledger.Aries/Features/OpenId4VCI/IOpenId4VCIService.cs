@@ -13,7 +13,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
         CredOfferPayload ProcessCredentialOffer(string offer);
         Task<OpenidCredentialIssuer> RequestOpenidCredentialIssuerData(CredOfferPayload credOfferPayload);
         Task<OauthAuthorizationServer> RequestOauthAuthorizationServer(CredOfferPayload credOfferPayload);
-        Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload);
+        Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer);
         Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse);
         Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId);
         Task<List<SdJwtCredentialRecord>> ListSdJwtCredentialAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0);
