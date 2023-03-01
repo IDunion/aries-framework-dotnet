@@ -23,4 +23,7 @@
     <ItemGroup>
       <Folder Include="Features\OpenID4Common\Interfaces" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\SdJwt\SdJwt.csproj" />
+    </ItemGroup>
 </Project>
