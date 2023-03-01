@@ -3,7 +3,7 @@ using JWT.Algorithms;
 using Microsoft.IdentityModel.Tokens;
 using SdJwt.Abstractions;
 
-namespace SdJwt.Tests
+namespace SdJwt
 {
     public class MockJwtAlgorithmFactory : IJwtAlgorithmFactory
     {
