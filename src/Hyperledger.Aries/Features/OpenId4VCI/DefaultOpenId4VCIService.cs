@@ -1,50 +1,93 @@
-﻿using Flurl;
-using Hyperledger.Aries.Agents;
-using Hyperledger.Aries.Extensions;
-using Hyperledger.Aries.Features.IssueCredential;
-using Hyperledger.Aries.Features.OpenID4Common.Records;
-using Hyperledger.Aries.Features.OpenId4VCI.Models;
-using Hyperledger.Aries.Storage;
-using Microsoft.Extensions.Logging;
-using Hyperledger.Aries.Utils;
-using JWT.Algorithms;
-using JWT.Builder;
-using SdJwt.Abstractions;
-using Microsoft.IdentityModel.Tokens;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Flurl;
+using Hyperledger.Aries.Agents;
+using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.OpenID4Common.Records;
+using Hyperledger.Aries.Features.OpenId4VCI.Models;
+using Hyperledger.Aries.Storage;
+using JWT.Builder;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
+using SdJwt.Abstractions;
 
 namespace Hyperledger.Aries.Features.OpenId4VCI
 {
     public class DefaultOpenId4VCIService : IOpenId4VCIService
     {
-        private const string jwk = "{\n    \"kty\": \"EC\",\n    \"d\": \"Iw6qWZhQ04CtijWzp3q-vGrQfmOcKd1SqjlxMgqzvwA\",\n    \"use\": \"sig\",\n    \"crv\": \"P-256\",\n    \"kid\": \"ECSNPzYd7TefqsBXX6LvfskkZSU=\",\n    \"x\": \"xYrl9sGkLv6_K5xa8jQK1ixQ8FC9pKlkzq2e2Po4_VY\",\n    \"y\": \"a281dDn0k54m0wKl-SfqkXLESv4_G8wZEQWpvKmfO2w\",\n    \"alg\": \"ES256\"\n}";
-
-        /// <summary>
-        /// The record service
-        /// </summary>
         protected readonly IWalletRecordService RecordService;
-
-        /// <summary>
-        /// The logger
-        /// </summary>
         protected readonly ILogger<DefaultOpenId4VCIService> Logger;
+        protected readonly IHttpClientFactory HttpClientFactory;
+        protected readonly IJwtSigningAlgorithmFactory JwtSigningAlgorithmFactory;
 
-        protected readonly HttpClient httpClient;
-
-        public DefaultOpenId4VCIService(IWalletRecordService recordService, ILogger<DefaultOpenId4VCIService> logger)
+        public DefaultOpenId4VCIService(IWalletRecordService recordService, ILogger<DefaultOpenId4VCIService> logger, IHttpClientFactory httpClientFactory, IJwtSigningAlgorithmFactory jwtSigningAlgorithmFactory)
         {
-            httpClient = new HttpClient();
             RecordService = recordService;
             Logger = logger;
+            HttpClientFactory = httpClientFactory;
+            JwtSigningAlgorithmFactory = jwtSigningAlgorithmFactory;
         }
 
+        public async Task<OpenId4VciRecord> ProcessCredentialOfferAsync(IAgentContext context, string offer)
+        {
+            var decodedOffer = HttpUtility.UrlDecode(offer);
+            var offerUri = new Uri(decodedOffer);
+            string queryString = offerUri.Query;
+            var queryDictionary = HttpUtility.ParseQueryString(queryString);
+
+            string credOffer = "";
+            if (queryDictionary.AllKeys.Contains("credential_offer"))
+            {
+                credOffer = queryDictionary.Get("credential_offer");
+            }
+            if (!string.IsNullOrEmpty(credOffer))
+            {
+                var credOfferPayload = credOffer.ToObject<CredOfferPayload>();
+                
+                var record = new OpenId4VciRecord()
+                {
+                    Id = Guid.NewGuid().ToString(), 
+                    CredentialOfferPayload = credOfferPayload
+                };
+                
+                var credentialIssuerMetadata = await RequestOpenidCredentialIssuerData(credOfferPayload);
+                record.CredentialMetadata = credentialIssuerMetadata;
+
+                await StoreVciRecordAsync(context, record);
+                return record;
+            }
+            
+            throw new InvalidOperationException($"No CredentialOffer: {offer}");
+        }
+
+        public async Task<OpenId4VciRecord> RequestCredentialAsync(IAgentContext context, string recordId, string keyRefId, string userPin = null)
+        {
+            var vciRecord = await GetVciRecordAsnyc(context, recordId);
+            
+            var oauthResponse = await RequestOauthAuthorizationServer(vciRecord.CredentialOfferPayload);
+            var token = await RequestToken(vciRecord.CredentialOfferPayload, oauthResponse);
+            
+            var credResponse = await RequestCredentials(vciRecord.CredentialOfferPayload, token);
+            
+            var sdJwtRecord = new SdJwtCredentialRecord
+            {
+                Id = Guid.NewGuid().ToString(),
+                CombinedIssuance = credResponse.Credential,
+                KeyAlias = keyRefId
+            };
+            
+            await StoreSdJwtCredentialAsync(context, sdJwtRecord);
+            vciRecord.CredentialRecordId = sdJwtRecord.Id;
+            await StoreVciRecordAsync(context, vciRecord);
+
+            return vciRecord;
+        }
+        
         public async Task<SdJwtCredentialRecord> GetSdJwtCredentialAsnyc(IAgentContext agentContext, string recordId)
         {
             var record = await RecordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, recordId);
@@ -66,99 +109,10 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
         }
 
         public Task<List<SdJwtCredentialRecord>> ListSdJwtCredentialAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
-        => RecordService.SearchAsync<SdJwtCredentialRecord>(agentContext.Wallet, query, null, count, skip);
+            => RecordService.SearchAsync<SdJwtCredentialRecord>(agentContext.Wallet, query, null, count, skip);
 
         public Task<List<OpenId4VciRecord>> ListVciRecordAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0)
-        => RecordService.SearchAsync<OpenId4VciRecord>(agentContext.Wallet, query, null, count, skip);
-
-        public CredOfferPayload ProcessCredentialOffer(string offer)
-        {
-            CredOfferPayload credOfferPayload = null;
-            try
-            {
-                var decodedOffer = HttpUtility.UrlDecode(offer);
-                var offerUri = new Uri(decodedOffer);
-                string queryString = offerUri.Query;
-                var queryDictionary = HttpUtility.ParseQueryString(queryString);
-
-                string credOffer = "";
-                if (queryDictionary.AllKeys.Contains("credential_offer"))
-                {
-                    credOffer = queryDictionary.Get("credential_offer");
-                }
-                if (!string.IsNullOrEmpty(credOffer))
-                {
-                    credOfferPayload = credOffer.ToObject<CredOfferPayload>();
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"No CredentialOffer: {ex.Message}");
-            }
-            return credOfferPayload;
-        }
-
-        public async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer)
-        {
-            var tokenValues = new Dictionary<string, string>
-            {
-                { "grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code" },
-                { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
-            };
-            var tokenData = new FormUrlEncodedContent(tokenValues);
-            var tokenHttpResponse = await httpClient.PostAsync(oauthAuthorizationServer.TokenEndpoint, tokenData);
-            var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
-
-            TokenResponse tokenResponse = null;
-            if (tokenHttpResponse.IsSuccessStatusCode)
-            {
-                tokenResponse = tokenResponseString.ToObject<TokenResponse>();
-            }
-            else
-            {
-                throw new Exception($"Status Code is {tokenHttpResponse.StatusCode} with message {tokenResponseString}");
-            }
-
-            return tokenResponse;
-        }
-
-        public async Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse)
-        {
-            CredRequest credRequest = new CredRequest
-            {
-                Format = "vc+sd-jwt",
-                Type = "VerifiedEMail",
-                Proof = new Proof
-                {
-                    ProofType = "jwt"
-                }
-            };
-
-            credRequest.Proof.Jwt = "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiUmFnd2wzMFBrOHdWeEZxRTVpU1VtWnBDOVJIemZINjdBSFJQTFlWY0NCWSIsInkiOiI0MWZNV0ZrWTUzVFBkY2QtVEY2Yi1qUXVJa0M5M1BPWXZJNHN5VjlHY3BrIn19.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvIiwiaWF0IjoxNjc3NjYyMTYyLCJub25jZSI6InRaaWduc25GYnAifQ._D8l6ILpe3W_SvRko0Dmhau647cCZP9_JirWFSsFyauTz-2ICptu8kFELgTAMN6JrG5uVJHzPRmksxUCY6SH2Q";
-
-            var requestData = new StringContent(credRequest.ToJson(), Encoding.UTF8, "application/json");
-
-            HttpResponseMessage credHttpResponse;
-            using (var httpClientWithAuth = new HttpClient())
-            {
-                httpClientWithAuth.DefaultRequestHeaders.Add("Authorization", tokenResponse.TokenType + " " + tokenResponse.AccessToken);
-                credHttpResponse = await httpClientWithAuth.PostAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/credential"), requestData);
-            }
-            
-            var credResponseString = await credHttpResponse.Content.ReadAsStringAsync();
-
-            CredResponse credResponse = null;
-            if (credHttpResponse.IsSuccessStatusCode)
-            {
-                credResponse = credResponseString.ToObject<CredResponse>();
-            }
-            else
-            {
-                throw new Exception($"Status Code is {credHttpResponse.StatusCode} with message {credResponseString}");
-            }
-
-            return credResponse;
-        }
+            => RecordService.SearchAsync<OpenId4VciRecord>(agentContext.Wallet, query, null, count, skip);
 
         public async Task StoreSdJwtCredentialAsync(IAgentContext agentContext, SdJwtCredentialRecord sdJwtCredentialRecord)
         {
@@ -185,10 +139,95 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
                 await RecordService.UpdateAsync(agentContext.Wallet, openId4VciRecord);
             }
         }
-
-        public async Task<OpenidCredentialIssuer> RequestOpenidCredentialIssuerData(CredOfferPayload credOfferPayload)
+        
+        private async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer)
         {
-            var credIssuerHttpResponse = await httpClient.GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/openid-credential-issuer"));
+            var tokenValues = new Dictionary<string, string>
+            {
+                { "grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code" },
+                { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
+            };
+            var tokenData = new FormUrlEncodedContent(tokenValues);
+            var tokenHttpResponse = await HttpClientFactory.CreateClient().PostAsync(oauthAuthorizationServer.TokenEndpoint, tokenData);
+            var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
+
+            TokenResponse tokenResponse = null;
+            if (tokenHttpResponse.IsSuccessStatusCode)
+            {
+                tokenResponse = tokenResponseString.ToObject<TokenResponse>();
+            }
+            else
+            {
+                throw new Exception($"Status Code is {tokenHttpResponse.StatusCode} with message {tokenResponseString}");
+            }
+
+            return tokenResponse;
+        }
+
+        private async Task<CredResponse> RequestCredentials(CredOfferPayload credOfferPayload, TokenResponse tokenResponse)
+        {
+            CredRequest credRequest = new CredRequest
+            {
+                Format = "vc+sd-jwt",
+                Type = "VerifiedEMail",
+                Proof = new Proof
+                {
+                    ProofType = "jwt"
+                }
+            };
+
+            // Todo: Make key alias dynamic
+            var id = "test";
+            var jwt = CreateProofOfPossession(id, tokenResponse.CNonce, credOfferPayload.CredentialIssuer);
+            // Todo: Get proof jwt signed by JwtSigningAlgorithmFactory
+            credRequest.Proof.Jwt = jwt;
+
+            var requestData = new StringContent(credRequest.ToJson(), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage credHttpResponse;
+            using (var httpClientWithAuth = new HttpClient())
+            {
+                httpClientWithAuth.DefaultRequestHeaders.Add("Authorization", tokenResponse.TokenType + " " + tokenResponse.AccessToken);
+                credHttpResponse = await httpClientWithAuth.PostAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/credential"), requestData);
+            }
+            
+            var credResponseString = await credHttpResponse.Content.ReadAsStringAsync();
+
+            CredResponse credResponse = null;
+            if (credHttpResponse.IsSuccessStatusCode)
+            {
+                credResponse = credResponseString.ToObject<CredResponse>();
+            }
+            else
+            {
+                throw new Exception($"Status Code is {credHttpResponse.StatusCode} with message {credResponseString}");
+            }
+
+            return credResponse;
+        }
+
+        private string CreateProofOfPossession(string keyAlias, string nonce, string audience)
+        {
+            var jwtSigner = JwtSigningAlgorithmFactory.CreateAlgorithm(keyAlias);
+
+            JObject jwk = JObject.Parse(jwtSigner.GetJwk());
+
+            var builder = JwtBuilder.Create()
+                .AddHeader(HeaderName.Type, "openid4vci-proof+jwt")
+                .AddHeader("jwk", jwk)
+                .AddClaim("nonce", nonce)
+                .AddClaim("aud", audience)
+                .AddClaim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+            builder.WithAlgorithm(jwtSigner);
+            builder.WithSecret("");
+
+            return builder.Encode();
+        }
+
+        private async Task<OpenidCredentialIssuer> RequestOpenidCredentialIssuerData(CredOfferPayload credOfferPayload)
+        {
+            var credIssuerHttpResponse = await HttpClientFactory.CreateClient().GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/openid-credential-issuer"));
             var credIsseuerResponseString = await credIssuerHttpResponse.Content.ReadAsStringAsync();
 
             if (!credIssuerHttpResponse.IsSuccessStatusCode)
@@ -205,9 +244,9 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             }
         }
 
-        public async Task<OauthAuthorizationServer> RequestOauthAuthorizationServer(CredOfferPayload credOfferPayload)
+        private async Task<OauthAuthorizationServer> RequestOauthAuthorizationServer(CredOfferPayload credOfferPayload)
         {
-            var credIssuerHttpResponse = await httpClient.GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/oauth-authorization-server"));
+            var credIssuerHttpResponse = await HttpClientFactory.CreateClient().GetAsync(Url.Combine(credOfferPayload.CredentialIssuer, "/.well-known/oauth-authorization-server"));
             var credIsseuerResponseString = await credIssuerHttpResponse.Content.ReadAsStringAsync();
 
             if (!credIssuerHttpResponse.IsSuccessStatusCode)
@@ -222,25 +261,6 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             {
                 throw new Exception($"Error parsing the result as OpenidCredentialIssuer with message {ex.Message}");
             }
-        }
-
-        private IJwtAlgorithm CreateJwtAlgorithm(string keyAlias)
-        {
-            // Todo: Use hardware key
-            var jsonWebKey = new JsonWebKey(jwk);
-            var x = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(jsonWebKey.X);
-            var y = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(jsonWebKey.Y);
-            var d = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(jsonWebKey.D);
-
-            ECDsa ecdsa = ECDsa.Create(new ECParameters()
-            {
-                Curve = ECCurve.NamedCurves.nistP256,
-                D = d,
-                Q = new ECPoint { X = x, Y = y }
-            })!;
-            ECDsaSecurityKey key = new ECDsaSecurityKey(ecdsa);
-
-            return new ES256Algorithm(key.ECDsa, key.ECDsa);
         }
     }
 }

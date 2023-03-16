@@ -8,11 +8,11 @@ namespace SdJwt
 {
     public class Holder : IHolder
     {
-        private readonly IJwtAlgorithmFactory _keyAlgorithmFactory;
+        private readonly IJwtSigningAlgorithmFactory _keySigningAlgorithmFactory;
 
-        public Holder(IJwtAlgorithmFactory keyAlgorithmFactory)
+        public Holder(IJwtSigningAlgorithmFactory keySigningAlgorithmFactory)
         {
-            _keyAlgorithmFactory = keyAlgorithmFactory;
+            _keySigningAlgorithmFactory = keySigningAlgorithmFactory;
         }
         
         public SdJwtDoc ReceiveCredential(string sdJwt)
@@ -57,7 +57,8 @@ namespace SdJwt
                 jwtBuilder.AddClaim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 jwtBuilder.AddClaim("aud", audience);
 
-                jwtBuilder.WithAlgorithm(_keyAlgorithmFactory.CreateJwtAlgorithm(holderKey));
+                jwtBuilder.WithAlgorithm(_keySigningAlgorithmFactory.CreateAlgorithm(holderKey));
+                jwtBuilder.WithSecret(new[] { "none" });
 
                 presentation += jwtBuilder.Encode();
             }

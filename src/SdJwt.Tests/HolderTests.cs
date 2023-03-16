@@ -16,7 +16,7 @@ namespace SdJwt.Tests
 
         public HolderTests()
         {
-            _holder = new Holder(new MockJwtAlgorithmFactory());
+            _holder = new Holder(new MockJwtSigningAlgorithmFactory());
         }
         
         [Test]
