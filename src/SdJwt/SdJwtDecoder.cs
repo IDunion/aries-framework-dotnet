@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using Jose;
 using JWT.Algorithms;
 using JWT.Builder;
 using Microsoft.IdentityModel.Tokens;
@@ -44,30 +41,6 @@ namespace SdJwt
             }
     
             return jObject.ToString();
-        }
-        
-        public string Verify(Jwk jwk)
-        {
-            var json = Jose.JWT.Decode(_jwt, jwk);
-    
-            JObject jObject = JObject.Parse(json);
-            if (jObject.ContainsKey("_sd") && jObject["_sd"] is JArray array)
-            {
-                foreach (var disclosure in _disclosures)
-                {
-                    var token = array.First(hash => hash.Value<string>() == disclosure.GetDigest());
-                    token.Remove();
-                    
-                    jObject.Add(disclosure.Name, disclosure.Value as JToken);
-                }
-            }
-    
-            return jObject.ToString();
-        }
-    
-        public override string ToString()
-        {
-            return _json;
         }
     }
 }
