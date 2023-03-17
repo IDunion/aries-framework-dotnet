@@ -1,7 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Features.OpenID4Common.Records;
-using Hyperledger.Aries.Features.OpenId4VerifiablePresentation.Models;
+using Hyperledger.Aries.Storage;
 
 namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
 {
@@ -24,7 +25,9 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
         /// <returns>Either null when the response method is direct_post otherwise it will return an Authentication
         /// Response Callback URL</returns>
         Task<string> GenerateAuthenticationResponse(IAgentContext agentContext, string authRecordId, string credRecordId);
-        
-        public Task<OpenId4VpRecord> ProcessAuthorizationRequestAsync(IAgentContext agentContext, AuthorizationRequest authorizationRequest);
+
+        Task<OpenId4VpRecord> GetOpenId4VpRecordAsync(IAgentContext agentContext, string recordId);
+
+        Task<List<OpenId4VpRecord>> ListOpenId4VpRecordAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0);
     }
 }

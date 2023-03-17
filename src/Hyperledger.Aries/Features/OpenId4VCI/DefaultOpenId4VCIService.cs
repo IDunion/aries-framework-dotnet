@@ -129,7 +129,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
 
         public async Task StoreVciRecordAsync(IAgentContext agentContext, OpenId4VciRecord openId4VciRecord)
         {
-            var record = await RecordService.GetAsync<SdJwtCredentialRecord>(agentContext.Wallet, openId4VciRecord.Id);
+            var record = await RecordService.GetAsync<OpenId4VciRecord>(agentContext.Wallet, openId4VciRecord.Id);
             if (record == null)
             {
                 await RecordService.AddAsync(agentContext.Wallet, openId4VciRecord);

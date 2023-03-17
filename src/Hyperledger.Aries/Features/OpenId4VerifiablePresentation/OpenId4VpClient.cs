@@ -100,12 +100,20 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             }
         }
 
-        public Task<OpenId4VpRecord> ProcessAuthorizationRequestAsync(IAgentContext agentContext, AuthorizationRequest authorizationRequest)
+        public async Task<OpenId4VpRecord> GetOpenId4VpRecordAsync(IAgentContext agentContext, string recordId)
         {
-            throw new NotImplementedException();
+            var record = await _recordService.GetAsync<OpenId4VpRecord>(agentContext.Wallet, recordId);
+
+            if (record == null)
+                throw new AriesFrameworkException(ErrorCode.RecordNotFound, "OpenId4VciRecord record not found");
+
+            return record;
         }
 
-        public string PrepareAuthorizationResponse(OpenId4VpRecord authorizationRequest, object vpToken, string presentation_submission)
+        public Task<List<OpenId4VpRecord>> ListOpenId4VpRecordAsync(IAgentContext agentContext, ISearchQuery query = null, int count = 100, int skip = 0) => 
+            _recordService.SearchAsync<OpenId4VpRecord>(agentContext.Wallet, query, null, count, skip);
+
+        private string PrepareAuthorizationResponse(OpenId4VpRecord authorizationRequest, object vpToken, string presentation_submission)
         {
             var redirectUri = new Uri(authorizationRequest.RedirectUri);
 
@@ -140,8 +148,8 @@ namespace Hyperledger.Aries.Features.OpenId4VerifiablePresentation
             var sdJwtDoc = new SdJwtDoc(sdJwtRecord.CombinedIssuance);
             return _holder.CreatePresentation(sdJwtDoc, new []{"email"}, sdJwtRecord.KeyAlias, vpRecord.Nonce, vpRecord.ClientId);
         }
-        
-        public static object CreatePresentationSubmission(OpenId4VpRecord openIdRecord)
+
+        private static object CreatePresentationSubmission(OpenId4VpRecord openIdRecord)
         {
             var request = PresentationDefinition.FromJson(openIdRecord.PresentationDefinition);
             
