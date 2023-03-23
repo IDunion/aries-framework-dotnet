@@ -29,6 +29,7 @@ using Polly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
@@ -202,11 +203,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 _ = long.TryParse(credentialRecord.CredentialRevocationId, out credRevIdx);
             }
             var tailsPath = await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revocationRecord.RevRegDefJson, "tails_location");
-            (string revRegUpdatedJson, string revocRegistryDeltaJson) = await Anoncreds.RevocationApi.RevokeCredentialAsync(
+
+            //TODO : wait for anoncreds-rs Revocation to be finished and tested
+            long.TryParse(JObject.Parse(revocationRecord.RevStatusListJson)["timestamp"].ToString(), out var revStatusListTimestamp);
+
+            //(string revRegUpdatedJson, string revocRegistryDeltaJson) = await Anoncreds.RevocationApi.UpdateRevocationStatusListJsonAsync(
+            string revocRegistryDeltaJson = "";
+            string newRevocationStatusList = await Anoncreds.RevocationApi.UpdateRevocationStatusListJsonAsync(
+                timestamp: revStatusListTimestamp,
+                new List<long> {0}, // Todo
+                new List<long> {0}, // Todo
                 revRegDefJson: revocationRecord.RevRegDefJson,
-                revRegJson: revocationRecord.RevRegJson,
-                credRevIdx: credRevIdx,
-                tailsPath: tailsPath);
+                currentRevStatusListJson: revocationRecord.RevStatusListJson);
 
             if ((string)JObject.Parse(revocationRecord.RevRegDefJson)["value"]["issuanceType"] == IssuerType.ISSUANCE_BY_DEFAULT.ToString())
             {
@@ -219,7 +227,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     revocationRecord.CredRevocationIdxUsed.Add(credRevIdx);
                 }
             }
-            revocationRecord.RevRegJson = revRegUpdatedJson;
+            revocationRecord.RevRegJson = JObject.Parse(revocationRecord.RevStatusListJson)["registry"].ToString();
+            revocationRecord.RevStatusListJson = newRevocationStatusList;
 
             TransactionCost paymentInfo =
                 await PaymentService.GetTransactionCostAsync(agentContext, TransactionTypes.REVOC_REG_ENTRY);
@@ -380,6 +389,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             (definition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
 
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await Anoncreds.CredentialRequestApi.CreateCredentialRequestJsonAsync(
+                entropy: null,
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
                 masterSecretJson: await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
@@ -788,8 +798,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         definitionRecord.CurrentRevocationRegistryId);
             }
             string credentialJson;
-            string revocationRegistryUpdatedJson;
-            string revocationRegistryDeltaJson;
+            string revocationRegistryUpdatedJson = "";
+            string revocationRegistryDeltaJson = "";
 
             (List<string> attrNames, List<string> attrNamesRaw, List<string> attrNamesEnc) = CredentialUtils.FormatCredentialValuesForAnoncreds(credentialRecord.CredentialAttributesValues);
 
@@ -800,6 +810,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string revRegJson = null;
             long credRevocationIdx = -1;
             List<long> credRevocationIdxUsed = null;
+            string revocationStateListJson = null;
 
             try
             {
@@ -815,6 +826,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     revRegJson = revocationRecord.RevRegJson;
                     credRevocationIdx = revocationRecord.NextCredRevocationIdx;
                     credRevocationIdxUsed = revocationRecord.CredRevocationIdxUsed;
+                    revocationStateListJson = revocationRecord.RevStatusListJson;
 
                     //Check if RevocationRegistry has enough space for a new credential.
                     if (!long.TryParse(await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revRegDefJson, "max_cred_num"), out long maxCredNum))
@@ -828,24 +840,24 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     }
                 }
 
-                (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await Anoncreds.CredentialApi.CreateCredentialAsync(
-                    definitionRecord.CredDefJson,
-                    definitionRecord.PrivateJson,
-                    credentialRecord.OfferJson,
-                    credentialRecord.RequestJson,
-                    attrNames,
-                    attrNamesRaw,
-                    attrNamesEnc,
-                    revRegDefJson,
-                    revRegDefPrivateJson,
-                    revRegJson,
-                    credRevocationIdx,
-                    credRevocationIdxUsed);
-
+                credentialJson = await Anoncreds.CredentialApi.CreateCredentialAsync(
+                    credDefObjectJson : definitionRecord.CredDefJson,
+                    credDefPvtObjectJson: definitionRecord.PrivateJson,
+                    credOfferObjectJson : credentialRecord.OfferJson,
+                    credReqObjectJson : credentialRecord.RequestJson,
+                    attributeNames : attrNames,
+                    attributeRawValues : attrNamesRaw,
+                    attributeEncodedValues : attrNamesEnc,
+                    revocationRegistryDefinitionJson : revRegDefJson,
+                    revocationRegistryDefinitionPrivateJson : revRegDefPrivateJson,
+                    revocationRegistryId : null, //Todo : how to use this field? indicates if use with old (Deltas) or new (RevStatusLists) revocation standard?
+                    revStatusListObjectJson : revocationStateListJson,
+                    regIdx : credRevocationIdx);
+                
                 if (revocationRecord != null)
                 {
                     credRevocationIdx = await UpdateCredentialRevocationRegistryIdxAndUsedIdx(revocationRecord, revRegDefJson);
-                    revocationRecord.RevRegJson = revocationRegistryUpdatedJson;
+                    revocationRecord.RevRegJson = JObject.Parse(revocationStateListJson)["registry"].ToString();
                     await RecordService.UpdateAsync(agentContext.AriesStorage, revocationRecord);
                 }
 
@@ -881,20 +893,19 @@ namespace Hyperledger.Aries.Features.IssueCredential
             definitionRecord.CurrentRevocationRegistryId = nextRevocationRecord.Id;
             await RecordService.UpdateAsync(agentContext.AriesStorage, definitionRecord);
 
-            (credentialJson, revocationRegistryUpdatedJson, revocationRegistryDeltaJson) = await Anoncreds.CredentialApi.CreateCredentialAsync(
-                definitionRecord.CredDefJson,
-                definitionRecord.PrivateJson,
-                credentialRecord.OfferJson,
-                credentialRecord.RequestJson,
-                attrNames,
-                attrNamesRaw,
-                attrNamesEnc,
-                revocationRegistryResult.RevRegDefJson,
-                revocationRegistryResult.RevRegDefPvtJson,
-                revocationRegistryResult.RevRegEntryJson,
-                nextRevocationRecord.NextCredRevocationIdx,
-                nextRevocationRecord.CredRevocationIdxUsed
-                );
+            credentialJson = await Anoncreds.CredentialApi.CreateCredentialAsync(
+                credDefObjectJson: definitionRecord.CredDefJson,
+                credDefPvtObjectJson: definitionRecord.PrivateJson,
+                credOfferObjectJson: credentialRecord.OfferJson,
+                credReqObjectJson: credentialRecord.RequestJson,
+                attributeNames: attrNames,
+                attributeRawValues: attrNamesRaw,
+                attributeEncodedValues: attrNamesEnc,
+                revocationRegistryDefinitionJson : revocationRegistryResult.RevRegDefJson,
+                revocationRegistryDefinitionPrivateJson : revocationRegistryResult.RevRegDefPvtJson,
+                revocationRegistryId : null, //Todo : how to use this field? indicates if use with old (Deltas) or new (RevStatusLists) revocation standard?
+                revStatusListObjectJson : nextRevocationRecord.RevStatusListJson,
+                regIdx : nextRevocationRecord.NextCredRevocationIdx);
 
             credRevocationIdx = await UpdateCredentialRevocationRegistryIdxAndUsedIdx(nextRevocationRecord, revocationRegistryResult.RevRegDefJson);
             nextRevocationRecord.RevRegJson = revocationRegistryUpdatedJson;

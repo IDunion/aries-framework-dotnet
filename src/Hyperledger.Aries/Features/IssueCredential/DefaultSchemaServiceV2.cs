@@ -334,6 +334,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 RevRegDefJson = revocationRegistryDefinitionJson,
                 RevRegJson = JObject.Parse(revocationStatusListJson)["registry"].ToString(),
                 RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson,
+                RevStatusListJson = revocationStatusListJson,
             };
 
             // Update tails location URI

@@ -951,7 +951,8 @@ namespace Hyperledger.Aries.Tests.Protocols
                 ledgerService,
                 tailsService,
                 messageService,
-                new Mock<ILogger<DefaultProofServiceV2>>().Object);
+                new Mock<ILogger<DefaultProofServiceV2>>().Object,
+                _schemaService);
         }
 
         public async Task InitializeAsync()

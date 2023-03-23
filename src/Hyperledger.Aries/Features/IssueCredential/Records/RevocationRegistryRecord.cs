@@ -67,6 +67,12 @@ namespace Hyperledger.Aries.Models.Records
         public string RevRegDeltaJson { get; set; }
 
         /// <summary>
+        /// Gets or sets the revocation status list json used with anoncreds-rs.
+        /// </summary>
+        /// <value>Json of the revocation status list.</value>
+        public string RevStatusListJson { get; set; }
+
+        /// <summary>
         /// Gets or sets the credential revocation identifier for the next issued credential.
         /// </summary>
         /// <value>The nect credential revocation identifier.</value>
