@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using JWT.Builder;
 using SdJwt.Abstractions;
 using SdJwt.Models;

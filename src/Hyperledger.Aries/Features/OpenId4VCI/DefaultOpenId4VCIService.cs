@@ -70,7 +70,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             var vciRecord = await GetVciRecordAsnyc(context, recordId);
             
             var oauthResponse = await RequestOauthAuthorizationServer(vciRecord.CredentialOfferPayload);
-            var token = await RequestToken(vciRecord.CredentialOfferPayload, oauthResponse);
+            var token = await RequestToken(vciRecord.CredentialOfferPayload, oauthResponse, userPin);
             
             var credResponse = await RequestCredentials(vciRecord.CredentialOfferPayload, token);
             
@@ -140,13 +140,17 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             }
         }
         
-        private async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer)
+        private async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer, string userPIN = null)
         {
             var tokenValues = new Dictionary<string, string>
             {
                 { "grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code" },
                 { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
             };
+            if (string.IsNullOrEmpty(userPIN) == false)
+            {
+                tokenValues.Add("user_pin", userPIN);
+            }
             var tokenData = new FormUrlEncodedContent(tokenValues);
             var tokenHttpResponse = await HttpClientFactory.CreateClient().PostAsync(oauthAuthorizationServer.TokenEndpoint, tokenData);
             var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
