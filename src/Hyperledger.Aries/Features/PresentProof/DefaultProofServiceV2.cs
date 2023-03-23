@@ -69,6 +69,8 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// </summary>
         protected readonly IMessageService MessageService;
 
+        protected readonly ISchemaService SchemaService;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultProofServiceV2"/> class.
         /// </summary>
@@ -79,6 +81,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <param name="ledgerService">The ledger service.</param>
         /// <param name="tailsService">The tails service.</param>
         /// <param name="messageService">The message service.</param>
+        /// <param name="schemaService">The schema service.</param>
         /// <param name="logger">The logger.</param>
         public DefaultProofServiceV2(
             IEventAggregator eventAggregator,
@@ -88,7 +91,8 @@ namespace Hyperledger.Aries.Features.PresentProof
             ILedgerService ledgerService,
             ITailsService tailsService,
             IMessageService messageService,
-            ILogger<DefaultProofServiceV2> logger)
+            ILogger<DefaultProofServiceV2> logger,
+            ISchemaService schemaService)
         {
             EventAggregator = eventAggregator;
             TailsService = tailsService;
@@ -98,6 +102,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             ProvisioningService = provisioningService;
             LedgerService = ledgerService;
             Logger = logger;
+            SchemaService = schemaService;
         }
 
         /// <inheritdoc />
@@ -147,7 +152,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
 
-                    //TODO: wait vor indy-vdr update
+                    //TODO : wait vor indy-vdr update
                     string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
@@ -223,7 +228,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
-                    //TODO: wait vor indy-vdr update
+
+                    //TODO : wait vor indy-vdr update
                     string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
@@ -419,13 +425,18 @@ namespace Hyperledger.Aries.Features.PresentProof
                 agentContext,
                 proof.Identifiers.Where(x => x.RevocationRegistryId != null));
 
+            //TODO : wait vor indy-vdr update
+            List<string> revocationStatusLists = 
+                new() { JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }) }; //await BuildRevocationStatusListsAsync(agentContext, ... );
+            //
             return await Anoncreds.PresentationApi.VerifyPresentationAsync(
-                proofJson,
-                proofRequestJson,
-                schemas,
-                definitions,
-                revocationDefinitions,
-                revocationRegistries);
+                presentationJson: proofJson,
+                presentationRequestJson: proofRequestJson,
+                schemaJsons : schemas,
+                credentialDefinitionJsons : definitions,
+                revocationRegistryDefinitionJsons : revocationDefinitions,
+                revocationStatusListJsons : revocationStatusLists,
+                nonrevokedIntervalOverrideJsons: null);
         }
 
         /// <inheritdoc />
@@ -925,13 +936,15 @@ namespace Hyperledger.Aries.Features.PresentProof
                 var credDefJObject = JObject.Parse(ledgerDefinition.ObjectJson);
                 try
                 {
-                    var seqNo = (long)credDefJObject["schemaId"];
-                    var schema = schemas.Where(x => x.SeqNo == seqNo).First();
-                    credDefJObject["schemaId"] = schema.Id;
+                    credDefJObject["schemaId"] = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefJObject["issuerId"].ToString());
+                    //TODO : ??? - review
+                    //var seqNo = (long)credDefJObject["schemaId"];
+                    //var schema = schemas.Where(x => x.SeqNo == seqNo).First();
+                    //credDefJObject["schemaId"] = schema.Id;
                 }
                 catch
                 {
-
+                    // nothing
                 }
 
                 var credDef = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionFromJsonAsync(JsonConvert.SerializeObject(credDefJObject));
@@ -958,6 +971,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             IAgentContext agentContext, CredentialInfo credentialInfo, AriesResponse registryDefinition,
             RevocationInterval nonRevoked)
         {
+            //TODO : wait vor indy-vdr update
+            string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
+
             var delta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                 agentContext: agentContext,
                 revocationRegistryId: credentialInfo.RevocationRegistryId,
@@ -970,12 +986,12 @@ namespace Hyperledger.Aries.Features.PresentProof
             long.TryParse(credentialInfo.CredentialRevocationId, out var credentialRevocationId);
 
             string state = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                registryDefinition.ObjectJson,
-                delta.ObjectJson,
-                credentialRevocationId,
-                (long)delta.Timestamp,
-                tailsFilePath,
-                null);
+                revRegDefJson: registryDefinition.ObjectJson,
+                newRevStatusListJson: revocationStateListJson,
+                revRegIndex: credentialRevocationId,
+                tailsPath: tailsFilePath,
+                revStateJson: null,
+                oldRevStatusListJson: null);
 
             return (delta, state);
         }

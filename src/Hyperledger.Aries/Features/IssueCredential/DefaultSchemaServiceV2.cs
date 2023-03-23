@@ -321,7 +321,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string revocationStatusListJson = await Anoncreds.RevocationApi.CreateRevocationStatusListJsonAsync(
                 revRegDefId: JObject.Parse(revocationRegistryDefinitionJson)["credDefId"].ToString(),
                 revRegDefJson: revocationRegistryDefinitionJson,
-                issuerId: JObject.Parse(revocationRegistryDefinitionJson)["IssuerId"].ToString(),
+                issuerId: JObject.Parse(revocationRegistryDefinitionJson)["issuerId"].ToString(),
                 timestamp: DateTimeOffset.Now.ToUnixTimeSeconds(),
                 issuanceType: issuanceType);
 
