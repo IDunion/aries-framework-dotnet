@@ -69,9 +69,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public virtual async Task<string> CreateSchemaAsync(IAgentContext context, string issuerDid, string name,
             string version, string[] attributeNames)
         {
-            uint seqNo = 0;
-            string schemaJson = await Anoncreds.SchemaApi.CreateSchemaJsonAsync(issuerDid, name, version, attributeNames.ToList(), seqNo);
-            string schemaId = await Anoncreds.SchemaApi.GetSchemaAttributeAsync(schemaJson, "id");
+            string schemaJson = await Anoncreds.SchemaApi.CreateSchemaJsonAsync(issuerDid, name, version, attributeNames.ToList());
+            string schemaId = issuerDid;
+            if (!schemaId.Contains(":"))
+            {
+                schemaId += $":2:{name}:{version}";
+            }
             SchemaRecord schemaRecord = new()
             {
                 Id = schemaId,
@@ -236,18 +239,18 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 throw new AriesFrameworkException(ErrorCode.InvalidParameterFormat, "RevocationRegistryBaseUri must be specified either in the configuration or the AgentOptions");
             }
 
-            Ledger.Models.AriesResponse schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
+            AriesResponse schema = await LedgerService.LookupSchemaAsync(context, configuration.SchemaId);
 
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionJsonAsync(
-                originDid: configuration.IssuerDid,
-                schemaObjectJson: schema.ObjectJson,
-                tag: configuration.Tag,
-                anoncreds_rs_dotnet.Models.SignatureType.CL,
-                supportRevocation: configuration.EnableRevocation);
-            string credentialDefinitionId = await Anoncreds.CredentialDefinitionApi.GetCredentialDefinitionAttributeAsync(credentialDefinitionJson, "id");
+                configuration.SchemaId,
+                schema.ObjectJson,
+                configuration.Tag,
+                configuration.IssuerDid,
+                SignatureType.CL,
+                configuration.EnableRevocation);
 
             DefinitionRecord definitionRecord = new()
             {
@@ -265,7 +268,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 paymentInfo: null);
 
             definitionRecord.SupportsRevocation = configuration.EnableRevocation;
-            definitionRecord.Id = credentialDefinitionId;
+            definitionRecord.Id = JObject.Parse(credentialDefinitionJson)["issuerId"].ToString();
             definitionRecord.SchemaId = configuration.SchemaId;
 
             if (configuration.EnableRevocation)
@@ -282,7 +285,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             await RecordService.AddAsync(context.AriesStorage, definitionRecord);
 
-            return credentialDefinitionId;
+            return definitionRecord.Id;
         }
 
         /// <inheritdoc />
