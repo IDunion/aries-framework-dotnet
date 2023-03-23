@@ -245,12 +245,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionJsonAsync(
-                configuration.SchemaId,
-                schema.ObjectJson,
-                configuration.Tag,
-                configuration.IssuerDid,
-                SignatureType.CL,
-                configuration.EnableRevocation);
+                schemaId: configuration.SchemaId,
+                schemaObjectJson: schema.ObjectJson,
+                tag: configuration.Tag,
+                issuerId: configuration.IssuerDid,
+                signatureType: SignatureType.CL,
+                supportRevocation: configuration.EnableRevocation);
 
             DefinitionRecord definitionRecord = new()
             {
@@ -310,16 +310,20 @@ namespace Hyperledger.Aries.Features.IssueCredential
             }
 
             (string revocationRegistryDefinitionJson,
-             string revocationRegistryDefinitionPrivateJson,
-             string revocationRegistryJson,
-             string revocationRegistryDeltaJson) = await Anoncreds.RevocationApi.CreateRevocationRegistryJsonAsync(
+             string revocationRegistryDefinitionPrivateJson) = await Anoncreds.RevocationApi.CreateRevocationRegistryDefinitionJsonAsync(
                  originDid: definitionRecord.IssuerDid,
-                 JsonConvert.SerializeObject(credDefJObject),
+                 credDefJson: JsonConvert.SerializeObject(credDefJObject),
                  tag: tag,
                  revRegType: RegistryType.CL_ACCUM,
-                 issuanceType: issuanceType,
                  maxCredNumber: maxCredNum,
                  tailsDirPath: null);
+
+            string revocationStatusListJson = await Anoncreds.RevocationApi.CreateRevocationStatusListJsonAsync(
+                revRegDefId: JObject.Parse(revocationRegistryDefinitionJson)["credDefId"].ToString(),
+                revRegDefJson: revocationRegistryDefinitionJson,
+                issuerId: JObject.Parse(revocationRegistryDefinitionJson)["IssuerId"].ToString(),
+                timestamp: DateTimeOffset.Now.ToUnixTimeSeconds(),
+                issuanceType: issuanceType);
 
             string revocationRegistryDefinitionId = await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
 
@@ -328,9 +332,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id,
                 RevRegDefJson = revocationRegistryDefinitionJson,
-                RevRegJson = revocationRegistryJson,
+                RevRegJson = JObject.Parse(revocationStatusListJson)["registry"].ToString(),
                 RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson,
-                RevRegDeltaJson = revocationRegistryDeltaJson
             };
 
             // Update tails location URI
@@ -357,7 +360,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 issuerDid: definitionRecord.IssuerDid,
                 revocationRegistryDefinitionId: revocationRegistryDefinitionId,
                 revocationDefinitionType: "CL_ACCUM",
-                value: revocationRegistryJson,
+                value: JObject.Parse(revocationStatusListJson)["registry"].ToString(),
                 paymentInfo: null);
 
             return (
@@ -365,7 +368,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     revocationRegistryDefinitionId,
                     revocationRegistryDefinitionJson,
                     revocationRegistryDefinitionPrivateJson,
-                    revocationRegistryJson),
+                    JObject.Parse(revocationStatusListJson)["registry"].ToString()),
                 revocationRecord
                 );
         }

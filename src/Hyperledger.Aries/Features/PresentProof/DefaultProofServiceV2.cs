@@ -147,6 +147,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
 
+                    //TODO: wait vor indy-vdr update
+                    string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
                     revocationRegistryId: credential.RevocationRegistryId,
@@ -161,12 +163,12 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson,
-                        revRegDeltaJson,
-                        credentialRevocationId,
-                        (long)registryDelta.Timestamp,
-                        tailsFilePath,
-                        null);
+                        revRegDefJson: revRegDefJson,
+                        newRevStatusListJson: revocationStateListJson,
+                        revRegIndex: credentialRevocationId,
+                        tailsPath: tailsFilePath,
+                        revStateJson: null,
+                        oldRevStatusListJson: null);
 
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
@@ -221,7 +223,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
-
+                    //TODO: wait vor indy-vdr update
+                    string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
                     revocationRegistryId: credential.RevocationRegistryId,
@@ -236,12 +239,12 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson,
-                        revRegDeltaJson,
-                        credentialRevocationId,
-                        (long)registryDelta.Timestamp,
-                        tailsFilePath,
-                        null);
+                        revRegDefJson: revRegDefJson,
+                        newRevStatusListJson: revocationStateListJson,
+                        revRegIndex: credentialRevocationId,
+                        tailsPath: tailsFilePath,
+                        revStateJson: null,
+                        oldRevStatusListJson: null);
 
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
@@ -416,7 +419,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                 agentContext,
                 proof.Identifiers.Where(x => x.RevocationRegistryId != null));
 
-            return await Anoncreds.PresentationApi.VerifyPresentationAsync(proofJson,
+            return await Anoncreds.PresentationApi.VerifyPresentationAsync(
+                proofJson,
                 proofRequestJson,
                 schemas,
                 definitions,
