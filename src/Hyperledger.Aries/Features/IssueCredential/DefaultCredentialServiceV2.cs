@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static Hyperledger.Aries.Common.AnoncredsModelExtensions;
 using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Features.IssueCredential
@@ -388,6 +389,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
             (definition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, definition.ObjectJson, credential.CredentialDefinitionId);
 
+            //workaround 
+            definition.ObjectJson = definition.ObjectJson.ToAnoncredsJson(AnoncredsModel.CredDef);
+            //
             (string CredentialRequestJson, string CredentialRequestMetadataJson) = await Anoncreds.CredentialRequestApi.CreateCredentialRequestJsonAsync(
                 entropy: null,
                 proverDid: proverDid,
@@ -468,6 +472,10 @@ namespace Hyperledger.Aries.Features.IssueCredential
             (credentialDefinition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
             string masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
 
+            //workaround
+            credentialDefinition.ObjectJson = credentialDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.CredDef);
+            //
+
             string credentialProcessedJson = await Anoncreds.CredentialApi.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
@@ -531,7 +539,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             string offerJson = await Anoncreds.CredentialOfferApi.CreateCredentialOfferJsonAsync(
                 schemaId,
-                credDefJson,
+                definition.Id,
                 definition.KeyCorrectnesProofJson);
 
             // Write offer record to local wallet
@@ -811,6 +819,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             long credRevocationIdx = -1;
             List<long> credRevocationIdxUsed = null;
             string revocationStateListJson = null;
+            string credDefFormatAnoncredsJson = null;
 
             try
             {
@@ -840,8 +849,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     }
                 }
 
+                //workaround
+                credDefFormatAnoncredsJson = definitionRecord.CredDefJson.ToAnoncredsJson(AnoncredsModel.CredDef);
+                //
+
                 credentialJson = await Anoncreds.CredentialApi.CreateCredentialAsync(
-                    credDefObjectJson : definitionRecord.CredDefJson,
+                    credDefObjectJson : credDefFormatAnoncredsJson,
                     credDefPvtObjectJson: definitionRecord.PrivateJson,
                     credOfferObjectJson : credentialRecord.OfferJson,
                     credReqObjectJson : credentialRecord.RequestJson,
@@ -893,8 +906,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
             definitionRecord.CurrentRevocationRegistryId = nextRevocationRecord.Id;
             await RecordService.UpdateAsync(agentContext.AriesStorage, definitionRecord);
 
+            //workaround
+            credDefFormatAnoncredsJson = definitionRecord.CredDefJson.ToAnoncredsJson(AnoncredsModel.CredDef);
+            //
+
             credentialJson = await Anoncreds.CredentialApi.CreateCredentialAsync(
-                credDefObjectJson: definitionRecord.CredDefJson,
+                credDefObjectJson: credDefFormatAnoncredsJson,
                 credDefPvtObjectJson: definitionRecord.PrivateJson,
                 credOfferObjectJson: credentialRecord.OfferJson,
                 credReqObjectJson: credentialRecord.RequestJson,

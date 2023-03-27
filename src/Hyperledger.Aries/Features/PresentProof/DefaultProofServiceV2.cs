@@ -432,11 +432,13 @@ namespace Hyperledger.Aries.Features.PresentProof
             return await Anoncreds.PresentationApi.VerifyPresentationAsync(
                 presentationJson: proofJson,
                 presentationRequestJson: proofRequestJson,
-                schemaJsons : schemas,
-                credentialDefinitionJsons : definitions,
-                revocationRegistryDefinitionJsons : revocationDefinitions,
-                revocationStatusListJsons : revocationStatusLists,
-                nonrevokedIntervalOverrideJsons: null);
+                schemaJsons: schemas,
+                credentialDefinitionJsons: definitions
+                //TODO : wait vor indy-vdr update, ignore revocation for now
+                //revocationRegistryDefinitionJsons : revocationDefinitions,
+                //revocationStatusListJsons : revocationStatusLists,
+                //nonrevokedIntervalOverrideJsons: null
+                );
         }
 
         /// <inheritdoc />
@@ -925,6 +927,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             foreach (var schemaId in schemaIds)
             {
                 var ledgerSchema = await LedgerService.LookupSchemaAsync(agentContext, schemaId);
+                //workaround
+                ledgerSchema.ObjectJson = ledgerSchema.ObjectJson.ToAnoncredsJson(AnoncredsModelExtensions.AnoncredsModel.Schema);
+                //
                 var schema = await Anoncreds.SchemaApi.CreateSchemaFromJsonAsync(ledgerSchema.ObjectJson);
                 schemas.Add(schema);
                 schemaJsonss.Add(schema.JsonString);
@@ -936,7 +941,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                 var credDefJObject = JObject.Parse(ledgerDefinition.ObjectJson);
                 try
                 {
-                    credDefJObject["schemaId"] = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefJObject["issuerId"].ToString());
+                    string temp = await SchemaService.LookupSchemaFromCredentialDefinitionAsync(agentContext, credDefJObject["id"].ToString());
+                    credDefJObject["schemaId"] = JObject.Parse(temp)["id"].ToString();
                     //TODO : ??? - review
                     //var seqNo = (long)credDefJObject["schemaId"];
                     //var schema = schemas.Where(x => x.SeqNo == seqNo).First();
@@ -946,8 +952,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 {
                     // nothing
                 }
-
-                var credDef = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionFromJsonAsync(JsonConvert.SerializeObject(credDefJObject));
+                var credDef = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionFromJsonAsync(JsonConvert.SerializeObject(credDefJObject).ToAnoncredsJson(AnoncredsModelExtensions.AnoncredsModel.CredDef));
                 credDefJsons.Add(credDef.JsonString);
             }
 

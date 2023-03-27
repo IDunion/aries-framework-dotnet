@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using static Hyperledger.Aries.Common.AnoncredsModelExtensions;
 using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Features.IssueCredential
@@ -82,6 +83,28 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 Version = version,
                 AttributeNames = attributeNames
             };
+
+            /** Todo : fix workaround when new indy_vdr version is released. 
+             * Workaround for compatibility with indy_vdr cause it uses old shared-rs Schema models, but latest anoncreds-rs are different.
+            Old shared-rs model
+            {
+              "ver":"{}",
+              "name":"{}"
+              "version":"{}"
+              "attrNames":[],
+              "id":"{}"
+            }
+
+            New anoncreds-rs model
+            {
+              "name":"{}"
+              "version":"{}"
+              "attrNames":[],
+              "issuerId":"{}"
+            }
+            **/
+            schemaJson = schemaJson.ToSharedRsJson(AnoncredsModel.Schema);
+            // END workaround
 
             TransactionCost paymentInfo = await paymentService.GetTransactionCostAsync(context, TransactionTypes.SCHEMA);
             await LedgerService.RegisterSchemaAsync(context, issuerDid, schemaJson, paymentInfo);
@@ -244,6 +267,29 @@ namespace Hyperledger.Aries.Features.IssueCredential
             ProvisioningRecord provisioning = await ProvisioningService.GetProvisioningAsync(context.AriesStorage);
             configuration.IssuerDid ??= provisioning.IssuerDid;
 
+            /** Todo : fix workaround when new indy_vdr version is released. 
+             * Workaround for compatibility with indy_vdr cause it uses old shared-rs Schema models, but latest anoncreds-rs are different.
+            Old shared-rs model
+            {
+              "ver":"{}",
+              "name":"{}"
+              "version":"{}"
+              "attrNames":[],
+              "id":"{}"
+            }
+
+            New anoncreds-rs model
+            {
+              "name":"{}"
+              "version":"{}"
+              "attrNames":[],
+              "issuerId":"{}"
+            }
+            **/
+            var seqNo = JObject.Parse(schema.ObjectJson)["seqNo"].ToString();
+            schema.ObjectJson = schema.ObjectJson.ToAnoncredsJson(AnoncredsModel.Schema);
+            // END workaround
+
             (string credentialDefinitionJson, string credentialDefinitionPrivateJson, string credentialKeyCorrectnessProofJson) = await Anoncreds.CredentialDefinitionApi.CreateCredentialDefinitionJsonAsync(
                 schemaId: configuration.SchemaId,
                 schemaObjectJson: schema.ObjectJson,
@@ -251,6 +297,16 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 issuerId: configuration.IssuerDid,
                 signatureType: SignatureType.CL,
                 supportRevocation: configuration.EnableRevocation);
+
+            //Todo: fix workaround with new indy_vdr release
+            string credDefId = configuration.IssuerDid;
+            if (!credDefId.Contains(":"))
+            {
+                credDefId += $":3:CL:{seqNo}:{configuration.Tag}";
+            }
+
+            credentialDefinitionJson = credentialDefinitionJson.ToSharedRsJson(AnoncredsModel.CredDef, id: credDefId, seqNo: seqNo);
+            // End workaround
 
             DefinitionRecord definitionRecord = new()
             {
@@ -268,7 +324,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 paymentInfo: null);
 
             definitionRecord.SupportsRevocation = configuration.EnableRevocation;
-            definitionRecord.Id = JObject.Parse(credentialDefinitionJson)["issuerId"].ToString();
+            definitionRecord.Id = JObject.Parse(credentialDefinitionJson)["id"].ToString();
             definitionRecord.SchemaId = configuration.SchemaId;
 
             if (configuration.EnableRevocation)
@@ -303,16 +359,22 @@ namespace Hyperledger.Aries.Features.IssueCredential
             {
                 _ = (long)credDefJObject["schemaId"];
                 credDefJObject["schemaId"] = definitionRecord.SchemaId;
+                credentialDefinitionJson = JsonConvert.SerializeObject(credDefJObject);
             }
             catch
             {
                 //schema id is already a string
             }
 
+            //workaround 
+            credentialDefinitionJson = credentialDefinitionJson.ToAnoncredsJson(AnoncredsModel.CredDef);
+            //
+
             (string revocationRegistryDefinitionJson,
              string revocationRegistryDefinitionPrivateJson) = await Anoncreds.RevocationApi.CreateRevocationRegistryDefinitionJsonAsync(
-                 originDid: definitionRecord.IssuerDid,
-                 credDefJson: JsonConvert.SerializeObject(credDefJObject),
+                 //originDid: definitionRecord.IssuerDid,
+                 originDid: JObject.Parse(credentialDefinitionJson)["issuerId"].ToString(),
+                 credDefJson: credentialDefinitionJson,
                  tag: tag,
                  revRegType: RegistryType.CL_ACCUM,
                  maxCredNumber: maxCredNum,
@@ -325,14 +387,15 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 timestamp: DateTimeOffset.Now.ToUnixTimeSeconds(),
                 issuanceType: issuanceType);
 
-            string revocationRegistryDefinitionId = await Anoncreds.RevocationApi.GetRevocationRegistryDefinitionAttributeAsync(revocationRegistryDefinitionJson, "id");
+            string revocationRegistryDefinitionId = JObject.Parse(revocationRegistryDefinitionJson)["issuerId"].ToString();
 
             RevocationRegistryRecord revocationRecord = new()
             {
                 Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id,
                 RevRegDefJson = revocationRegistryDefinitionJson,
-                RevRegJson = JObject.Parse(revocationStatusListJson)["registry"].ToString(),
+                RevRegJson = JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString(),  
+                //Todo workaround : check for right format of RevRegJson somethin like '{ value : {accum: JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString()} }' ?
                 RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson,
                 RevStatusListJson = revocationStatusListJson,
             };
@@ -348,6 +411,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             revocationRecord.TailsFile = tailsfile;
             revocationRecord.TailsLocation = tailsLocation;
 
+            //Todo workaround : RevocRegDef has to be converted into Shared-Rs format -> see class Common/AnoncredsModelExtensions.cs
             await LedgerService.RegisterRevocationRegistryDefinitionAsync(
                 context: context,
                 submitterDid: definitionRecord.IssuerDid,
