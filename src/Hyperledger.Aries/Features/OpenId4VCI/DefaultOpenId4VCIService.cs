@@ -65,12 +65,12 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             throw new InvalidOperationException($"No CredentialOffer: {offer}");
         }
 
-        public async Task<OpenId4VciRecord> RequestCredentialAsync(IAgentContext context, string recordId, string keyRefId, string userPin = null)
+        public async Task<OpenId4VciRecord> RequestCredentialAsync(IAgentContext context, string recordId, string keyRefId, string userPin = null, string attestation = null)
         {
             var vciRecord = await GetVciRecordAsnyc(context, recordId);
             
             var oauthResponse = await RequestOauthAuthorizationServer(vciRecord.CredentialOfferPayload);
-            var token = await RequestToken(vciRecord.CredentialOfferPayload, oauthResponse, userPin);
+            var token = await RequestToken(vciRecord.CredentialOfferPayload, oauthResponse, userPin, attestation);
             
             var credResponse = await RequestCredentials(vciRecord.CredentialOfferPayload, token);
             
@@ -140,17 +140,18 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             }
         }
         
-        private async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer, string userPIN = null)
+        private async Task<TokenResponse> RequestToken(CredOfferPayload credOfferPayload, OauthAuthorizationServer oauthAuthorizationServer, string userPIN = null, string attestation = null)
         {
             var tokenValues = new Dictionary<string, string>
             {
                 { "grant_type", "urn:ietf:params:oauth:grant-type:pre-authorized_code" },
                 { "pre-authorized_code", credOfferPayload.Grants.GrantType.PreauthorizedCode }
             };
+            if (string.IsNullOrEmpty(attestation) == false)
+                tokenValues.Add("wallet_attestation", attestation);
             if (string.IsNullOrEmpty(userPIN) == false)
-            {
                 tokenValues.Add("user_pin", userPIN);
-            }
+            
             var tokenData = new FormUrlEncodedContent(tokenValues);
             var tokenHttpResponse = await HttpClientFactory.CreateClient().PostAsync(oauthAuthorizationServer.TokenEndpoint, tokenData);
             var tokenResponseString = await tokenHttpResponse.Content.ReadAsStringAsync();
@@ -173,7 +174,7 @@ namespace Hyperledger.Aries.Features.OpenId4VCI
             CredRequest credRequest = new CredRequest
             {
                 Format = "vc+sd-jwt",
-                Type = "VerifiedEMail",
+                Type = credOfferPayload.Credentials[0].Type,
                 Proof = new Proof
                 {
                     ProofType = "jwt"
