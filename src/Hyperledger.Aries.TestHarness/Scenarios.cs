@@ -138,7 +138,7 @@ namespace Hyperledger.Aries.TestHarness
                 }
                 else if (holderContext.AriesStorage.Store != null)
                 {
-                    await MasterSecretUtils.CreateAndStoreMasterSecretAsync(holderContext.AriesStorage, recordService, proverMasterSecretId);
+                    await LinkSecretUtils.CreateAndStoreLinkSecretAsync(holderContext.AriesStorage, recordService, proverMasterSecretId);
                 }
             }
             catch

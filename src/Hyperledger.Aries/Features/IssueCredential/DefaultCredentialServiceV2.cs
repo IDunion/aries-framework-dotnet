@@ -396,8 +396,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 entropy: null,
                 proverDid: proverDid,
                 credentialDefinitionJson: definition.ObjectJson,
-                masterSecretJson: await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId),
-                masterSecretId: provisioning.MasterSecretId,
+                linkSecret: await LinkSecretUtils.GetLinkSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.LinkSecretId),
+                linkSecretId: provisioning.LinkSecretId,
                 credentialOfferJson: credential.OfferJson
                 );
 
@@ -470,7 +470,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             //Need to replace schemaId as seqNo with schemaId as id string for indy-shared-rs method
             (credentialDefinition.ObjectJson, string schemaId) = await ReplaceSchemaIdSeqNoWithString(agentContext, credentialDefinition.ObjectJson, credentialDefinition.Id);
-            string masterSecretJson = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.MasterSecretId);
+            string linkSecret = await LinkSecretUtils.GetLinkSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioning.LinkSecretId);
 
             //workaround
             credentialDefinition.ObjectJson = credentialDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.CredDef);
@@ -479,7 +479,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
             string credentialProcessedJson = await Anoncreds.CredentialApi.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
-                masterSecretJson,
+                linkSecret,
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );

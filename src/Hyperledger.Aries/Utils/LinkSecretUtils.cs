@@ -9,16 +9,16 @@ using Hyperledger.Aries.Common;
 
 namespace Hyperledger.Aries.Utils
 {
-    public static class MasterSecretUtils
+    public static class LinkSecretUtils
     {
         /// <summary>
-        /// Creates a new master secret for use with <c>indy_sdk</c> or <c>anoncreds_rs</c> methods and stores it as <see cref="MasterSecretRecord"/> in the wallet. 
+        /// Creates a new master secret for use with <c>indy_sdk</c> or <c>anoncreds_rs</c> methods and stores it as <see cref="LinkSecretRecord"/> in the wallet. 
         /// </summary>
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="recordService">The record service.</param>
-        /// /// <param name="masterSecretId">The master secret id.</param>
+        /// /// <param name="linkSecretId">The master secret id.</param>
         /// <returns>The master secret id for accessing the corresponding record.</returns>
-        public static async Task<string> CreateAndStoreMasterSecretAsync(AriesStorage storage, IWalletRecordService recordService, string masterSecretId = null)
+        public static async Task<string> CreateAndStoreLinkSecretAsync(AriesStorage storage, IWalletRecordService recordService, string linkSecretId = null)
         {
             //Invalid combination of Wallet and Store in AriesStorage
             if ((storage?.Wallet != null && storage?.Store != null) || (storage?.Wallet == null && storage?.Store == null))
@@ -28,24 +28,24 @@ namespace Hyperledger.Aries.Utils
             //Store in AriesStorage (V2 used)
             else if (storage?.Store != null)
             {
-                if (string.IsNullOrEmpty(masterSecretId))
+                if (string.IsNullOrEmpty(linkSecretId))
                 {
-                    masterSecretId = Guid.NewGuid().ToString();
+                    linkSecretId = Guid.NewGuid().ToString();
                 }
 
-                MasterSecretRecord masterSecretRecord = new()
+                LinkSecretRecord linkSecretRecord = new()
                 {
-                    Id = masterSecretId,
-                    MasterSecretJson = await Anoncreds.MasterSecretApi.CreateMasterSecretJsonAsync()
+                    Id = linkSecretId,
+                    LinkSecretJson = await Anoncreds.LinkSecretApi.CreateLinkSecretAsync()
                 };
 
-                await recordService.AddAsync(storage, masterSecretRecord);
-                return masterSecretId;
+                await recordService.AddAsync(storage, linkSecretRecord);
+                return linkSecretId;
             }
             //Wallet in AriesStorage (V1 used)
             else
             {
-                return await AnonCreds.ProverCreateMasterSecretAsync(storage.Wallet, masterSecretId);
+                return await AnonCreds.ProverCreateMasterSecretAsync(storage.Wallet, linkSecretId);
             }
         }
 
@@ -56,10 +56,10 @@ namespace Hyperledger.Aries.Utils
         /// <param name="storage">The indy-sdk or aries-askar Wallet.</param>
         /// <param name="recordService">The record service.</param>
         /// <returns>The master secret as JSON.</returns>
-        public static async Task<string> GetMasterSecretJsonAsync(AriesStorage storage, IWalletRecordService recordService, string id)
+        public static async Task<string> GetLinkSecretJsonAsync(AriesStorage storage, IWalletRecordService recordService, string id)
         {
-            MasterSecretRecord record = await recordService.GetAsync<MasterSecretRecord>(storage, id);
-            return record?.MasterSecretJson;
+            LinkSecretRecord record = await recordService.GetAsync<LinkSecretRecord>(storage, id);
+            return record?.LinkSecretJson;
         }
     }
 }

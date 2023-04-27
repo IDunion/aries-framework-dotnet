@@ -140,7 +140,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 wallet: agentContext.AriesStorage.Wallet,
                 proofRequest: proofRequest.ToJson(),
                 requestedCredentials: requestedCredentials.ToJson(),
-                masterSecret: provisioningRecord.MasterSecretId,
+                masterSecret: provisioningRecord.LinkSecretId,
                 schemas: schemas,
                 credentialDefs: definitions,
                 revStates: revocationStates);

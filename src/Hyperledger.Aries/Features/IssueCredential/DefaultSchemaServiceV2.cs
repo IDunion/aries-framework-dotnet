@@ -394,7 +394,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 Id = revocationRegistryDefinitionId,
                 CredentialDefinitionId = definitionRecord.Id,
                 RevRegDefJson = revocationRegistryDefinitionJson,
-                RevRegJson = JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString(),  
+                RevRegJson = JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString(),
+                //RevRegJson = JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString(),  
                 //Todo workaround : check for right format of RevRegJson somethin like '{ value : {accum: JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString()} }' ?
                 RevRegDefPrivateJson = revocationRegistryDefinitionPrivateJson,
                 RevStatusListJson = revocationStatusListJson,
@@ -412,20 +413,25 @@ namespace Hyperledger.Aries.Features.IssueCredential
             revocationRecord.TailsLocation = tailsLocation;
 
             //Todo workaround : RevocRegDef has to be converted into Shared-Rs format -> see class Common/AnoncredsModelExtensions.cs
+            //string JSON = revocationRegistryDefinitionJson.ToSharedRsJson(AnoncredsModel.RevRegDef);
+
             await LedgerService.RegisterRevocationRegistryDefinitionAsync(
                 context: context,
                 submitterDid: definitionRecord.IssuerDid,
                 data: revocationDefinition.ToString(),
+                //data : JSON,
                 paymentInfo: null);
 
             await RecordService.AddAsync(context.AriesStorage, revocationRecord);
 
+            //TODO MORGEN WEITER
             await LedgerService.SendRevocationRegistryEntryAsync(
                 context: context,
                 issuerDid: definitionRecord.IssuerDid,
                 revocationRegistryDefinitionId: revocationRegistryDefinitionId,
                 revocationDefinitionType: "CL_ACCUM",
-                value: JObject.Parse(revocationStatusListJson)["registry"].ToString(),
+                //value: JObject.Parse(revocationStatusListJson)["registry"].ToString(),
+                value: JObject.Parse(revocationStatusListJson)["currentAccumulator"].ToString(),
                 paymentInfo: null);
 
             return (

@@ -48,6 +48,17 @@ namespace Hyperledger.Aries.Common
             string resultJson = "";
             switch (model)
             {
+                case AnoncredsModel.RevRegDef:
+                    RevocationRegistryDefinition revRegDef = JsonConvert.DeserializeObject<RevocationRegistryDefinition>(modelJson);
+                    resultJson =
+                        "{" +
+                            $"\"credDefId\":\"{revRegDef.CredentialDefinitionId}\"," +
+                            $"\"revocDefType\":\"{revRegDef.RegistryType}\"," +
+                            $"\"tag\":\"{revRegDef.Tag}\"," +
+                            $"\"value\":{JsonConvert.SerializeObject(revRegDef.Value)}," +
+                            $"\"issuerId\":\"{JObject.Parse(modelJson)["id"]}\"" +
+                        "}";
+                    break;
                 case AnoncredsModel.Schema:
                     Schema schema = JsonConvert.DeserializeObject<Schema>(modelJson);
 
@@ -103,6 +114,19 @@ namespace Hyperledger.Aries.Common
             string resultJson = "";
             switch (model)
                 {
+                //Todo CHECK FOR ISSUANCE BY DFEFAULT Value in modelJson (why does it not exist?)
+                case AnoncredsModel.RevRegDef:
+                    RevocationRegistryDefinition revRegDef = JsonConvert.DeserializeObject<RevocationRegistryDefinition>(modelJson);
+                    resultJson =
+                        "{" +
+                            $"\"ver\":\"1.0\"," +
+                            $"\"credDefId\":\"{revRegDef.CredentialDefinitionId}\"," +
+                            $"\"revocDefType\":\"{revRegDef.RegistryType}\"," +
+                            $"\"tag\":\"{revRegDef.Tag}\"," +
+                            $"\"value\":{JsonConvert.SerializeObject(revRegDef.Value)}," +
+                            $"\"id\":\"{revRegDef.IssuerId}\"" +
+                        "}";
+                    break;
                 case AnoncredsModel.Schema:
                     Schema schema = JsonConvert.DeserializeObject<Schema>(modelJson);
 

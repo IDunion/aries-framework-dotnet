@@ -417,7 +417,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 proverDid: proverDid,
                 credOfferJson: credential.OfferJson,
                 credDefJson: definition.ObjectJson,
-                masterSecretId: provisioning.MasterSecretId);
+                masterSecretId: provisioning.LinkSecretId);
 
             // Update local credential record with new info
             credential.CredentialRequestMetadataJson = request.CredentialRequestMetadataJson;

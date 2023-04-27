@@ -786,7 +786,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
+            await LinkSecretUtils.CreateAndStoreLinkSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -897,7 +897,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
+            await LinkSecretUtils.CreateAndStoreLinkSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             (var request, var _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);
@@ -966,7 +966,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                 await _credentialService.ProcessOfferAsync(_holderWallet, credentialOffer, holderConnection);
 
             // Holder creates master secret. Will also be created during wallet agent provisioning
-            await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
+            await LinkSecretUtils.CreateAndStoreLinkSecretAsync(storage: _holderWallet.AriesStorage, _recordService, TestConstants.DefaultMasterSecret);
 
             // Holder accepts the credential offer and sends a credential request
             var (request, _) = await _credentialService.CreateRequestAsync(_holderWallet, holderCredentialId);

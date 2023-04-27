@@ -140,7 +140,7 @@ namespace Hyperledger.Aries.Configuration
 
             var record = new ProvisioningRecord
             {
-                MasterSecretId = masterSecretId,
+                LinkSecretId = masterSecretId,
                 Endpoint = endpoint,
                 Owner =
                 {

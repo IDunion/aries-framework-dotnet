@@ -6,10 +6,10 @@ namespace Hyperledger.Aries.Configuration
     /// Represents a master secret record in the agency wallet
     /// </summary>
     /// <seealso cref="RecordBase" />
-    public class MasterSecretRecord : RecordBase
+    public class LinkSecretRecord : RecordBase
     {
         /// <inheritdoc />
-        public override string TypeName => "AF.MasterSecretRecord";
+        public override string TypeName => "AF.LinkSecretRecord";
 
         /// <summary>
         /// Gets or sets the master secret json.
@@ -17,7 +17,7 @@ namespace Hyperledger.Aries.Configuration
         /// <value>
         /// The master secret json.
         /// </value>
-        public string MasterSecretJson { get; set; }
+        public string LinkSecretJson { get; set; }
 
     }
 }

@@ -131,11 +131,11 @@ namespace Hyperledger.Aries.Configuration
                 }
             }
 
-            string masterSecretId = await MasterSecretUtils.CreateAndStoreMasterSecretAsync(storage: storage, recordService: RecordService);
+            string linkSecretId = await LinkSecretUtils.CreateAndStoreLinkSecretAsync(storage: storage, recordService: RecordService);
 
             ProvisioningRecord record = new()
             {
-                MasterSecretId = masterSecretId,
+                LinkSecretId = linkSecretId,
                 Endpoint = endpoint,
                 Owner =
                 {

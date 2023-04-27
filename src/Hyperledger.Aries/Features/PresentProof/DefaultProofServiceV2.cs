@@ -152,6 +152,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
 
+                    //TODO: Conversion Delta in StatusList
+
                     //TODO : wait vor indy-vdr update
                     string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
@@ -289,7 +291,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
             var proofrequestJson = proofRequest.ToJson();
 
-            var masterSecret = await MasterSecretUtils.GetMasterSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioningRecord.MasterSecretId);
+            var linkSecret = await LinkSecretUtils.GetLinkSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioningRecord.LinkSecretId);
 
             string presentation = await Anoncreds.PresentationApi.CreatePresentationAsync(
                 proofrequestJson,
@@ -297,7 +299,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 credentialProofJsons,
                 selfAttestNames,
                 selfAttestValues,
-                masterSecret,
+                linkSecret,
                 schemas,
                 definitions);
 

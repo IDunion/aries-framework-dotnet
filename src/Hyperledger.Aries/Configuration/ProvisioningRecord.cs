@@ -58,11 +58,11 @@ namespace Hyperledger.Aries.Configuration
 
 
         /// <summary>
-        /// Gets or sets the master key identifier for the provisioned agent.
+        /// Gets or sets the link key identifier for the provisioned agent.
         /// </summary>
-        /// <returns>The master key identifier for the provisioned agent</returns>
-        [Newtonsoft.Json.JsonProperty("_masterSecretId")]
-        public virtual string MasterSecretId { get; set; }
+        /// <returns>The link key identifier for the provisioned agent</returns>
+        [Newtonsoft.Json.JsonProperty("_linkSecretId")]
+        public virtual string LinkSecretId { get; set; }
 
 
         /// <summary>
