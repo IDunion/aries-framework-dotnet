@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -71,18 +72,32 @@ namespace Hyperledger.Aries.Features.IssueCredential
             var tailsUri = JObject.Parse(revocationRegistry.ObjectJson)["value"]["tailsLocation"].ToObject<string>();
             var tailsFileName = JObject.Parse(revocationRegistry.ObjectJson)["value"]["tailsHash"].ToObject<string>();
 
+            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsUri: '{tailsUri}'.");
+            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsFileName: '{tailsFileName}'.");
+
             var tailsfile = Path.Combine(AgentOptions.RevocationRegistryDirectory, tailsFileName);
+
+            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsfile: '{tailsfile}'.");
+
             var hash = Multibase.Base58.Decode(tailsFileName);
 
             if (!Directory.Exists(AgentOptions.RevocationRegistryDirectory))
             {
+                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory not existing '{AgentOptions.RevocationRegistryDirectory}'. Directory getting created...");
                 Directory.CreateDirectory(AgentOptions.RevocationRegistryDirectory);
+                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory was created '{AgentOptions.RevocationRegistryDirectory}'.");
+            }
+            else
+            {
+                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory already exists '{AgentOptions.RevocationRegistryDirectory}'.");
             }
 
             try
             {
+                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile already saved on device ... ?");
                 if (!File.Exists(tailsfile))
                 {
+                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - No");
                     var bytes = await HttpClient.GetByteArrayAsync(new Uri(tailsUri));
 
                     // Check hash
@@ -97,6 +112,12 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     File.WriteAllBytes(
                         path: tailsfile,
                         bytes: bytes);
+
+                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile was saved on device?");
+                }
+                else
+                {
+                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Yes");
                 }
             }
             catch (Exception e)
