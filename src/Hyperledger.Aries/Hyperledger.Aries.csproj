@@ -5,12 +5,12 @@
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Aries.xml</DocumentationFile>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>2.0.16-beta</Version>
+        <Version>2.0.24-beta</Version>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Hyperledger.Anoncreds-Rs" Version="0.3.24-alpha" />
-        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.15-alpha" />
-        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.5" />
+        <PackageReference Include="Hyperledger.Aries-Askar" Version="0.2.7.5" />
+        <PackageReference Include="Hyperledger.Indy-VDR" Version="0.4.0.2" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsHostingVersion)" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />

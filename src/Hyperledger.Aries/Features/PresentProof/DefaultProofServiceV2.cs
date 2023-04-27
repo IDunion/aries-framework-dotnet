@@ -21,8 +21,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using static Hyperledger.Aries.Common.AnoncredsModelExtensions;
 using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
 
 namespace Hyperledger.Aries.Features.PresentProof
@@ -152,10 +154,6 @@ namespace Hyperledger.Aries.Features.PresentProof
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
 
-                    //TODO: Conversion Delta in StatusList
-
-                    //TODO : wait vor indy-vdr update
-                    string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
                     revocationRegistryId: credential.RevocationRegistryId,
@@ -166,6 +164,22 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                     string revRegDefJson = registryDefinition.ObjectJson;
                     string revRegDeltaJson = registryDelta.ObjectJson;
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationDeltaJson: {revRegDeltaJson}");
+
+                    //Convert 'old' revocation delta in 'new' revocationStatusList
+                    string revocationStateListJson =
+                        RevocationUtils.ConvertDeltaToRevocationStatusListJson(
+                            revRegDefId: credential.RevocationRegistryId,
+                            revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                            deltaJson: revRegDeltaJson,
+                            timestamp: (long)registryDelta.Timestamp
+                            );
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationStatusListJson: {revocationStateListJson}");
+
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
@@ -176,6 +190,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                         tailsPath: tailsFilePath,
                         revStateJson: null,
                         oldRevStatusListJson: null);
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationStateJson: {revStateJson}");
 
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
@@ -230,9 +247,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
                         agentContext: agentContext,
                         registryId: credential.RevocationRegistryId);
-
-                    //TODO : wait vor indy-vdr update
-                    string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
+                    
                     var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                     agentContext: agentContext,
                     revocationRegistryId: credential.RevocationRegistryId,
@@ -243,6 +258,22 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                     string revRegDefJson = registryDefinition.ObjectJson;
                     string revRegDeltaJson = registryDelta.ObjectJson;
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedPredicates - revocationDeltaJson: {revRegDeltaJson}");
+
+                    //Convert 'old' revocation delta in 'new' revocationStatusList
+                    string revocationStateListJson =
+                        RevocationUtils.ConvertDeltaToRevocationStatusListJson(
+                            revRegDefId: credential.RevocationRegistryId,
+                            revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                            deltaJson: revRegDeltaJson,
+                            timestamp: (long)registryDelta.Timestamp
+                            );
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedPredicates -revocationStatusListJson: {revocationStateListJson}");
+
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
@@ -253,6 +284,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                         tailsPath: tailsFilePath,
                         revStateJson: null,
                         oldRevStatusListJson: null);
+
+                    //Todo
+                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedPredicates - revocationStateJson: {revStateJson}");
 
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
                 }
