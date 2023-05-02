@@ -113,7 +113,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             ProofRequest proofRequest, RequestedCredentials requestedCredentials)
         {
             Logger.LogDebug($"Hyperledger Aries - Calling {nameof(CreateProofAsync)}");
-
+            Debug.WriteLine($"Hyperledger Aries - Calling {nameof(CreateProofAsync)}");
             var provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             var credentialObjects = new List<CredentialInfo>();

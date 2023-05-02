@@ -923,7 +923,6 @@ namespace Hyperledger.Aries.Tests.Protocols
                 .Returns(new HttpClient());
 
             var logger = new Mock<ILogger<DefaultTailsServiceV2>>();
-            logger.Setup(x => x.LogDebug(It.IsAny<string>()));
 
             var tailsService = new DefaultTailsServiceV2(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object, logger.Object);
 
