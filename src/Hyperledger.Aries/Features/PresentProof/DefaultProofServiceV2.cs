@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using static Hyperledger.Aries.Common.AnoncredsModelExtensions;
 using Anoncreds = anoncreds_rs_dotnet.Anoncreds;
@@ -111,19 +112,28 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<string> CreateProofAsync(IAgentContext agentContext,
             ProofRequest proofRequest, RequestedCredentials requestedCredentials)
         {
+            Logger.LogDebug($"Hyperledger Aries - Calling {nameof(CreateProofAsync)}");
+
             var provisioningRecord = await ProvisioningService.GetProvisioningAsync(agentContext.AriesStorage);
 
             var credentialObjects = new List<CredentialInfo>();
             var credentialEntryJsons = new List<string>();
             var credentialProofJsons = new List<string>();
             int index = 0;
+
+            Logger.LogDebug($"Hyperledger Aries - Going into foreach 'RequestedAttributes':");
             foreach (var attr in requestedCredentials.RequestedAttributes)
             {
+                Logger.LogDebug($"Hyperledger Aries - Processing attribute: '{JsonConvert.SerializeObject(attr)}'");
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, attr.Value.CredentialId);
                 anoncreds_rs_dotnet.Models.Credential credential = await Anoncreds.CredentialApi.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
 
+                Logger.LogDebug($"Hyperledger Aries - Got credential from wallet: '{JsonConvert.SerializeObject(credentialRecord)}'");
+
                 Dictionary<string, string> attributes = new();
                 credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
+
+                Logger.LogDebug($"Hyperledger Aries - Credential attributes are: '{JsonConvert.SerializeObject(attributes)}'");
 
                 var credentialRevocationIdx = "";
                 if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
@@ -140,8 +150,11 @@ namespace Hyperledger.Aries.Features.PresentProof
                     Attributes = attributes
                 });
 
+                Logger.LogDebug($"Hyperledger Aries - Current CredentialInfo list is: '{JsonConvert.SerializeObject(credentialObjects)}'");
+
                 if (credentialRecord.RevocationRegistryId != null)
                 {
+                    Logger.LogDebug($"Hyperledger Aries - Credential supports revocation with RevocationID: '{credentialRecord.RevocationRegistryId}'");
                     uint nonRevokedTo = 0;
                     if (proofRequest.NonRevoked != null)
                         nonRevokedTo = proofRequest.NonRevoked.To;
@@ -149,6 +162,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                     {
                         nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
                     }
+                    Logger.LogDebug($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
 
                     var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
                         agentContext: agentContext,
@@ -164,9 +178,8 @@ namespace Hyperledger.Aries.Features.PresentProof
 
                     string revRegDefJson = registryDefinition.ObjectJson;
                     string revRegDeltaJson = registryDelta.ObjectJson;
-
-                    //Todo
-                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationDeltaJson: {revRegDeltaJson}");
+                    Logger.LogDebug($"Hyperledger Aries - RevocationRegistryDefJson is: '{revRegDefJson}'");
+                    Logger.LogDebug($"Hyperledger Aries - RevocationRegistryDeltaJson is: '{revRegDeltaJson}'");
 
                     //Convert 'old' revocation delta in 'new' revocationStatusList
                     string revocationStateListJson =
@@ -177,8 +190,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                             timestamp: (long)registryDelta.Timestamp
                             );
 
-                    //Todo
-                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationStatusListJson: {revocationStateListJson}");
+                    Logger.LogDebug($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync() - RevocationStatusListJson is: {revocationStateListJson}");
 
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
@@ -191,14 +203,16 @@ namespace Hyperledger.Aries.Features.PresentProof
                         revStateJson: null,
                         oldRevStatusListJson: null);
 
-                    //Todo
-                    Debug.WriteLine($"Aries method - CreateProofAsync() - path RequestedAttributes - revocationStateJson: {revStateJson}");
+                    Logger.LogDebug($"Hyperledger Aries after CreateOrUpdateRevocationStateAsync() - RevocationStatusListJson: {revStateJson}");
 
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
+
+                    Logger.LogDebug($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
                 }
                 else
                 {
                     credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                    Logger.LogDebug($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
                 }
                 credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
                 {
@@ -207,9 +221,11 @@ namespace Hyperledger.Aries.Features.PresentProof
                     Referent = attr.Key,
                     Reveal = Convert.ToByte(attr.Value.Revealed)
                 }));
+                Logger.LogDebug($"Hyperledger Aries current credentialProofJsons: '{JsonConvert.SerializeObject(credentialProofJsons)}'");
                 index += 1;
             }
 
+            Logger.LogDebug($"Hyperledger Aries - Going into foreach 'RequestedPredicates'");
             foreach (var pred in requestedCredentials.RequestedPredicates)
             {
                 CredentialRecord credentialRecord = await RecordService.GetAsync<CredentialRecord>(agentContext.AriesStorage, pred.Value.CredentialId);
@@ -317,15 +333,25 @@ namespace Hyperledger.Aries.Features.PresentProof
                 credentialObjects.Select(x => x.SchemaId).Distinct(),
                 credentialObjects.Select(x => x.CredentialDefinitionId).Distinct());
 
+            Logger.LogDebug($"Hyperledger Aries built schemas: '{JsonConvert.SerializeObject(schemas)}'");
+            Logger.LogDebug($"Hyperledger Aries built credDefs: '{JsonConvert.SerializeObject(definitions)}'");
+
+            //Not used in V2
+            /**
             var revocationStates = await BuildRevocationStatesAsync(
                 agentContext: agentContext,
                 credentialObjects: credentialObjects,
                 proofRequest: proofRequest,
                 requestedCredentials: requestedCredentials);
 
+            Logger.LogDebug($"Hyperledger Aries built revocationStates: '{revocationStates}'");
+            **/
+
             var proofrequestJson = proofRequest.ToJson();
 
             var linkSecret = await LinkSecretUtils.GetLinkSecretJsonAsync(agentContext.AriesStorage, RecordService, provisioningRecord.LinkSecretId);
+
+            Logger.LogDebug($"Hyperledger Aries - Calling CreatePresentationAsync() in Anoncreds-Rs");
 
             string presentation = await Anoncreds.PresentationApi.CreatePresentationAsync(
                 proofrequestJson,
@@ -336,6 +362,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                 linkSecret,
                 schemas,
                 definitions);
+
+            Logger.LogDebug($"Hyperledger Aries - CreatePresentationAsync() completed successfully");
 
             return presentation;
         }
@@ -914,6 +942,7 @@ namespace Hyperledger.Aries.Features.PresentProof
         /// <inheritdoc />
         public virtual async Task<(PresentationMessage, ProofRecord)> CreatePresentationAsync(IAgentContext agentContext, string proofRecordId, RequestedCredentials requestedCredentials)
         {
+            Logger.LogDebug($"Hyperledger Aries - Calling {nameof(CreatePresentationAsync)}");
             var record = await GetAsync(agentContext, proofRecordId);
 
             if (record.State != ProofState.Requested)
@@ -956,6 +985,8 @@ namespace Hyperledger.Aries.Features.PresentProof
         #region Private Methods
         private async Task<(List<string>, List<string>)> BuildSchemasAndCredDefsAsync(IAgentContext agentContext, IEnumerable<string> schemaIds, IEnumerable<string> credentialDefIds)
         {
+            Logger.LogDebug($"Called {nameof(BuildSchemasAndCredDefsAsync)}'");
+
             var schemaJsonss = new List<string>();
             var schemas = new List<Schema>();
             var credDefJsons = new List<string>();
@@ -1012,8 +1043,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             IAgentContext agentContext, CredentialInfo credentialInfo, AriesResponse registryDefinition,
             RevocationInterval nonRevoked)
         {
-            //TODO : wait vor indy-vdr update
-            string revocationStateListJson = JsonConvert.SerializeObject(new RevocationStatusList() { Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() }); //await LedgerService.LookupRevocationStateListAsync();
+            Logger.LogDebug($"Called {nameof(BuildRevocationStateAsync)}'");
 
             var delta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                 agentContext: agentContext,
@@ -1022,6 +1052,16 @@ namespace Hyperledger.Aries.Features.PresentProof
                 // is other than 0
                 from: 0, //nonRevoked.From,
                 to: (long)nonRevoked.To);
+
+            //TODO : wait vor indy-vdr update
+            //Convert 'old' revocation delta in 'new' revocationStatusList
+            string revocationStateListJson =
+                RevocationUtils.ConvertDeltaToRevocationStatusListJson(
+                    revRegDefId: credentialInfo.RevocationRegistryId,
+                    revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                    deltaJson: delta.ObjectJson,
+                    timestamp: (long)delta.Timestamp
+                    );
 
             var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialInfo.RevocationRegistryId);
             long.TryParse(credentialInfo.CredentialRevocationId, out var credentialRevocationId);
@@ -1042,6 +1082,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             ProofRequest proofRequest,
             RequestedCredentials requestedCredentials)
         {
+            Logger.LogDebug($"Called {nameof(BuildRevocationStatesAsync)}'");
+            Logger.LogDebug($"Hyperledger Aries ProofRequest is: '{JsonConvert.SerializeObject(proofRequest)}'");
+
             var allCredentials = new List<RequestedAttribute>();
             allCredentials.AddRange(requestedCredentials.RequestedAttributes.Values);
             allCredentials.AddRange(requestedCredentials.RequestedPredicates.Values);
@@ -1051,6 +1094,7 @@ namespace Hyperledger.Aries.Features.PresentProof
             if (proofRequest.NonRevoked == null && !HasNonRevokedOnAttributeLevel(proofRequest))
                 return result.ToJson();
 
+            Logger.LogDebug($"Hyperledger Aries going in foreach 'requestedCredential in allCredentials'");
             foreach (var requestedCredential in allCredentials)
             {
                 var credential = credentialObjects.First(x => x.Referent == requestedCredential.CredentialId);
@@ -1076,6 +1120,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                     continue;
                 }
 
+                Logger.LogDebug($"Hyperledger Aries going in foreach 'proofRequestRequestedAttribute in proofRequest.RequestedAttributes'");
                 foreach (var proofRequestRequestedAttribute in proofRequest.RequestedAttributes)
                 {
                     var revocationInterval = proofRequestRequestedAttribute.Value.NonRevoked;

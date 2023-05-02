@@ -11,9 +11,11 @@ using Hyperledger.Aries.Common;
 using Hyperledger.Aries.Configuration;
 using Hyperledger.Aries.Contracts;
 using Hyperledger.Aries.Extensions;
+using Hyperledger.Aries.Features.PresentProof;
 using Hyperledger.Aries.Utils;
 using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.PoolApi;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Multiformats.Base;
 using Newtonsoft.Json.Linq;
@@ -40,6 +42,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
         // ReSharper restore InconsistentNaming
 
         /// <summary>
+        /// The logger
+        /// </summary>
+        protected readonly ILogger<DefaultTailsServiceV2> Logger;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DefaultTailsServiceV2" /> class.
         /// </summary>
         /// <param name="ledgerService">The ledger service.</param>
@@ -48,11 +55,13 @@ namespace Hyperledger.Aries.Features.IssueCredential
         public DefaultTailsServiceV2(
             ILedgerService ledgerService,
             IOptions<AgentOptions> agentOptions,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ILogger<DefaultTailsServiceV2> logger)
         {
             LedgerService = ledgerService;
             AgentOptions = agentOptions.Value;
             HttpClient = httpClientFactory.CreateClient();
+            Logger = logger;
         }
 
         public Task<BlobStorageWriter> CreateTailsAsync()
@@ -68,36 +77,38 @@ namespace Hyperledger.Aries.Features.IssueCredential
         /// <inheritdoc />
         public virtual async Task<string> EnsureTailsExistsAsync(IAgentContext agentContext, string revocationRegistryId)
         {
+            Logger.LogDebug($"Called {nameof(EnsureTailsExistsAsync)}'");
+
             var revocationRegistry = await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revocationRegistryId);
             var tailsUri = JObject.Parse(revocationRegistry.ObjectJson)["value"]["tailsLocation"].ToObject<string>();
             var tailsFileName = JObject.Parse(revocationRegistry.ObjectJson)["value"]["tailsHash"].ToObject<string>();
 
-            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsUri: '{tailsUri}'.");
-            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsFileName: '{tailsFileName}'.");
+            Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - tailsUri: '{tailsUri}'.");
+            Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - tailsFileName: '{tailsFileName}'.");
 
             var tailsfile = Path.Combine(AgentOptions.RevocationRegistryDirectory, tailsFileName);
 
-            Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - tailsfile: '{tailsfile}'.");
+            Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - tailsfile: '{tailsfile}'.");
 
             var hash = Multibase.Base58.Decode(tailsFileName);
 
             if (!Directory.Exists(AgentOptions.RevocationRegistryDirectory))
             {
-                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory not existing '{AgentOptions.RevocationRegistryDirectory}'. Directory getting created...");
+                Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Directory not existing '{AgentOptions.RevocationRegistryDirectory}'. Directory getting created...");
                 Directory.CreateDirectory(AgentOptions.RevocationRegistryDirectory);
-                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory was created '{AgentOptions.RevocationRegistryDirectory}'.");
+                Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Directory was created '{AgentOptions.RevocationRegistryDirectory}'.");
             }
             else
             {
-                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Directory already exists '{AgentOptions.RevocationRegistryDirectory}'.");
+                Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Directory already exists '{AgentOptions.RevocationRegistryDirectory}'.");
             }
 
             try
             {
-                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile already saved on device ... ?");
+                Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Tailsfile already saved on device ... ?");
                 if (!File.Exists(tailsfile))
                 {
-                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - No");
+                    Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - No");
                     var bytes = await HttpClient.GetByteArrayAsync(new Uri(tailsUri));
 
                     // Check hash
@@ -113,11 +124,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
                         path: tailsfile,
                         bytes: bytes);
 
-                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile was saved on device?");
+                    Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Tailsfile was saved on device?");
                 }
                 else
                 {
-                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Yes");
+                    Logger.LogDebug($"Aries method - EnsureTailsExistsAsync() - Yes");
                 }
             }
             catch (Exception e)
