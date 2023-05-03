@@ -533,11 +533,16 @@ namespace Hyperledger.Aries.Features.PresentProof
         public virtual async Task<List<IssueCredential.Credential>> ListCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofRequest proofRequest, string attributeReferent)
         {
+            Debug.WriteLine($"Called {nameof(ListCredentialsForProofRequestAsync)}");
+
             var attributeInfo = await GetProofAttributeInfo(proofRequest, attributeReferent);
             if (attributeInfo == null)
             {
+                Debug.WriteLine("Hyperledger Aries - ProofAttributeInfo is null, returning emptyList of type IssueCredential.Credential");
                 return new List<IssueCredential.Credential>();
             }
+
+            Debug.WriteLine($"Hyperledger Aries - ProofAttributeInfo is: {JsonConvert.SerializeObject(attributeInfo)}");
             var credentials = await ProverSearchCredentialsForProofRequestAsync(agentContext, attributeInfo);
 
             return credentials.Where(x => CheckAttributes(x, attributeInfo) == true).ToList();
@@ -1248,26 +1253,35 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private async Task<ProofAttributeInfo> GetProofAttributeInfo(ProofRequest proofRequest, string attributeReferent)
         {
+            Debug.WriteLine($"Called {nameof(GetProofAttributeInfo)}");
             ProofAttributeInfo proofAttributeInfo;
+
+            Debug.WriteLine($"Hyperledger Aries - Searching ProofAttributeInfo for attributeReferent: {attributeReferent}");
             bool found = proofRequest.RequestedAttributes.TryGetValue(attributeReferent, out proofAttributeInfo);
             if (!found)
             {
                 ProofPredicateInfo proofPredicateInfo;
                 proofRequest.RequestedPredicates.TryGetValue(attributeReferent, out proofPredicateInfo);
+                Debug.WriteLine($"Hyperledger Aries - Did not find ProofAttributeInfo but maybe ProofPredicateInfo? : {JsonConvert.SerializeObject(proofPredicateInfo)}");
                 return proofPredicateInfo;
             }
+
+            Debug.WriteLine($"Hyperledger Aries - Found ProofAttributeInfo: {JsonConvert.SerializeObject(proofAttributeInfo)}");
             return proofAttributeInfo;
         }
 
         private async Task<List<IssueCredential.Credential>> ProverSearchCredentialsForProofRequestAsync(IAgentContext agentContext,
             ProofAttributeInfo attributeInfo)
         {
+            Debug.WriteLine($"Called: {nameof(ProverSearchCredentialsForProofRequestAsync)}");
+
             List<IssueCredential.Credential> result = new List<IssueCredential.Credential>();
 
             List<ISearchQuery> queryList = new List<ISearchQuery>();
 
             queryList.AddRange(await CheckRestrictions(attributeInfo.Restrictions));
 
+            Debug.WriteLine($"Hyperledger Aries - Building SearchQuery to look for potential credentials");
             ISearchQuery finalQuery;
             if (queryList.Count > 1)
             {
@@ -1279,15 +1293,20 @@ namespace Hyperledger.Aries.Features.PresentProof
             }
             else
             {
+                Debug.WriteLine($"Hyperledger Aries - No SearchQuery provided returning empty List of type IssueCredential.Credential");
                 return result;
             }
 
+            Debug.WriteLine($"Hyperledger Aries - Search Credentials in wallet for query: {JsonConvert.SerializeObject(finalQuery)}");
             var credRecs = await RecordService.SearchAsync<CredentialRecord>(agentContext.AriesStorage, finalQuery, count: 2147483647);
+            Debug.WriteLine($"Hyperledger Aries - Found following Credentials : {JsonConvert.SerializeObject(credRecs)}");
+
             foreach (var cred in credRecs)
             {
                 if (!string.IsNullOrEmpty(cred.CredentialJson))
                 {
                     result.Add(ConvertCredential(cred));
+                    Debug.WriteLine($"Hyperledger Aries - Added Credential with Id : {cred.Id} to list of suitable Credentials for ProofRequest");
                 }
             }
 
@@ -1296,9 +1315,12 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private async Task<List<ISearchQuery>> CheckRestrictions(IEnumerable<AttributeFilter> restrictions)
         {
+            Debug.WriteLine($"Called: {nameof(CheckRestrictions)}");
+            Debug.WriteLine($"Hyperledger Aries - Provided restrictions are {JsonConvert.SerializeObject(restrictions)}");
+
             List<ISearchQuery> queryList = new List<ISearchQuery>();
 
-            if (restrictions == null)
+            if (restrictions == null || !restrictions.Any())
             {
                 queryList.Add(SearchQuery.Equal("State", "Issued"));
             }
@@ -1338,16 +1360,19 @@ namespace Hyperledger.Aries.Features.PresentProof
                     queryList.Add(SearchQuery.And(currentQueryList.ToArray()));
                 }
             }
-
+            Debug.WriteLine($"Hyperledger Aries - Returning SearchQuery {JsonConvert.SerializeObject(queryList)}");
             return queryList;
         }
 
         private bool CheckAttributes(IssueCredential.Credential credential, ProofAttributeInfo attributeInfo)
         {
+            Debug.WriteLine($"Called: {nameof(CheckAttributes)}");
             if (attributeInfo.Name != null)
             {
+                Debug.WriteLine($"Check for name field to contain: {attributeInfo.Name}");
                 if (credential.CredentialInfo.Attributes.ContainsKey(attributeInfo.Name))
                 {
+                    Debug.WriteLine($"Attribute contained in name field");
                     return true;
                 }
             }
@@ -1355,11 +1380,13 @@ namespace Hyperledger.Aries.Features.PresentProof
             {
                 foreach (string name in attributeInfo.Names)
                 {
+                    Debug.WriteLine($"Check for names list field to contain: {name}");
                     if (!credential.CredentialInfo.Attributes.ContainsKey(name))
                     {
                         return false;
                     }
                 }
+                Debug.WriteLine($"All attributes contained in names list field");
                 return true;
             }
 
@@ -1368,6 +1395,7 @@ namespace Hyperledger.Aries.Features.PresentProof
 
         private IssueCredential.Credential ConvertCredential(CredentialRecord credentialRecord)
         {
+            Debug.WriteLine($"Called: {nameof(ConvertCredential)}");
             anoncreds_rs_dotnet.Models.Credential anoncredsCredential = JsonConvert.DeserializeObject< anoncreds_rs_dotnet.Models.Credential>(credentialRecord.CredentialJson);
             IssueCredential.Credential issueCredential = new IssueCredential.Credential
             {
