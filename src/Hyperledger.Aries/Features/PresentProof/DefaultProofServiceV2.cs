@@ -195,7 +195,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson: revRegDefJson,
+                        revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
                         newRevStatusListJson: revocationStateListJson,
                         revRegIndex: credentialRevocationId,
                         tailsPath: tailsFilePath,
@@ -293,7 +293,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson: revRegDefJson,
+                        revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
                         newRevStatusListJson: revocationStateListJson,
                         revRegIndex: credentialRevocationId,
                         tailsPath: tailsFilePath,
