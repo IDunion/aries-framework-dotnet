@@ -922,9 +922,7 @@ namespace Hyperledger.Aries.Tests.Protocols
             clientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(new HttpClient());
 
-            var logger = new Mock<ILogger<DefaultTailsServiceV2>>();
-
-            var tailsService = new DefaultTailsServiceV2(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object, logger.Object);
+            var tailsService = new DefaultTailsServiceV2(ledgerService, Options.Create(new Configuration.AgentOptions()), clientFactory.Object);
 
             _schemaService = new DefaultSchemaServiceV2(provisioning, _recordService, ledgerService, paymentService, Options.Create(new Configuration.AgentOptions()));
 
