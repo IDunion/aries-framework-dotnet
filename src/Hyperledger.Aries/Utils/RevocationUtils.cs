@@ -25,19 +25,19 @@ namespace Hyperledger.Aries.Utils
             bool isIssuanceByDefault = revocationRegistryDefinition.Value.IssuanceType == IssuerType.ISSUANCE_BY_DEFAULT.ToString();
 
             // 0 means unrevoked, 1 means revoked
-            bool defaultState = !isIssuanceByDefault;
+            byte defaultState = isIssuanceByDefault? (byte)0 : (byte)1;
 
             int maxCredNumber = revocationRegistryDefinition.Value.MaxCredNum;
 
             // Fill with default value
-            List<bool> revocationList = Enumerable.Repeat(element: defaultState, count: maxCredNumber).ToList();
+            List<byte> revocationList = Enumerable.Repeat(element: defaultState, count: maxCredNumber).ToList();
 
             IEnumerable<int> issuedList =
                 delta.Value.Issued == null ? new List<int>() : delta.Value.Issued.Select(x => (int)x);
             // Set all `issuer` indexes to 0 (not revoked)
             foreach (int issued in issuedList)
             {
-                revocationList[issued] = false;
+                revocationList[issued] = (byte)0;
             }
             
             IEnumerable<int> revokedList = 
@@ -45,7 +45,7 @@ namespace Hyperledger.Aries.Utils
             // Set all `revoked` indexes to 1 (revoked)
             foreach (int revoked in revokedList)
             {
-                revocationList[revoked] = true;
+                revocationList[revoked] = (byte)1;
             }
 
             RevocationStatusList revStatusList = new()

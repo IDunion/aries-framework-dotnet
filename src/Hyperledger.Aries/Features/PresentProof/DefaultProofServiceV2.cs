@@ -192,6 +192,8 @@ namespace Hyperledger.Aries.Features.PresentProof
                     Debug.WriteLine($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync() - RevocationStatusListJson is: {revocationStateListJson}");
 
                     long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
+                    Debug.WriteLine($"Hyperledger Aries - credentialRevocationIdx is: '{credentialRevocationId}'");
+
                     var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
                     string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
