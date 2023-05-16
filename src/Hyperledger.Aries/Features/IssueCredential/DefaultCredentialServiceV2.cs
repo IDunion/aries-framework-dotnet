@@ -28,6 +28,7 @@ using Newtonsoft.Json.Linq;
 using Polly;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -475,7 +476,15 @@ namespace Hyperledger.Aries.Features.IssueCredential
             //workaround
             credentialDefinition.ObjectJson = credentialDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.CredDef);
             //
-
+            Debug.WriteLine($"Aries Framework - Calling AnoncredsWrapper ProcessCredentialAsync");
+            Debug.WriteLine($"Aries Framework - ...");
+            Debug.WriteLine($"Aries Framework - CredentialDefinitionJson is {credentialDefinition.ObjectJson}");
+            Debug.WriteLine($"Aries Framework - CredentialRequestMetadataJson is {credentialRecord.CredentialRequestMetadataJson}");
+            Debug.WriteLine($"Aries Framework - LinkSecret is {linkSecret}");
+            Debug.WriteLine($"Aries Framework - RevocationRegistryDefinitionJson is {revocationRegistryDefinitionJson}");
+            Debug.WriteLine($"Aries Framework - ...");
+            Debug.WriteLine($"Aries Framework - Calling AnoncredsWrapper ProcessCredentialAsync");
+            Debug.WriteLine($"Aries Framework - CredentialJson is: {credentialJson}");
             string credentialProcessedJson = await Anoncreds.CredentialApi.ProcessCredentialAsync(
                 credentialJson,
                 credentialRecord.CredentialRequestMetadataJson,
@@ -483,7 +492,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 credentialDefinition.ObjectJson,
                 revocationRegistryDefinitionJson
                 );
-            string credentialProcessedId = await Anoncreds.CredentialApi.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
+            Debug.WriteLine($"Aries Framework - Processsed CredentialJson is: {credentialProcessedJson}");
+
+            //string credentialProcessedId = await Anoncreds.CredentialApi.GetCredentialAttributeAsync(credentialProcessedJson, "cred_def_id");
+            //Debug.WriteLine($"Aries Framework - credentialProcessedId is: {credentialProcessedId} ---> IS THIS ERROR? IS THIS CRED_DEF_ID?");
+            Debug.WriteLine($"Aries Framework - credentialRecordId is: {credentialRecord.Id}");
 
             JObject credJObject = JObject.Parse(credentialProcessedJson);
             try
@@ -498,7 +511,8 @@ namespace Hyperledger.Aries.Features.IssueCredential
             credentialRecord.CredentialJson = JsonConvert.SerializeObject(credJObject);
             credentialRecord.SchemaId = schemaId;
 
-            credentialRecord.CredentialId = credentialProcessedId;
+            //credentialRecord.CredentialId = credentialProcessedId;
+            credentialRecord.CredentialId = credentialRecord.Id;
             await credentialRecord.TriggerAsync(CredentialTrigger.Issue);
             await RecordService.UpdateAsync(agentContext.AriesStorage, credentialRecord);
             EventAggregator.Publish(new ServiceMessageProcessingEvent
