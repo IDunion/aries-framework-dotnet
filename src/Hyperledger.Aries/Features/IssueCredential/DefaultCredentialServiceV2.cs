@@ -463,7 +463,9 @@ namespace Hyperledger.Aries.Features.IssueCredential
                 // If credential supports revocation, lookup registry definition
                 AriesResponse revocationRegistry =
                     await LedgerService.LookupRevocationRegistryDefinitionAsync(agentContext, revRegId);
-                revocationRegistryDefinitionJson = revocationRegistry.ObjectJson;
+                //workaround
+                revocationRegistryDefinitionJson = revocationRegistry.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef);
+                //
                 credentialRecord.RevocationRegistryId = revRegId;
             }
 
