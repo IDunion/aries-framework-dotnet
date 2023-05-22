@@ -1151,7 +1151,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     issuerDid: IssuerConfiguration.IssuerDid,
                     name: $"test-schema-{Guid.NewGuid()}",
                     version: "1.0",
-                    attributeNames: new[] { "name", "age" });
+                    attributeNames: new[] { "firstname", "lastname", "age", "employer" });
 
             RevocableCredentialDefinitionId = await PairedAgents.Agent1.Provider.GetRequiredService<ISchemaService>()
                 .CreateCredentialDefinitionAsync(
@@ -1218,7 +1218,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1282,7 +1284,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1316,8 +1320,10 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
-                        new CredentialPreviewAttribute("age", "22")
+                        new CredentialPreviewAttribute("firstname", "fname2"),
+                        new CredentialPreviewAttribute("lastname", "lname2"),
+                        new CredentialPreviewAttribute("employer", "empl2"),
+                        new CredentialPreviewAttribute("age", "33")
                     }
                 });
             await IssuerMessageService.SendAsync(IssuerAgentContext, offer2, PairedAgents.Connection1);
@@ -1350,8 +1356,10 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
-                        new CredentialPreviewAttribute("age", "22")
+                        new CredentialPreviewAttribute("firstname", "fname3"),
+                        new CredentialPreviewAttribute("lastname", "lname3"),
+                        new CredentialPreviewAttribute("employer", "empl3"),
+                        new CredentialPreviewAttribute("age", "44")
                     }
                 });
             await IssuerMessageService.SendAsync(IssuerAgentContext, offer3, PairedAgents.Connection1);
@@ -1413,7 +1421,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1463,8 +1473,10 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
-                        new CredentialPreviewAttribute("age", "22")
+                        new CredentialPreviewAttribute("firstname", "fname2"),
+                        new CredentialPreviewAttribute("lastname", "lname2"),
+                        new CredentialPreviewAttribute("employer", "empl2"),
+                        new CredentialPreviewAttribute("age", "33")
                     }
                 });
             await IssuerMessageService.SendAsync(IssuerAgentContext, offer2, PairedAgents.Connection1);
@@ -1522,7 +1534,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1557,7 +1571,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     Nonce = await AnonCreds.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
-                        { "id-verification", new ProofAttributeInfo { Names = new [] { "name", "age" } } }
+                        { "id-verification", new ProofAttributeInfo { Names = new [] { "firstname", "age" } } }
                     }
                 });
 
@@ -1595,7 +1609,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1629,7 +1645,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     Nonce = await AnonCreds.GenerateNonceAsync(),
                     RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
                     {
-                        { "id-verification", new ProofAttributeInfo { Names = new [] { "name", "age" } } }
+                        { "id-verification", new ProofAttributeInfo { Names = new [] { "firstname", "age" } } }
                     },
                     NonRevoked = new RevocationInterval
                     {
@@ -1671,7 +1687,9 @@ namespace Hyperledger.Aries.Tests.Protocols
                     IssuerDid = IssuerConfiguration.IssuerDid,
                     CredentialAttributeValues = new[]
                     {
-                        new CredentialPreviewAttribute("name", "random"),
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
                         new CredentialPreviewAttribute("age", "22")
                     }
                 });
@@ -1707,7 +1725,7 @@ namespace Hyperledger.Aries.Tests.Protocols
                     {
                         { "id-verification", new ProofAttributeInfo
                             {
-                                Names = new [] { "name", "age" },
+                                Names = new [] { "firstname", "age" },
                                 NonRevoked = new RevocationInterval
                                 {
                                     From = 0,
@@ -1728,6 +1746,386 @@ namespace Hyperledger.Aries.Tests.Protocols
                     RequestedAttributes = new Dictionary<string, RequestedAttribute>
                     {
                         { "id-verification", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        }
+                    }
+                });
+
+            proofRecordIssuer = await IssuerProofService.ProcessPresentationAsync(IssuerAgentContext, presentationMessage);
+
+            var valid = await IssuerProofService.VerifyProofAsync(IssuerAgentContext, proofRecordIssuer.Id);
+            Assert.True(valid);
+        }
+
+        [Fact(DisplayName = "AppDebugging1 - Test verification with one attributeKey relating to one credential.")]
+        public async Task CanVerifyWithNonRevokedSetOnAttributeLevelOneAttrKey()
+        {
+            var (offer, record) = await IssuerCredentialService
+                .CreateOfferAsync(IssuerAgentContext, new OfferConfiguration
+                {
+                    CredentialDefinitionId = RevocableCredentialDefinitionId,
+                    IssuerDid = IssuerConfiguration.IssuerDid,
+                    CredentialAttributeValues = new[]
+                    {
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
+                        new CredentialPreviewAttribute("age", "22")
+                    }
+                });
+            await IssuerMessageService.SendAsync(IssuerAgentContext, offer, PairedAgents.Connection1);
+
+            var credentialRecordOnHolderSide = (await HolderCredentialService.ListAsync(HolderAgentContext))
+                .First(credentialRecord => credentialRecord.State == CredentialState.Offered);
+            var (request, _) = await HolderCredentialService.CreateRequestAsync(HolderAgentContext, credentialRecordOnHolderSide.Id);
+            await HolderMessageService.SendAsync(HolderAgentContext, request, PairedAgents.Connection2);
+
+            var credentialRecordOnIssuerSide = (await IssuerCredentialService.ListRequestsAsync(
+                IssuerAgentContext)).First();
+            var (issuance, _) = await IssuerCredentialService.CreateCredentialAsync(IssuerAgentContext, credentialRecordOnIssuerSide.Id);
+            await IssuerMessageService.SendAsync(IssuerAgentContext, issuance, PairedAgents.Connection1);
+
+            credentialRecordOnHolderSide =
+                await HolderCredentialService.GetAsync(HolderAgentContext,
+                    credentialRecordOnHolderSide.Id);
+            credentialRecordOnIssuerSide =
+                await IssuerCredentialService.GetAsync(IssuerAgentContext,
+                    credentialRecordOnIssuerSide.Id);
+
+            Assert.Equal(CredentialState.Issued, credentialRecordOnHolderSide.State);
+            Assert.Equal(CredentialState.Issued, credentialRecordOnIssuerSide.State);
+
+            var (requestPresentationMessage, proofRecordIssuer) = await IssuerProofService
+                .CreateRequestAsync(IssuerAgentContext, new ProofRequest
+                {
+                    Name = "ProofV2",
+                    Version = "0.0.1b",
+                    Nonce = await AnonCreds.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        { "grp_1", new ProofAttributeInfo
+                            {
+                                Names = new [] { "firstname"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        }
+                    },
+                    RequestedPredicates = new Dictionary<string, ProofPredicateInfo>()
+                });
+
+            var proofRecordHolder = await HolderProofService.ProcessRequestAsync(HolderAgentContext, requestPresentationMessage, PairedAgents.Connection2);
+            var availableCredentials = await HolderProofService
+                .ListCredentialsForProofRequestAsync(HolderAgentContext, proofRecordHolder.RequestJson.ToObject<ProofRequest>(), "grp_1");
+
+            var (presentationMessage, _) = await HolderProofService.CreatePresentationAsync(
+                HolderAgentContext, proofRecordHolder.Id, new RequestedCredentials
+                {
+                    RequestedAttributes = new Dictionary<string, RequestedAttribute>
+                    {
+                        {
+                            "grp_1", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        }
+                    }
+                });
+
+            proofRecordIssuer = await IssuerProofService.ProcessPresentationAsync(IssuerAgentContext, presentationMessage);
+
+            var valid = await IssuerProofService.VerifyProofAsync(IssuerAgentContext, proofRecordIssuer.Id);
+            Assert.True(valid);
+        }
+
+        [Fact(DisplayName = "AppDebugging3 - Test verification with one attributeKey (with two attributes) relating to one credential.")]
+        public async Task CanVerifyWithNonRevokedSetOnAttributeLevelOneAttrKeyWithTwoAttributes()
+        {
+            var (offer, record) = await IssuerCredentialService
+                .CreateOfferAsync(IssuerAgentContext, new OfferConfiguration
+                {
+                    CredentialDefinitionId = RevocableCredentialDefinitionId,
+                    IssuerDid = IssuerConfiguration.IssuerDid,
+                    CredentialAttributeValues = new[]
+                    {
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
+                        new CredentialPreviewAttribute("age", "22")
+                    }
+                });
+            await IssuerMessageService.SendAsync(IssuerAgentContext, offer, PairedAgents.Connection1);
+
+            var credentialRecordOnHolderSide = (await HolderCredentialService.ListAsync(HolderAgentContext))
+                .First(credentialRecord => credentialRecord.State == CredentialState.Offered);
+            var (request, _) = await HolderCredentialService.CreateRequestAsync(HolderAgentContext, credentialRecordOnHolderSide.Id);
+            await HolderMessageService.SendAsync(HolderAgentContext, request, PairedAgents.Connection2);
+
+            var credentialRecordOnIssuerSide = (await IssuerCredentialService.ListRequestsAsync(
+                IssuerAgentContext)).First();
+            var (issuance, _) = await IssuerCredentialService.CreateCredentialAsync(IssuerAgentContext, credentialRecordOnIssuerSide.Id);
+            await IssuerMessageService.SendAsync(IssuerAgentContext, issuance, PairedAgents.Connection1);
+
+            credentialRecordOnHolderSide =
+                await HolderCredentialService.GetAsync(HolderAgentContext,
+                    credentialRecordOnHolderSide.Id);
+            credentialRecordOnIssuerSide =
+                await IssuerCredentialService.GetAsync(IssuerAgentContext,
+                    credentialRecordOnIssuerSide.Id);
+
+            Assert.Equal(CredentialState.Issued, credentialRecordOnHolderSide.State);
+            Assert.Equal(CredentialState.Issued, credentialRecordOnIssuerSide.State);
+
+            var (requestPresentationMessage, proofRecordIssuer) = await IssuerProofService
+                .CreateRequestAsync(IssuerAgentContext, new ProofRequest
+                {
+                    Name = "ProofV2",
+                    Version = "0.0.1b",
+                    Nonce = await AnonCreds.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        { "grp_1", new ProofAttributeInfo
+                            {
+                                Names = new [] { "firstname", "employer"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        }
+                    },
+                    RequestedPredicates = new Dictionary<string, ProofPredicateInfo>()
+                });
+
+            var proofRecordHolder = await HolderProofService.ProcessRequestAsync(HolderAgentContext, requestPresentationMessage, PairedAgents.Connection2);
+            var availableCredentials = await HolderProofService
+                .ListCredentialsForProofRequestAsync(HolderAgentContext, proofRecordHolder.RequestJson.ToObject<ProofRequest>(), "grp_1");
+
+            var (presentationMessage, _) = await HolderProofService.CreatePresentationAsync(
+                HolderAgentContext, proofRecordHolder.Id, new RequestedCredentials
+                {
+                    RequestedAttributes = new Dictionary<string, RequestedAttribute>
+                    {
+                        {
+                            "grp_1", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        }
+                    }
+                });
+
+            proofRecordIssuer = await IssuerProofService.ProcessPresentationAsync(IssuerAgentContext, presentationMessage);
+
+            var valid = await IssuerProofService.VerifyProofAsync(IssuerAgentContext, proofRecordIssuer.Id);
+            Assert.True(valid);
+        }
+
+        [Fact(DisplayName = "AppDebugging2 - Test verification with two attributeKeys relating to one credential.")]
+        public async Task CanVerifyWithNonRevokedSetOnAttributeLevelTwoAttrKey()
+        {
+            var (offer, record) = await IssuerCredentialService
+                .CreateOfferAsync(IssuerAgentContext, new OfferConfiguration
+                {
+                    CredentialDefinitionId = RevocableCredentialDefinitionId,
+                    IssuerDid = IssuerConfiguration.IssuerDid,
+                    CredentialAttributeValues = new[]
+                    {
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
+                        new CredentialPreviewAttribute("age", "22")
+                    }
+                });
+            await IssuerMessageService.SendAsync(IssuerAgentContext, offer, PairedAgents.Connection1);
+
+            var credentialRecordOnHolderSide = (await HolderCredentialService.ListAsync(HolderAgentContext))
+                .First(credentialRecord => credentialRecord.State == CredentialState.Offered);
+            var (request, _) = await HolderCredentialService.CreateRequestAsync(HolderAgentContext, credentialRecordOnHolderSide.Id);
+            await HolderMessageService.SendAsync(HolderAgentContext, request, PairedAgents.Connection2);
+
+            var credentialRecordOnIssuerSide = (await IssuerCredentialService.ListRequestsAsync(
+                IssuerAgentContext)).First();
+            var (issuance, _) = await IssuerCredentialService.CreateCredentialAsync(IssuerAgentContext, credentialRecordOnIssuerSide.Id);
+            await IssuerMessageService.SendAsync(IssuerAgentContext, issuance, PairedAgents.Connection1);
+
+            credentialRecordOnHolderSide =
+                await HolderCredentialService.GetAsync(HolderAgentContext,
+                    credentialRecordOnHolderSide.Id);
+            credentialRecordOnIssuerSide =
+                await IssuerCredentialService.GetAsync(IssuerAgentContext,
+                    credentialRecordOnIssuerSide.Id);
+
+            Assert.Equal(CredentialState.Issued, credentialRecordOnHolderSide.State);
+            Assert.Equal(CredentialState.Issued, credentialRecordOnIssuerSide.State);
+
+            var (requestPresentationMessage, proofRecordIssuer) = await IssuerProofService
+                .CreateRequestAsync(IssuerAgentContext, new ProofRequest
+                {
+                    Name = "ProofV2",
+                    Version = "0.0.1b",
+                    Nonce = await AnonCreds.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        { "grp_1", new ProofAttributeInfo
+                            {
+                                Names = new [] { "firstname"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        },
+                        { "grp_2", new ProofAttributeInfo
+                            {
+                                Names = new [] { "lastname"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        }
+                    },
+                    RequestedPredicates = new Dictionary<string, ProofPredicateInfo>()
+                });
+
+            var proofRecordHolder = await HolderProofService.ProcessRequestAsync(HolderAgentContext, requestPresentationMessage, PairedAgents.Connection2);
+            var availableCredentials = await HolderProofService
+                .ListCredentialsForProofRequestAsync(HolderAgentContext, proofRecordHolder.RequestJson.ToObject<ProofRequest>(), "grp_1");
+
+            var (presentationMessage, _) = await HolderProofService.CreatePresentationAsync(
+                HolderAgentContext, proofRecordHolder.Id, new RequestedCredentials
+                {
+                    RequestedAttributes = new Dictionary<string, RequestedAttribute>
+                    {
+                        { 
+                            "grp_1", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        },
+                        {
+                            "grp_2", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        }
+                    }
+                });
+
+            proofRecordIssuer = await IssuerProofService.ProcessPresentationAsync(IssuerAgentContext, presentationMessage);
+
+            var valid = await IssuerProofService.VerifyProofAsync(IssuerAgentContext, proofRecordIssuer.Id);
+            Assert.True(valid);
+        }
+
+        [Fact(DisplayName = "AppDebugging4 - Test verification with two attributeKeys (one with two attributes) relating to one credential.")]
+        public async Task CanVerifyWithNonRevokedSetOnAttributeLevelTwoAttrKeyTwoAttributes()
+        {
+            var (offer, record) = await IssuerCredentialService
+                .CreateOfferAsync(IssuerAgentContext, new OfferConfiguration
+                {
+                    CredentialDefinitionId = RevocableCredentialDefinitionId,
+                    IssuerDid = IssuerConfiguration.IssuerDid,
+                    CredentialAttributeValues = new[]
+                    {
+                        new CredentialPreviewAttribute("firstname", "fname"),
+                        new CredentialPreviewAttribute("lastname", "lname"),
+                        new CredentialPreviewAttribute("employer", "empl"),
+                        new CredentialPreviewAttribute("age", "22")
+                    }
+                });
+            await IssuerMessageService.SendAsync(IssuerAgentContext, offer, PairedAgents.Connection1);
+
+            var credentialRecordOnHolderSide = (await HolderCredentialService.ListAsync(HolderAgentContext))
+                .First(credentialRecord => credentialRecord.State == CredentialState.Offered);
+            var (request, _) = await HolderCredentialService.CreateRequestAsync(HolderAgentContext, credentialRecordOnHolderSide.Id);
+            await HolderMessageService.SendAsync(HolderAgentContext, request, PairedAgents.Connection2);
+
+            var credentialRecordOnIssuerSide = (await IssuerCredentialService.ListRequestsAsync(
+                IssuerAgentContext)).First();
+            var (issuance, _) = await IssuerCredentialService.CreateCredentialAsync(IssuerAgentContext, credentialRecordOnIssuerSide.Id);
+            await IssuerMessageService.SendAsync(IssuerAgentContext, issuance, PairedAgents.Connection1);
+
+            credentialRecordOnHolderSide =
+                await HolderCredentialService.GetAsync(HolderAgentContext,
+                    credentialRecordOnHolderSide.Id);
+            credentialRecordOnIssuerSide =
+                await IssuerCredentialService.GetAsync(IssuerAgentContext,
+                    credentialRecordOnIssuerSide.Id);
+
+            Assert.Equal(CredentialState.Issued, credentialRecordOnHolderSide.State);
+            Assert.Equal(CredentialState.Issued, credentialRecordOnIssuerSide.State);
+
+            var (requestPresentationMessage, proofRecordIssuer) = await IssuerProofService
+                .CreateRequestAsync(IssuerAgentContext, new ProofRequest
+                {
+                    Name = "ProofV2",
+                    Version = "0.0.1b",
+                    Nonce = await AnonCreds.GenerateNonceAsync(),
+                    RequestedAttributes = new Dictionary<string, ProofAttributeInfo>
+                    {
+                        { "grp_1", new ProofAttributeInfo
+                            {
+                                Names = new [] { "firstname"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        },
+                        { "grp_2", new ProofAttributeInfo
+                            {
+                                Names = new [] { "lastname", "employer"},
+                                Restrictions = new List<AttributeFilter>(),
+                                NonRevoked = new RevocationInterval
+                                {
+                                    From = 0,
+                                    To = _now
+                                }
+                            }
+                        }
+                    },
+                    RequestedPredicates = new Dictionary<string, ProofPredicateInfo>()
+                });
+
+            var proofRecordHolder = await HolderProofService.ProcessRequestAsync(HolderAgentContext, requestPresentationMessage, PairedAgents.Connection2);
+            var availableCredentials = await HolderProofService
+                .ListCredentialsForProofRequestAsync(HolderAgentContext, proofRecordHolder.RequestJson.ToObject<ProofRequest>(), "grp_1");
+
+            var (presentationMessage, _) = await HolderProofService.CreatePresentationAsync(
+                HolderAgentContext, proofRecordHolder.Id, new RequestedCredentials
+                {
+                    RequestedAttributes = new Dictionary<string, RequestedAttribute>
+                    {
+                        {
+                            "grp_1", new RequestedAttribute
+                            {
+                                CredentialId = availableCredentials.First().CredentialInfo.Referent,
+                                Revealed = true
+                            }
+                        },
+                        {
+                            "grp_2", new RequestedAttribute
                             {
                                 CredentialId = availableCredentials.First().CredentialInfo.Referent,
                                 Revealed = true

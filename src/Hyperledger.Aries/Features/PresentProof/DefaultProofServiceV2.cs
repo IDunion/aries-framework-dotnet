@@ -118,6 +118,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             var credentialObjects = new List<CredentialInfo>();
             var credentialEntryJsons = new List<string>();
             var credentialProofJsons = new List<string>();
+            //There can be more credProofJsons relating to one entry in credEntryJson indicated by index in credProofJsons
+            //index 0 relates to first element of credentialEntryJsons, index 1 to second and so on
+            var credentialEntryProofMapping = new Dictionary<string, int>();
             int index = 0;
 
             Debug.WriteLine($"Hyperledger Aries - Going into foreach 'RequestedAttributes':");
@@ -128,109 +131,116 @@ namespace Hyperledger.Aries.Features.PresentProof
                 anoncreds_rs_dotnet.Models.Credential credential = await Anoncreds.CredentialApi.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
                 Debug.WriteLine($"Hyperledger Aries - Got credential from wallet: '{JsonConvert.SerializeObject(credentialRecord)}'");
 
-                //credential already added to credentialObjects, no need for adding several times in credentialEntryJsons 
-                if (credentialObjects.Any(x => x.Referent.Equals(credentialRecord.Id)))
+                //check if credential already added to credentialObjects, no need for adding same credential in credentialEntryJsons and building revocationStates several times
+                if (!credentialObjects.Any(x => x.Referent.Equals(credentialRecord.Id)))
                 {
-                    Debug.WriteLine($"Hyperledger Aries - Credential referent already in list credentialObjects: '{credentialRecord.Id}'");
-                    continue;
-                }
+                    credentialEntryProofMapping.Add(credentialRecord.Id, index);
 
-                Dictionary<string, string> attributes = new();
-                credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
+                    Dictionary<string, string> attributes = new();
+                    credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
 
-                Debug.WriteLine($"Hyperledger Aries - Credential attributes are: '{JsonConvert.SerializeObject(attributes)}'");
+                    Debug.WriteLine($"Hyperledger Aries - Credential attributes are: '{JsonConvert.SerializeObject(attributes)}'");
 
-                var credentialRevocationIdx = "";
-                if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
-                    credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
-                else
-                    credentialRevocationIdx = null;
+                    var credentialRevocationIdx = "";
+                    if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
+                        credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+                    else
+                        credentialRevocationIdx = null;
 
-                credentialObjects.Add(new CredentialInfo {
-                    SchemaId = credentialRecord.SchemaId,
-                    CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
-                    RevocationRegistryId = credentialRecord.RevocationRegistryId,
-                    Referent = credentialRecord.Id,
-                    CredentialRevocationId = credentialRevocationIdx,
-                    Attributes = attributes
-                });
+                    credentialObjects.Add(new CredentialInfo {
+                        SchemaId = credentialRecord.SchemaId,
+                        CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
+                        RevocationRegistryId = credentialRecord.RevocationRegistryId,
+                        Referent = credentialRecord.Id,
+                        CredentialRevocationId = credentialRevocationIdx,
+                        Attributes = attributes
+                    });
 
-                Debug.WriteLine($"Hyperledger Aries - Current CredentialInfo list is: '{JsonConvert.SerializeObject(credentialObjects)}'");
+                    Debug.WriteLine($"Hyperledger Aries - Current CredentialInfo list is: '{JsonConvert.SerializeObject(credentialObjects)}'");
 
-                if (credentialRecord.RevocationRegistryId != null)
-                {
-                    Debug.WriteLine($"Hyperledger Aries - Credential supports revocation with RevocationID: '{credentialRecord.RevocationRegistryId}'");
-                    uint nonRevokedTo = 0;
-                    if (proofRequest.NonRevoked != null)
-                        nonRevokedTo = proofRequest.NonRevoked.To;
-                    else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                    if (credentialRecord.RevocationRegistryId != null)
                     {
-                        nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
-                    }
-                    Debug.WriteLine($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
+                        Debug.WriteLine($"Hyperledger Aries - Credential supports revocation with RevocationID: '{credentialRecord.RevocationRegistryId}'");
+                        uint nonRevokedTo = 0;
+                        if (proofRequest.NonRevoked != null)
+                            nonRevokedTo = proofRequest.NonRevoked.To;
+                        else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                        {
+                            nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
+                        }
+                        Debug.WriteLine($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
 
-                    var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                        var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                            agentContext: agentContext,
+                            registryId: credential.RevocationRegistryId);
+
+                        var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                         agentContext: agentContext,
-                        registryId: credential.RevocationRegistryId);
+                        revocationRegistryId: credential.RevocationRegistryId,
+                        // Ledger will not return correct revocation state if the 'from' field
+                        // is other than 0
+                        from: 0,
+                        to: nonRevokedTo);
 
-                    var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
-                    agentContext: agentContext,
-                    revocationRegistryId: credential.RevocationRegistryId,
-                    // Ledger will not return correct revocation state if the 'from' field
-                    // is other than 0
-                    from: 0,
-                    to: nonRevokedTo);
+                        string revRegDefJson = registryDefinition.ObjectJson;
+                        string revRegDeltaJson = registryDelta.ObjectJson;
+                        Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDefJson is: '{revRegDefJson}'");
+                        Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDeltaJson is: '{revRegDeltaJson}'");
 
-                    string revRegDefJson = registryDefinition.ObjectJson;
-                    string revRegDeltaJson = registryDelta.ObjectJson;
-                    Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDefJson is: '{revRegDefJson}'");
-                    Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDeltaJson is: '{revRegDeltaJson}'");
+                        //Convert 'old' revocation delta in 'new' revocationStatusList
+                        string revocationStateListJson =
+                            RevocationUtils.ConvertDeltaToRevocationStatusListJson(
+                                revRegDefId: credential.RevocationRegistryId,
+                                revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                                deltaJson: revRegDeltaJson,
+                                timestamp: (long)registryDelta.Timestamp
+                                );
 
-                    //Convert 'old' revocation delta in 'new' revocationStatusList
-                    string revocationStateListJson =
-                        RevocationUtils.ConvertDeltaToRevocationStatusListJson(
-                            revRegDefId: credential.RevocationRegistryId,
-                            revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
-                            deltaJson: revRegDeltaJson,
-                            timestamp: (long)registryDelta.Timestamp
-                            );
+                        Debug.WriteLine($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync()");
+                        Debug.WriteLine($"Hyperledger Aries - converted revocationStatusList is {revocationStateListJson}");
 
-                    Debug.WriteLine($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync()");
-                    Debug.WriteLine($"Hyperledger Aries - converted revocationStatusList is {revocationStateListJson}");
+                        long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
+                        Debug.WriteLine($"Hyperledger Aries - credentialRevocationIdx is: '{credentialRevocationId}'");
 
-                    long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
-                    Debug.WriteLine($"Hyperledger Aries - credentialRevocationIdx is: '{credentialRevocationId}'");
+                        var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
-                    var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
+                        string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
+                            revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                            newRevStatusListJson: revocationStateListJson,
+                            revRegIndex: credentialRevocationId,
+                            tailsPath: tailsFilePath,
+                            revStateJson: null,
+                            oldRevStatusListJson: null);
 
-                    string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
-                        newRevStatusListJson: revocationStateListJson,
-                        revRegIndex: credentialRevocationId,
-                        tailsPath: tailsFilePath,
-                        revStateJson: null,
-                        oldRevStatusListJson: null);
+                        Debug.WriteLine($"Hyperledger Aries after CreateOrUpdateRevocationStateAsync() - revocationStateJson: {revStateJson}");
 
-                    Debug.WriteLine($"Hyperledger Aries after CreateOrUpdateRevocationStateAsync() - revocationStateJson: {revStateJson}");
+                        credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
 
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
-
-                    Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
+                        Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
+                    }
+                    else
+                    {
+                        credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                        Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
+                    }
+                    index += 1;
                 }
                 else
                 {
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
-                    Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: '{JsonConvert.SerializeObject(credentialEntryJsons)}'");
+                    credentialEntryProofMapping.TryGetValue(credentialRecord.Id, out int idx);
+                    Debug.WriteLine($"Hyperledger Aries - Credential referent already in list credentialObjects: '{credentialRecord.Id}' relating to index '{idx}'");
                 }
+
+                //build credentialProofJson list: relate prove to a credential which was found for a given attr.Key by setting right index from credentialEntryProofMapping
+                credentialEntryProofMapping.TryGetValue(credentialRecord.Id, out int proofIndex);
                 credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
                 {
-                    EntryIndex = index,
+                    EntryIndex = proofIndex,
                     IsPredicate = Convert.ToByte(false),
                     Referent = attr.Key,
                     Reveal = Convert.ToByte(attr.Value.Revealed)
                 }));
                 Debug.WriteLine($"Hyperledger Aries current credentialProofJsons: '{JsonConvert.SerializeObject(credentialProofJsons)}'");
-                index += 1;
             }
 
             Debug.WriteLine($"Hyperledger Aries - Going into foreach 'RequestedPredicates'");
@@ -241,102 +251,109 @@ namespace Hyperledger.Aries.Features.PresentProof
                 anoncreds_rs_dotnet.Models.Credential credential = await Anoncreds.CredentialApi.CreateCredentialFromJsonAsync(credentialRecord.CredentialJson);
                 Debug.WriteLine($"Hyperledger Aries - Got credential from wallet: '{JsonConvert.SerializeObject(credentialRecord)}'");
 
-                //credential already added to credentialObjects, no need for adding several times in credentialEntryJsons
-                if (credentialObjects.Any(x => x.Referent.Equals(credentialRecord.Id)))
+                //check if credential already added to credentialObjects, no need for adding same credential in credentialEntryJsons and building revocationStates several times
+                if (!credentialObjects.Any(x => x.Referent.Equals(credentialRecord.Id)))
                 {
-                    Debug.WriteLine($"Hyperledger Aries - Credential referent already in list of credentialObjects: '{credentialRecord.Id}'");
-                    continue;
-                }
+                    credentialEntryProofMapping.Add(credentialRecord.Id, index);
 
-                Dictionary<string, string> attributes = new();
-                credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
+                    Dictionary<string, string> attributes = new();
+                    credentialRecord.CredentialAttributesValues.ToList().ForEach(x => attributes.Add((string)x.Name, (string)x.Value));
 
-                Debug.WriteLine($"Hyperledger Aries - Credential attributes are: '{JsonConvert.SerializeObject(attributes)}'");
+                    Debug.WriteLine($"Hyperledger Aries - Credential attributes are: '{JsonConvert.SerializeObject(attributes)}'");
 
-                var credentialRevocationIdx = "";
-                if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
-                    credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
-                else
-                    credentialRevocationIdx = null;
+                    var credentialRevocationIdx = "";
+                    if (JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"].HasValues)
+                        credentialRevocationIdx = (string)JObject.Parse(credentialRecord.CredentialJson)["signature"]["r_credential"]["i"];
+                    else
+                        credentialRevocationIdx = null;
 
-                credentialObjects.Add(new CredentialInfo 
-                {
-                    SchemaId = credentialRecord.SchemaId,
-                    CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
-                    RevocationRegistryId = credentialRecord.RevocationRegistryId,
-                    Referent = credentialRecord.Id,
-                    CredentialRevocationId = credentialRevocationIdx,
-                    Attributes = attributes
-                });
-
-                Debug.WriteLine($"Hyperledger Aries - Current CredentialInfo list is: '{JsonConvert.SerializeObject(credentialObjects)}'");
-
-                if (credentialRecord.RevocationRegistryId != null)
-                {
-                    Debug.WriteLine($"Hyperledger Aries - Credential supports revocation with RevocationID: '{credentialRecord.RevocationRegistryId}'");
-                    uint nonRevokedTo = 0;
-                    if (proofRequest.NonRevoked != null)
-                        nonRevokedTo = proofRequest.NonRevoked.To;
-                    else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                    credentialObjects.Add(new CredentialInfo
                     {
-                        nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
-                    }
-                    Debug.WriteLine($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
+                        SchemaId = credentialRecord.SchemaId,
+                        CredentialDefinitionId = credentialRecord.CredentialDefinitionId,
+                        RevocationRegistryId = credentialRecord.RevocationRegistryId,
+                        Referent = credentialRecord.Id,
+                        CredentialRevocationId = credentialRevocationIdx,
+                        Attributes = attributes
+                    });
 
-                    var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                    Debug.WriteLine($"Hyperledger Aries - Current CredentialInfo list is: '{JsonConvert.SerializeObject(credentialObjects)}'");
+
+                    if (credentialRecord.RevocationRegistryId != null)
+                    {
+                        Debug.WriteLine($"Hyperledger Aries - Credential supports revocation with RevocationID: '{credentialRecord.RevocationRegistryId}'");
+                        uint nonRevokedTo = 0;
+                        if (proofRequest.NonRevoked != null)
+                            nonRevokedTo = proofRequest.NonRevoked.To;
+                        else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                        {
+                            nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
+                        }
+                        Debug.WriteLine($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
+
+                        var registryDefinition = await LedgerService.LookupRevocationRegistryDefinitionAsync(
+                            agentContext: agentContext,
+                            registryId: credential.RevocationRegistryId);
+
+                        var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
                         agentContext: agentContext,
-                        registryId: credential.RevocationRegistryId);
-                    
-                    var registryDelta = await LedgerService.LookupRevocationRegistryDeltaAsync(
-                    agentContext: agentContext,
-                    revocationRegistryId: credential.RevocationRegistryId,
-                    // Ledger will not return correct revocation state if the 'from' field
-                    // is other than 0
-                    from: 0,
-                    to: nonRevokedTo);
+                        revocationRegistryId: credential.RevocationRegistryId,
+                        // Ledger will not return correct revocation state if the 'from' field
+                        // is other than 0
+                        from: 0,
+                        to: nonRevokedTo);
 
-                    string revRegDefJson = registryDefinition.ObjectJson;
-                    string revRegDeltaJson = registryDelta.ObjectJson;
+                        string revRegDefJson = registryDefinition.ObjectJson;
+                        string revRegDeltaJson = registryDelta.ObjectJson;
 
-                    Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDefJson is: '{revRegDefJson}'");
-                    Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDeltaJson is: '{revRegDeltaJson}'");
+                        Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDefJson is: '{revRegDefJson}'");
+                        Debug.WriteLine($"Hyperledger Aries - RevocationRegistryDeltaJson is: '{revRegDeltaJson}'");
 
-                    //Convert 'old' revocation delta in 'new' revocationStatusList
-                    string revocationStateListJson =
-                        RevocationUtils.ConvertDeltaToRevocationStatusListJson(
-                            revRegDefId: credential.RevocationRegistryId,
-                            revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
-                            deltaJson: revRegDeltaJson,
-                            timestamp: (long)registryDelta.Timestamp
-                            );
+                        //Convert 'old' revocation delta in 'new' revocationStatusList
+                        string revocationStateListJson =
+                            RevocationUtils.ConvertDeltaToRevocationStatusListJson(
+                                revRegDefId: credential.RevocationRegistryId,
+                                revRegDefJson: registryDefinition.ObjectJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                                deltaJson: revRegDeltaJson,
+                                timestamp: (long)registryDelta.Timestamp
+                                );
 
-                    Debug.WriteLine($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync()");
-                    Debug.WriteLine($"Hyperledger Aries - converted revocationStatusList is {revocationStateListJson}");
+                        Debug.WriteLine($"Hyperledger Aries before CreateOrUpdateRevocationStateAsync()");
+                        Debug.WriteLine($"Hyperledger Aries - converted revocationStatusList is {revocationStateListJson}");
 
-                    long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
-                    var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
+                        long.TryParse(credentialRevocationIdx, out var credentialRevocationId);
+                        var tailsFilePath = await TailsService.EnsureTailsExistsAsync(agentContext, credentialRecord.RevocationRegistryId);
 
-                    string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
-                        revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
-                        newRevStatusListJson: revocationStateListJson,
-                        revRegIndex: credentialRevocationId,
-                        tailsPath: tailsFilePath,
-                        revStateJson: null,
-                        oldRevStatusListJson: null);
+                        string revStateJson = await Anoncreds.RevocationApi.CreateOrUpdateRevocationStateAsync(
+                            revRegDefJson: revRegDefJson.ToAnoncredsJson(AnoncredsModel.RevRegDef),
+                            newRevStatusListJson: revocationStateListJson,
+                            revRegIndex: credentialRevocationId,
+                            tailsPath: tailsFilePath,
+                            revStateJson: null,
+                            oldRevStatusListJson: null);
 
-                    Debug.WriteLine($"Hyperledger Aries after CreateOrUpdateRevocationStateAsync() - revocationStateJson: {revStateJson}");
+                        Debug.WriteLine($"Hyperledger Aries after CreateOrUpdateRevocationStateAsync() - revocationStateJson: {revStateJson}");
 
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
+                        credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntryJson(credentialRecord.CredentialJson, (long)registryDelta.Timestamp, revStateJson)));
+                    }
+                    else
+                    {
+                        credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                    }
+                    Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: {JsonConvert.SerializeObject(credentialEntryJsons)}");
+                    index += 1;
                 }
                 else
                 {
-                    credentialEntryJsons.Add(JsonConvert.SerializeObject(CredentialEntry.CreateCredentialEntry(credential)));
+                    credentialEntryProofMapping.TryGetValue(credentialRecord.Id, out int idx);
+                    Debug.WriteLine($"Hyperledger Aries - Credential referent already in list credentialObjects: '{credentialRecord.Id}' relating to index '{idx}'");
                 }
-                Debug.WriteLine($"Hyperledger Aries current credentialEntryJsons: {JsonConvert.SerializeObject(credentialEntryJsons)}");
 
+                //build credentialProofJson list: relate prove to a credential which was found for a given pred.Key by setting right index from credentialEntryProofMapping
+                credentialEntryProofMapping.TryGetValue(credentialRecord.Id, out int proofIndex);
                 credentialProofJsons.Add(JsonConvert.SerializeObject(new CredentialProof
                 {
-                    EntryIndex = index,
+                    EntryIndex = proofIndex,
                     IsPredicate = Convert.ToByte(true),
                     Referent = pred.Key,
                     Reveal = Convert.ToByte(pred.Value.Revealed)
