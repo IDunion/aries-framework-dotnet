@@ -98,12 +98,11 @@ namespace Hyperledger.Aries.Features.IssueCredential
 
             try
             {
-                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile already saved on device ... ?");
+                Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile already saved on device?");
                 if (!File.Exists(tailsfile))
                 {
                     Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - No");
                     var bytes = await HttpClient.GetByteArrayAsync(new Uri(tailsUri));
-                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - collected bytes from tailsUri: {string.Join(", ", bytes)} with len: {bytes.ToArray().Length}");
                     // Check hash
                     using var sha256 = SHA256.Create();
                     var computedHash = sha256.ComputeHash(bytes);
@@ -116,8 +115,6 @@ namespace Hyperledger.Aries.Features.IssueCredential
                     File.WriteAllBytes(
                         path: tailsfile,
                         bytes: bytes);
-                    byte[] testBytes = File.ReadAllBytes(tailsfile);
-                    Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - written bytes to file {string.Join(", ", testBytes)} with len: {testBytes.ToArray().Length}");
                     Debug.WriteLine($"Aries method - EnsureTailsExistsAsync() - Tailsfile was saved on device");
                 }
                 else
