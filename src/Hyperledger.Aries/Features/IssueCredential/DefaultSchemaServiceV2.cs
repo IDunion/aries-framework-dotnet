@@ -375,6 +375,7 @@ namespace Hyperledger.Aries.Features.IssueCredential
                  //originDid: definitionRecord.IssuerDid,
                  originDid: JObject.Parse(credentialDefinitionJson)["issuerId"].ToString(),
                  credDefJson: credentialDefinitionJson,
+                 credDefId: definitionRecord.Id,
                  tag: tag,
                  revRegType: RegistryType.CL_ACCUM,
                  maxCredNumber: maxCredNum,

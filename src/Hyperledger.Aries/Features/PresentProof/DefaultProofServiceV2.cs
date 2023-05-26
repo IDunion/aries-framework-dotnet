@@ -285,9 +285,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                         uint nonRevokedTo = 0;
                         if (proofRequest.NonRevoked != null)
                             nonRevokedTo = proofRequest.NonRevoked.To;
-                        else if (proofRequest.RequestedAttributes.First().Value.NonRevoked != null)
+                        else if (proofRequest.RequestedPredicates.First().Value.NonRevoked != null)
                         {
-                            nonRevokedTo = proofRequest.RequestedAttributes.First().Value.NonRevoked.To;
+                            nonRevokedTo = proofRequest.RequestedPredicates.First().Value.NonRevoked.To;
                         }
                         Debug.WriteLine($"Hyperledger Aries - nonRevokedTo is: '{nonRevokedTo}'");
 
@@ -373,9 +373,9 @@ namespace Hyperledger.Aries.Features.PresentProof
             Debug.WriteLine($"Hyperledger Aries selfAttestNames: '{JsonConvert.SerializeObject(selfAttestNames)}'");
             Debug.WriteLine($"Hyperledger Aries selfAttestValues: '{JsonConvert.SerializeObject(selfAttestValues)}'");
 
-            (var schemas, var definitions) = await BuildSchemasAndCredDefsAsync(agentContext,
-                credentialObjects.Select(x => x.SchemaId).Distinct(),
-                credentialObjects.Select(x => x.CredentialDefinitionId).Distinct());
+            IEnumerable<string> schemaIds = credentialObjects.Select(x => x.SchemaId).Distinct();
+            IEnumerable<string> credDefIds = credentialObjects.Select(x => x.CredentialDefinitionId).Distinct();
+            (var schemas, var definitions) = await BuildSchemasAndCredDefsAsync(agentContext,schemaIds,credDefIds);
 
             Debug.WriteLine($"Hyperledger Aries built schemas: '{JsonConvert.SerializeObject(schemas)}'");
             Debug.WriteLine($"Hyperledger Aries built credDefs: '{JsonConvert.SerializeObject(definitions)}'");
@@ -394,7 +394,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                 selfAttestValues,
                 linkSecret,
                 schemas,
-                definitions);
+                schemaIds.ToList(),
+                definitions,
+                credDefIds.ToList());
 
             Debug.WriteLine($"Hyperledger Aries - CreatePresentationAsync() completed successfully");
 
@@ -504,15 +506,16 @@ namespace Hyperledger.Aries.Features.PresentProof
                     }
                 }
 
-            (var schemas, var definitions) = await BuildSchemasAndCredDefsAsync(agentContext,
-                proof.Identifiers
+            IEnumerable<string> schemaIds = proof.Identifiers
                     .Select(x => x.SchemaId)
                     .Where(x => x != null)
-                    .Distinct(),
-                proof.Identifiers
+                    .Distinct();
+            IEnumerable<string> credDefIds = proof.Identifiers
                     .Select(x => x.CredentialDefintionId)
                     .Where(x => x != null)
-                    .Distinct());
+                    .Distinct();
+
+            (var schemas, var definitions) = await BuildSchemasAndCredDefsAsync(agentContext,schemaIds,credDefIds);
 
             Debug.WriteLine($"Hyperledger Aries - Built Schemas: {JsonConvert.SerializeObject(schemas)}");
             Debug.WriteLine($"Hyperledger Aries - Built CredDefs: {JsonConvert.SerializeObject(definitions)}");
@@ -542,7 +545,9 @@ namespace Hyperledger.Aries.Features.PresentProof
                 presentationJson: proofJson,
                 presentationRequestJson: proofRequestJson,
                 schemaJsons: schemas,
+                schemaIds: schemaIds.ToList(),
                 credentialDefinitionJsons: definitions,
+                credentialDefinitionIds: credDefIds.ToList(),
                 //TODO : wait vor indy-vdr update, ignore revocation for now
                 revocationRegistryDefinitionJsons : revocationDefinitions,
                 revocationStatusListJsons : revocationStateListJsons,
@@ -1033,12 +1038,11 @@ namespace Hyperledger.Aries.Features.PresentProof
         }
 
         #region Private Methods
-        private async Task<(List<string>, List<string>)> BuildSchemasAndCredDefsAsync(IAgentContext agentContext, IEnumerable<string> schemaIds, IEnumerable<string> credentialDefIds)
+        private async Task<(List<string>,List<string>)> BuildSchemasAndCredDefsAsync(IAgentContext agentContext, IEnumerable<string> schemaIds, IEnumerable<string> credentialDefIds)
         {
             Debug.WriteLine($"Called {nameof(BuildSchemasAndCredDefsAsync)}'");
 
-            var schemaJsonss = new List<string>();
-            var schemas = new List<Schema>();
+            var schemaJsons = new List<string>();
             var credDefJsons = new List<string>();
 
             foreach (var schemaId in schemaIds)
@@ -1048,8 +1052,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 ledgerSchema.ObjectJson = ledgerSchema.ObjectJson.ToAnoncredsJson(AnoncredsModelExtensions.AnoncredsModel.Schema);
                 //
                 var schema = await Anoncreds.SchemaApi.CreateSchemaFromJsonAsync(ledgerSchema.ObjectJson);
-                schemas.Add(schema);
-                schemaJsonss.Add(schema.JsonString);
+                schemaJsons.Add(schema.JsonString);
             }
 
             foreach (var credDefId in credentialDefIds)
@@ -1073,7 +1076,7 @@ namespace Hyperledger.Aries.Features.PresentProof
                 credDefJsons.Add(credDef.JsonString);
             }
 
-            return (schemaJsonss, credDefJsons);
+            return (schemaJsons, credDefJsons);
         }
 
         private bool HasNonRevokedOnAttributeLevel(ProofRequest proofRequest)
