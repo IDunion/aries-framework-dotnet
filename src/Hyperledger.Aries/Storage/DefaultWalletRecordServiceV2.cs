@@ -68,10 +68,6 @@ namespace Hyperledger.Aries.Storage
                     throw new AriesAskarException(e.Message, e.errorCode);
                 }
             }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
-            }
         }
 
         /// <inheritdoc />
@@ -134,10 +130,6 @@ namespace Hyperledger.Aries.Storage
             {
                 throw new AriesAskarException(e.Message, e.errorCode);
             }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
-            }
         }
 
         /// <inheritdoc />
@@ -160,10 +152,6 @@ namespace Hyperledger.Aries.Storage
             catch (AriesAskarException e)
             {
                 throw new AriesAskarException(e.Message, e.errorCode);
-            }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
@@ -217,10 +205,6 @@ namespace Hyperledger.Aries.Storage
                     throw new AriesAskarException(e.Message, e.errorCode);
                 }
             }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
-            }
         }
 
         /// <inheritdoc />
@@ -238,17 +222,6 @@ namespace Hyperledger.Aries.Storage
             {
                 Debug.WriteLine($"Couldn't delete record: {e}");
                 return false;
-            }
-            finally
-            {
-                try
-                {
-                    _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
-                }
-                catch
-                {
-
-                }
             }
         }
 
@@ -277,10 +250,6 @@ namespace Hyperledger.Aries.Storage
                     throw new AriesAskarException(e.Message, e.errorCode);
                 }
             }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
-            }
         }
 
         /// <inheritdoc />
@@ -306,10 +275,6 @@ namespace Hyperledger.Aries.Storage
                 {
                     throw new AriesAskarException(e.Message, e.errorCode);
                 }
-            }
-            finally
-            {
-                _ = await AriesAskarStore.CloseAndCommitAsync(storage.Store.session);
             }
         }
 
