@@ -5,7 +5,7 @@
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Aries.xml</DocumentationFile>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>2.0.44-beta</Version>
+        <Version>2.0.45-beta</Version>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Hyperledger.Anoncreds-Rs" Version="0.3.30-alpha" />
