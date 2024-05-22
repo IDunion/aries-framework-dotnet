@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Hyperledger.Aries.Tests": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "PATH": "C:\\Rustlibs"
+      }
+    }
+  }
+}

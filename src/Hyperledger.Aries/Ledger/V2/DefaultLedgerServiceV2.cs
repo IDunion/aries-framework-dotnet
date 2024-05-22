@@ -246,5 +246,55 @@ namespace Hyperledger.Aries.Ledger.V2
                 exceptionPredicate: (IndyVdrException e) => e.Message.Contains("PoolTimeout") || 
                                                             e.Message.Contains("Service unavailable"));
         }
+
+
+        public async Task RegisterCustomAsync(IAgentContext context, string requestJson, TransactionCost paymentInfo = null)
+        {
+            var req = await LedgerApi.BuildCustomRequest(requestJson);
+
+            await SignAndSubmitRequestAsync(context, requestJson, req);
+        }
+
+        public async Task RegisterDisableAllTxnAuthorAgreementsAsync(IAgentContext context, string submitterDid)
+        {
+            var req = await LedgerApi.BuildDisableAllTxnAuthorAgreementsRequest(submitterDid);
+
+            await SignAndSubmitRequestAsync(context, submitterDid, req);
+        }
+
+        public async Task<string> LookupdGetTxnAuthorAgreementRequestAsync(IAgentContext agentContext)
+        {
+            var req = await LedgerApi.BuildGetTxnAuthorAgreementRequestAsync();
+
+            return await SubmitRequestAsync(agentContext, req);
+        }
+
+        public async Task<string> LookupTxnRequestAsync(IAgentContext agentContext, int ledgerType, int seqNo)
+        {
+            var req = await LedgerApi.BuildGetTxnRequestAsync(ledgerType, seqNo);
+
+            return await SubmitRequestAsync(agentContext, req);
+        }
+
+        public async Task<string> BuildGetValidatorInfoRequestAsync(IAgentContext context, string submitterDid)
+        {
+            var req = await LedgerApi.BuildGetValidatorInfoRequestAsync(submitterDid);
+
+            return await SubmitRequestAsync(context, req);
+        }
+
+        public async Task RegisterTxnAuthorAgreementRequestAsync(IAgentContext context, string submitterDid, string text, string version, long ratificationTs, long retirementTs)
+        {
+            var req = await LedgerApi.BuildTxnAuthorAgreementRequestAsync(submitterDid, text, version, ratificationTs, retirementTs);
+
+            await SignAndSubmitRequestAsync(context, submitterDid, req);
+        }
+
+        public async Task RegisterRichSchemaRequestAsync(IAgentContext context, string submitterDid, string rsId, string rsContent, string rsName, string rsVersion, string rsType, string ver)
+        {
+            var req = await LedgerApi.BuildRichSchemaRequestAsync(submitterDid, rsId, rsContent, rsName, rsVersion, rsType, ver);
+
+            await SignAndSubmitRequestAsync(context, submitterDid, req);
+        }
     }
 }
