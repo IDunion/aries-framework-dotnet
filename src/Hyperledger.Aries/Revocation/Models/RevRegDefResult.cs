@@ -8,6 +8,8 @@ namespace Hyperledger.Aries.Revocation.Models
 {
     public class RevRegDefResult
     {
+        public IntPtr Handle { get; set; }
+
         [JsonProperty]
         public string JobId { get; set; }
 

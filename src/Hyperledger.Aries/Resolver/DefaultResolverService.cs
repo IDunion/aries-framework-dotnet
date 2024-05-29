@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Resolver.Abstrations;
 using indy_vdr_dotnet.libindy_vdr;
 using System;
 using System.Collections.Generic;

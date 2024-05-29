@@ -56,6 +56,12 @@ namespace Hyperledger.Aries.Ledger.V2
             return result;
         }
 
+        public async Task<ParseResponseResult> LookupAcceptanceMechanismsAsync(IAgentContext context, string submittedDid)
+        {
+            var req = await LedgerApi.BuildGetAcceptanceMechanismsRequestAsync();
+            var response = await SubmitRequestAsync(context, req);
+            return ResponseParser.ParseGetSchemaResponse(response);
+        }
         /// <inheritdoc />
         public async Task RegisterAttributeAsync(IAgentContext context, string submittedDid, string targetDid, string attributeName,
             object value, TransactionCost paymentInfo = null)

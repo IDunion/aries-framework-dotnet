@@ -52,16 +52,9 @@ namespace Hyperledger.Aries.Revocation.Utils
         }
     }
 
-    public class ProfileSessionInactiveError : BaseError
+    public class AnonCredsRevocationError : BaseError
     {
-        public ProfileSessionInactiveError(string message, string errorCode = null) : base(message, errorCode)
-        {
-        }
-    }
-
-    public class InjectionContextError : BaseError
-    {
-        public InjectionContextError(string message, string errorCode = null) : base(message, errorCode)
+        public AnonCredsRevocationError(string message, string errorCode = null) : base(message, errorCode)
         {
         }
     }

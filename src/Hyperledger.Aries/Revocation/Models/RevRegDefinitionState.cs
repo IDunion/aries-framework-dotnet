@@ -27,13 +27,5 @@ namespace Hyperledger.Aries.Revocation.Models
             STATE_DECOMMISSIONED = 4,
             STATE_FULL = 5
         }
-        public static Dictionary<RevRegDefState,String> RevRegDefStateames = new Dictionary<RevRegDefState, String>(){
-            { RevRegDefState.STATE_FINISHED , "finished" },
-            { RevRegDefState.STATE_FAILED , "failed" },
-            { RevRegDefState.STATE_ACTION , "action" },
-            { RevRegDefState.STATE_WAIT , "wait" },
-            { RevRegDefState.STATE_DECOMMISSIONED , "decommissioned" },
-            { RevRegDefState.STATE_FULL , "full" }
-            };
     }
 }

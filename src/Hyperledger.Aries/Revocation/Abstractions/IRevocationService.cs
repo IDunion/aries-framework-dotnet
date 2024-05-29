@@ -10,6 +10,6 @@ namespace Hyperledger.Aries.Revocation.Abstractions
 {
     public interface IRevocationService
     {
-        Task<RevRegDefResult> RegisterRevocationRegistryDefinition(Profile profile, RevocationRegistryDefinition revRegDef);
+        public Task CreateAndRegisterRevocationRegistryDefinitionAsync(IAgentContext context, string originDid, CredentialDefinition credDefObject, string credDefId, string tag, RegistryType revRegType, long maxCredNumber, string tailsDirPath);
     }
 }

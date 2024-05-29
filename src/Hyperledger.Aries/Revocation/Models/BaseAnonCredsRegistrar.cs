@@ -24,7 +24,7 @@ public abstract class BaseAnonCredsRegistrar
     /// <summary>
     /// Register a revocation registry definition on the registry.
     /// </summary>
-    public abstract Task<RevRegDefResult> RegisterRevocationRegistryDefinition(Profile profile, RevocationRegistryDefinition revocationRegistryDefinition);
+    public abstract Task<RevRegDefResult> RegisterRevocationRegistryDefinition(RevocationRegistryDefinition revocationRegistryDefinition);
 
   
 }
