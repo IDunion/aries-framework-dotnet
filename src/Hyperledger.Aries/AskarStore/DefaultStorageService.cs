@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.AskarStore
 {
-    public class DefaultStoreService : IStoreService
+    public class DefaultStorageService : IStorageService
     {
         public Task<string> GenerateRawKeyAsync(string Seed = null)
         {

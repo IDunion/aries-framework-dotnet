@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Aries.AskarStore
 {
-    public interface IStoreService
+    public interface IStorageService
     {
         Task<bool> RemoveStoreAsync(Store store);
         Task<Store> OpenStore(Store store, bool provision =false);
