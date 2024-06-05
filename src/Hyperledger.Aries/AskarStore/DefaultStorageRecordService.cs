@@ -1,5 +1,6 @@
 ﻿using aries_askar_dotnet.AriesAskar;
 using aries_askar_dotnet.Models;
+using Hyperledger.Aries.AskarStore.Abstractions;
 using Hyperledger.Aries.AskarStore.Models;
 using Hyperledger.Aries.Extensions;
 using Newtonsoft.Json;
@@ -71,11 +72,17 @@ namespace Hyperledger.Aries.AskarStore
             Session session = await CreateSession(store);
             var items = await session.FetchAllAsync(record.Type, tag_query, limit, for_update);
             var rows = JsonConvert.DeserializeObject<IEnumerable<StorageRecord>>(items.ToJson());
-            var results = new List<StorageRecord >();
+            var results = new List<StorageRecord>();
             foreach (StorageRecord row in rows) {
                 results.Add(row);
             }
             return results;
+        }
+
+        public async Task<long> RemoveAllRecords(Store store, StorageRecord record, string tagFilter = null)
+        {
+            Session session = await CreateSession(store);
+            return await session.RemoveAllAsync(record.Type, tagFilter);
         }
     }
 }

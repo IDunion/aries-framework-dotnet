@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Aries.AskarStore
+namespace Hyperledger.Aries.AskarStore.Abstractions
 {
     public interface IStorageRecordService
     {
@@ -15,5 +15,6 @@ namespace Hyperledger.Aries.AskarStore
         Task<StorageRecord> GetRecord(Store store, string recordType, string recordId, bool for_update = false);
         Task<StorageRecord> FindRecord(Store store, StorageRecord record, string tag_query, long limit, bool for_update = false);
         Task<IEnumerable<StorageRecord>> FindAllRecord(Store store, StorageRecord record, string tag_query, long limit, bool for_update = false);
+        Task<long> RemoveAllRecords(Store store, StorageRecord record, string tagFilter = null);
     }
 }
