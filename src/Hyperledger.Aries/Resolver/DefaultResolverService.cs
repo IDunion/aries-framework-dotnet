@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Aries.Agents;
 using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using Hyperledger.Aries.Resolver.Abstrations;
 using indy_vdr_dotnet.libindy_vdr;
 using System;
@@ -14,7 +15,7 @@ namespace Hyperledger.Aries.Resolver
     {
         public async Task<string> ResolveAsync(PoolAwaitable poolHandle, string did)
         {
-            if (await poolHandle is IntPtr pHandle)
+            if ((await poolHandle).PoolHandle is IntPtr pHandle)
             {
                 var response = await ResolverApi.ResolveAsync(pHandle, did);
                 return response;
@@ -23,7 +24,7 @@ namespace Hyperledger.Aries.Resolver
         }
         public async Task<string> DereferenceAsync(PoolAwaitable poolHandle, string did_url)
         {
-            if (await poolHandle is IntPtr pHandle)
+            if ((await poolHandle).PoolHandle is IntPtr pHandle)
             {
                 var response = await ResolverApi.DereferenceAsync(pHandle, did_url);
                 return response;

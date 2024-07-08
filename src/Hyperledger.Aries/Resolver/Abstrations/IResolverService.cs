@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Aries.Ledger;
+using Hyperledger.Aries.Ledger.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
